@@ -1,0 +1,71 @@
+name: Build binary
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: 'gradle'
+      - uses: actions/cache@v3
+        with:
+          path: "/home/runner/.konan"
+          key: ${{ runner.os }}-${{ hashFiles('**/build.gradle.kts') }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get install libcurl4-openssl-dev
+      - name: Build with Gradle
+        run: ./gradlew commonBinaries
+      - name: Move and apply correct permissions to binary
+        run: |
+          cp build/bin/common/releaseExecutable/changelog-generator.kexe ./changelog_generator
+          chmod +x ./changelog_generator
+      - name: Upload executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: changelog_generator
+          path: changelog_generator
+  change-log:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Download a single artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: changelog_generator
+      - name: Give artifact correct permissions
+        run: chmod +x ./changelog_generator
+      - name: Run changelog
+        id: changelog
+        run: ./changelog_generator
+        env:
+          CHANGELOG_SERVICE_NAME: "Changelog Generator"
+          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGELOG_JIRA_APP_NAME: "montaapp"
+          CHANGELOG_OUTPUT: "slack"
+          CHANGELOG_SLACK_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
+          CHANGELOG_SLACK_CHANNEL_NAME: "#releases"
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: changelog_generator
+          asset_name: changelog_generator
+          tag: ${{ github.ref }}
+          overwrite: true

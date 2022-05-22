@@ -1,0 +1,99 @@
+package com.monta.changelog
+
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.groups.OptionGroup
+import com.github.ajalt.clikt.parameters.groups.groupChoice
+import com.github.ajalt.clikt.parameters.groups.required
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
+import com.monta.changelog.log.ChangeLogService
+import com.monta.changelog.printer.ChangeLogPrinter
+import com.monta.changelog.printer.ConsoleChangeLogPrinter
+import com.monta.changelog.printer.slack.SlackChangeLogPrinter
+import kotlinx.coroutines.runBlocking
+
+class GenerateChangeLogCommand : CliktCommand() {
+
+    private val debug: Boolean by option(
+        help = "Enables debug logging"
+    ).flag(
+        secondaryNames = arrayOf("--debug", "-D"),
+        default = false
+    )
+
+    private val serviceName: String by option(
+        help = "Name of the service used for generating the changelog",
+        envvar = "CHANGELOG_SERVICE_NAME"
+    ).required()
+
+    private val githubRelease: Boolean by option(
+        help = "If enabled this will create a release on github with a newly generated changelog",
+        envvar = "CHANGELOG_GITHUB_RELEASE"
+    ).flag("--github-release", "-R", default = false)
+
+    private val githubToken: String? by option(
+        help = "Github Token used for creating releases",
+        envvar = "CHANGELOG_GITHUB_TOKEN"
+    )
+
+    private val jiraAppName: String? by option(
+        help = "Name of the Jira app used for generating Jira issue urls (optional)",
+        envvar = "CHANGELOG_JIRA_APP_NAME"
+    )
+
+    private val output: PrintingConfig by option(
+        help = "Name of the output used for printing the log (defaults to console)",
+        envvar = "CHANGELOG_OUTPUT"
+    ).groupChoice(
+        choices = mapOf(
+            "plain" to ConsolePrintingConfig(),
+            "slack" to SlackPrintingConfig()
+        )
+    ).required()
+
+    override fun run() {
+        runBlocking {
+            val changeLogService = ChangeLogService(
+                debug = debug,
+                serviceName = serviceName,
+                jiraAppName = jiraAppName,
+                githubRelease = githubRelease,
+                githubToken = githubToken
+            )
+
+            changeLogService.generateChangeLog(
+                changeLogPrinter = output.changeLogPrinter
+            )
+        }
+    }
+
+    sealed class PrintingConfig(name: String) : OptionGroup(name) {
+        abstract val changeLogPrinter: ChangeLogPrinter
+    }
+
+    class ConsolePrintingConfig : PrintingConfig("Options for printing to console") {
+        override val changeLogPrinter: ChangeLogPrinter by lazy {
+            ConsoleChangeLogPrinter()
+        }
+    }
+
+    class SlackPrintingConfig : PrintingConfig("Options for printing to slack") {
+        private val slackToken: String by option(
+            help = "Slack token used for publishing",
+            envvar = "CHANGELOG_SLACK_TOKEN"
+        ).required()
+
+        private val slackChannel: String by option(
+            help = "Slack channel where the changelog will be published to (i.e #my-channel)",
+            envvar = "CHANGELOG_SLACK_CHANNEL_NAME"
+        ).required()
+
+        override val changeLogPrinter: ChangeLogPrinter by lazy {
+            SlackChangeLogPrinter(slackToken, slackChannel)
+        }
+    }
+}
+
+
+
