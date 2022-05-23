@@ -4,6 +4,7 @@ import com.monta.changelog.util.DebugLogger
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.refTo
 import kotlinx.cinterop.toKString
+import kotlinx.serialization.StringFormat
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import platform.posix.FILE
@@ -18,14 +19,7 @@ internal class GitCommandUtil {
     private val logJsonFormat = """
         {
            "commit":"%H",
-           "abbreviated_commit":"%h",
-           "tree":"%T",
-           "abbreviated_tree":"%t",
-           "parent":"%P",
-           "abbreviated_parent":"%p",
-           "refs":"%D",
            "subject":"%s",
-           "commit_notes":"%N",
            "author":{
               "name":"%aN",
               "email":"%aE",
@@ -47,7 +41,9 @@ internal class GitCommandUtil {
         return executeCommand(buildString {
             append("git log ")
             append("--pretty=format:'$logJsonFormat'")
-        }).map { Json.decodeFromString(it) }
+        }).mapNotNull {
+            Json.decodeFromStringNullable(it)
+        }
     }
 
     fun getLogs(latestTag: String, previousTag: String): List<LogItem> {
@@ -55,7 +51,18 @@ internal class GitCommandUtil {
             append("git log ")
             append("--pretty=format:'$logJsonFormat' ")
             append("$latestTag...$previousTag")
-        }).map { Json.decodeFromString(it) }
+        }).mapNotNull {
+            Json.decodeFromStringNullable(it)
+        }
+    }
+
+    private inline fun <reified T> StringFormat.decodeFromStringNullable(string: String): T? {
+        return try {
+            decodeFromString(string)
+        } catch (exception: Exception) {
+            DebugLogger.warn("exception while parsing commit: $string")
+            null
+        }
     }
 
     fun getRemoteUrl(): String? {

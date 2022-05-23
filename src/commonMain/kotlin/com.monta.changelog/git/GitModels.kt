@@ -17,17 +17,10 @@ data class CommitInfo(
 
 @Serializable
 internal data class LogItem(
-    val abbreviated_commit: String,
-    val abbreviated_parent: String,
-    val abbreviated_tree: String,
     val author: Author,
-    val commit: String,
-    val commit_notes: String,
     val committer: Author,
-    val parent: String,
-    val refs: String,
+    val commit: String,
     val subject: String,
-    val tree: String,
 )
 
 @Serializable
