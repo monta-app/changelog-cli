@@ -23,7 +23,7 @@ class GitService {
 
         when (tags.size) {
             0 -> {
-                DebugLogger.debug("only one tag found; returning from latest commit to last tag")
+                DebugLogger.info("only one tag found; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
                     commits = gitCommandUtil.getLogs().mapToCommits()
@@ -31,7 +31,7 @@ class GitService {
             }
             1 -> {
                 val latestTag = tags[0]
-                DebugLogger.debug("only one tag found $latestTag; returning from latest commit to last tag")
+                DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = latestTag.toFormattedDate(),
                     commits = gitCommandUtil.getLogs().mapToCommits()
@@ -40,7 +40,7 @@ class GitService {
             else -> {
                 val latestTag = tags[0]
                 val previousTag = tags[1]
-                DebugLogger.debug("returning commits between tag $latestTag and $previousTag")
+                DebugLogger.info("returning commits between tag $latestTag and $previousTag")
                 return CommitInfo(
                     tagName = latestTag.toFormattedDate(),
                     commits = gitCommandUtil.getLogs(latestTag, previousTag).mapToCommits()
