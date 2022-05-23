@@ -32,13 +32,16 @@ class ChangeLogService(
 
     init {
         if (debug) {
-            DebugLogger.setLoggingLevel(DebugLogger.Level.Info)
+            DebugLogger.setLoggingLevel(DebugLogger.Level.Verbose)
         } else {
-            DebugLogger.setLoggingLevel(DebugLogger.Level.Error)
+            DebugLogger.setLoggingLevel(DebugLogger.Level.Info)
         }
 
-        DebugLogger.debug("serviceName=$serviceName jiraAppName=$jiraAppName githubRelease=$githubRelease")
-        DebugLogger.debug("repoOwner=${repoInfo.repoOwner} repoName=${repoInfo.repoName}")
+        DebugLogger.info("serviceName $serviceName")
+        DebugLogger.info("jiraAppName $jiraAppName")
+        DebugLogger.info("githubRelease $githubRelease")
+        DebugLogger.info("repoOwner ${repoInfo.repoOwner}")
+        DebugLogger.info("repoName ${repoInfo.repoName}")
     }
 
     suspend fun generateChangeLog(changeLogPrinter: ChangeLogPrinter) {

@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -64,6 +64,7 @@ jobs:
         run: ./changelog-cli
         env:
           CHANGELOG_SERVICE_NAME: "Changelog Generator"
+          CHANGELOG_GITHUB_RELEASE: true
           CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHANGELOG_JIRA_APP_NAME: "montaapp"
           CHANGELOG_OUTPUT: "slack"

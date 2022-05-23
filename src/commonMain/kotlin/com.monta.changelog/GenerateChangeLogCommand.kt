@@ -47,7 +47,7 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_OUTPUT"
     ).groupChoice(
         choices = mapOf(
-            "plain" to ConsolePrintingConfig(),
+            "console" to ConsolePrintingConfig(),
             "slack" to SlackPrintingConfig()
         )
     ).required()
