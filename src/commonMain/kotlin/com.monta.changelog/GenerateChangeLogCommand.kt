@@ -11,9 +11,17 @@ import com.monta.changelog.log.ChangeLogService
 import com.monta.changelog.printer.ChangeLogPrinter
 import com.monta.changelog.printer.ConsoleChangeLogPrinter
 import com.monta.changelog.printer.slack.SlackChangeLogPrinter
+import com.monta.changelog.util.DebugLogger
 import kotlinx.coroutines.runBlocking
 
 class GenerateChangeLogCommand : CliktCommand() {
+    private val banner = """
+ __    __   ______   __   __   ______  ______    
+/\ "-./  \ /\  __ \ /\ "-.\ \ /\__  _\/\  __ \   
+\ \ \-./\ \\ \ \/\ \\ \ \-.  \\/_/\ \/\ \  __ \  
+ \ \_\ \ \_\\ \_____\\ \_\\"\_\  \ \_\ \ \_\ \_\ 
+  \/_/  \/_/ \/_____/ \/_/ \/_/   \/_/  \/_/\/_/              
+        """.trimIndent()
 
     private val debug: Boolean by option(
         help = "Enables debug logging"
@@ -54,6 +62,8 @@ class GenerateChangeLogCommand : CliktCommand() {
 
     override fun run() {
         runBlocking {
+            DebugLogger.info("\n" + banner)
+
             val changeLogService = ChangeLogService(
                 debug = debug,
                 serviceName = serviceName,
