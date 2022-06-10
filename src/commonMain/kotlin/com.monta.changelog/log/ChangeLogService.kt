@@ -10,11 +10,11 @@ import com.monta.changelog.util.GroupedCommitMap
 import com.monta.changelog.util.LinkResolver
 
 class ChangeLogService(
-    private val debug: Boolean,
+    debug: Boolean,
     private val serviceName: String,
     private val jiraAppName: String?,
     private val githubRelease: Boolean,
-    private val githubToken: String?,
+    githubToken: String?,
 ) {
 
     private val gitService = GitService()
@@ -44,9 +44,26 @@ class ChangeLogService(
         DebugLogger.info("repoName      ${repoInfo.repoName}")
     }
 
-    suspend fun generateChangeLog(changeLogPrinter: ChangeLogPrinter) {
-        val commitInfo = gitService.getCommits()
+    suspend fun generate(
+        changeLogPrinter: ChangeLogPrinter,
+        startSha: String,
+        endSha: String,
+    ) = generateChangeLog(
+        changeLogPrinter = changeLogPrinter,
+        commitInfo = gitService.getCommits(
+            startSha = startSha,
+            endSha = endSha
+        )
+    )
 
+    suspend fun generate(
+        changeLogPrinter: ChangeLogPrinter,
+    ) = generateChangeLog(
+        changeLogPrinter = changeLogPrinter,
+        commitInfo = gitService.getCommits()
+    )
+
+    private suspend fun generateChangeLog(changeLogPrinter: ChangeLogPrinter, commitInfo: CommitInfo) {
         val changeLog = ChangeLog(
             serviceName = serviceName,
             jiraAppName = jiraAppName,

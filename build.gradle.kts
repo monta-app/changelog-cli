@@ -16,6 +16,8 @@ kotlin {
 
     val hostOs = System.getProperty("os.name")
 
+    // Cross Compilation
+
     val commonTarget = when {
         hostOs == "Mac OS X" -> macosX64("common")
         hostOs == "Linux" -> linuxX64("common")
@@ -60,5 +62,11 @@ kotlin {
 
             }
         }
+    }
+}
+
+kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
+    binaries.all {
+        freeCompilerArgs = freeCompilerArgs + "-Xdisable-phases=EscapeAnalysis"
     }
 }

@@ -19,6 +19,7 @@ internal class CommitMapper {
         id: String,
         message: String,
     ): Commit? {
+
         val splitMessage = message.split(":", limit = 2)
 
         if (splitMessage.size <= 1) {

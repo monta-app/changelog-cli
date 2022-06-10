@@ -2,6 +2,7 @@ package com.monta.changelog
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
+import com.github.ajalt.clikt.parameters.groups.cooccurring
 import com.github.ajalt.clikt.parameters.groups.groupChoice
 import com.github.ajalt.clikt.parameters.groups.required
 import com.github.ajalt.clikt.parameters.options.flag
@@ -60,6 +61,8 @@ class GenerateChangeLogCommand : CliktCommand() {
         )
     ).required()
 
+    private val commitShaOptions by CommitShaOptions().cooccurring()
+
     override fun run() {
         runBlocking {
             DebugLogger.info("\n" + banner)
@@ -72,9 +75,20 @@ class GenerateChangeLogCommand : CliktCommand() {
                 githubToken = githubToken
             )
 
-            changeLogService.generateChangeLog(
-                changeLogPrinter = output.changeLogPrinter
-            )
+            val commitShaOptions = commitShaOptions
+
+            if (commitShaOptions != null) {
+                changeLogService.generate(
+                    startSha = commitShaOptions.startSha,
+                    endSha = commitShaOptions.endSha,
+                    changeLogPrinter = output.changeLogPrinter
+                )
+            } else {
+                changeLogService.generate(
+                    changeLogPrinter = output.changeLogPrinter
+                )
+            }
+
         }
     }
 
@@ -86,6 +100,15 @@ class GenerateChangeLogCommand : CliktCommand() {
         override val changeLogPrinter: ChangeLogPrinter by lazy {
             ConsoleChangeLogPrinter()
         }
+    }
+
+    class CommitShaOptions : OptionGroup() {
+        val startSha: String by option(
+            help = "The github commit sha to start the change log from",
+        ).required()
+        val endSha: String by option(
+            help = "The github commit sha to end the change log on",
+        ).required()
     }
 
     class SlackPrintingConfig : PrintingConfig("Options for printing to slack") {

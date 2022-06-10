@@ -33,6 +33,10 @@ internal class GitCommandUtil {
         }
     """.replace("\n", "").trimIndent()
 
+    fun getHeadSha(): String {
+        return executeCommand("git rev-parse --verify HEAD").first()
+    }
+
     fun getTags(): List<String> {
         return executeCommand("git tag --sort=-v:refname").map { tag -> tag.trim() }
     }

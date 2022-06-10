@@ -16,6 +16,13 @@ class GitService {
         return RepoInfo(repoOwner, repoName)
     }
 
+    fun getCommits(startSha: String, endSha: String): CommitInfo {
+        return CommitInfo(
+            tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+            commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
+        )
+    }
+
     fun getCommits(): CommitInfo {
         val tags = gitCommandUtil.getTags()
 
@@ -34,7 +41,7 @@ class GitService {
                 DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = latestTag.toFormattedDate(),
-                    commits = gitCommandUtil.getLogs().mapToCommits()
+                    commits = gitCommandUtil.getLogs(gitCommandUtil.getHeadSha(), latestTag).mapToCommits()
                 )
             }
             else -> {
