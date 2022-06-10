@@ -48,6 +48,26 @@ git tag -a 2022-04-21-14-45 -m "Release 2022-04-21 14-45"
 git push --follow-tags
 ```
 
+### Example GitHub Action Step
+```yaml
+  create-change-log:
+    needs: build
+    name: Create and publish change log
+    runs-on: self-hosted
+    timeout-minutes: 5
+    steps:
+      - name: Run changelog cli action
+        uses: monta-app/changelog-cli-action@main
+        with:
+          service-name: "My cool service" # Name that appears in slack message
+          github-release: true # Should it create a github release?
+          github-token: ${{ secrets.GITHUB_TOKEN }} # shouldn't need to change this
+          jira-app-name: "montaapp" # Name of the Jira app (used for linking issues)
+          output: "slack" # Don't change this if you want to log to slack
+          slack-token: ${{ secrets.SLACK_APP_TOKEN }} # Slack APP token
+          slack-channel: "#releases" # Channel to print changelog to
+```
+
 ### Example Release
 
 ```Markdown
