@@ -129,7 +129,10 @@ class GenerateChangeLogCommand : CliktCommand() {
         ).split(",")
 
         override val changeLogPrinter: ChangeLogPrinter by lazy {
-            SlackChangeLogPrinter(slackToken, slackChannel, slackChannels)
+            SlackChangeLogPrinter(slackToken, buildSet {
+                slackChannel?.let { add(it) }
+                slackChannels?.let { addAll(it) }
+            })
         }
     }
 }

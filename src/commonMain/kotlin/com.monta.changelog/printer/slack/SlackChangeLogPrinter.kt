@@ -15,15 +15,14 @@ import io.ktor.http.contentType
 
 class SlackChangeLogPrinter(
     private val slackToken: String,
-    private val slackChannel: String?,
-    private val slackChannels: List<String>?,
+    private val slackChannels: Set<String>,
 ) : ChangeLogPrinter {
 
     override suspend fun print(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog,
     ) {
-        for (channel in getChannels()) {
+        for (channel in slackChannels) {
             makeRequest(SlackMessageRequest(
                 channel = channel,
                 text = changeLog.title,
@@ -33,19 +32,6 @@ class SlackChangeLogPrinter(
                 )
             ))
         }
-    }
-
-    private fun getChannels(): Set<String>
-    {
-        var channels = setOf<String>()
-
-        if (slackChannel != null)
-            channels = channels.plus(slackChannel)
-
-        if (slackChannels != null)
-            channels = channels.plus(slackChannels)
-
-        return channels
     }
 
     private fun buildRequest(
