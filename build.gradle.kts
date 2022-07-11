@@ -45,7 +45,7 @@ kotlin {
                 // Atomic
                 implementation("org.jetbrains.kotlinx:atomicfu:0.18.2")
                 // Http Client
-                val ktorVersion = "2.0.2"
+                val ktorVersion = "2.0.3"
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-curl:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
