@@ -54,7 +54,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                val kotestVersion = "5.3.0"
+                val kotestVersion = "5.3.1"
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation("io.kotest:kotest-framework-engine:$kotestVersion")
