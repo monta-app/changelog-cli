@@ -45,7 +45,7 @@ kotlin {
                 // Atomic
                 implementation("org.jetbrains.kotlinx:atomicfu:0.17.3")
                 // Http Client
-                val ktorVersion = "2.0.2"
+                val ktorVersion = "2.0.3"
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-curl:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
@@ -54,7 +54,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                val kotestVersion = "5.3.0"
+                val kotestVersion = "5.3.1"
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation("io.kotest:kotest-framework-engine:$kotestVersion")
