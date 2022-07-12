@@ -123,7 +123,7 @@ class GenerateChangeLogCommand : CliktCommand() {
             envvar = "CHANGELOG_SLACK_CHANNEL_NAME"
         )
 
-        private val slackChannels by option(
+        private val slackChannels: List<String>? by option(
             help = "Comma-separated list of Slack channels where the changelog will be posted",
             envvar = "CHANGELOG_SLACK_CHANNELS"
         ).split(",")
