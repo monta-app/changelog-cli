@@ -8,6 +8,7 @@ import com.github.ajalt.clikt.parameters.groups.required
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.options.split
 import com.monta.changelog.log.ChangeLogService
 import com.monta.changelog.printer.ChangeLogPrinter
 import com.monta.changelog.printer.ConsoleChangeLogPrinter
@@ -117,16 +118,21 @@ class GenerateChangeLogCommand : CliktCommand() {
             envvar = "CHANGELOG_SLACK_TOKEN"
         ).required()
 
-        private val slackChannel: String by option(
+        private val slackChannel: String? by option(
             help = "Slack channel where the changelog will be published to (i.e #my-channel)",
             envvar = "CHANGELOG_SLACK_CHANNEL_NAME"
-        ).required()
+        )
+
+        private val slackChannels: List<String>? by option(
+            help = "Comma-separated list of Slack channels where the changelog will be posted",
+            envvar = "CHANGELOG_SLACK_CHANNELS"
+        ).split(",")
 
         override val changeLogPrinter: ChangeLogPrinter by lazy {
-            SlackChangeLogPrinter(slackToken, slackChannel)
+            SlackChangeLogPrinter(slackToken, buildSet {
+                slackChannel?.let { add(it) }
+                slackChannels?.let { addAll(it) }
+            })
         }
     }
 }
-
-
-
