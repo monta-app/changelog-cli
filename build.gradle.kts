@@ -1,7 +1,7 @@
 plugins {
     kotlin("multiplatform") version "1.7.10"
     kotlin("plugin.serialization") version "1.7.10"
-    id("io.kotest.multiplatform") version "5.3.2"
+    id("io.kotest.multiplatform") version "5.4.0"
 }
 
 group = "com.monta.gradle.changelog"
