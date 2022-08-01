@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.monta.gradle.changelog"
-version = "0.0.4"
+version = "1.1.0"
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -43,7 +43,7 @@ kotlin {
                 // Serialization
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
                 // Atomic
-                implementation("org.jetbrains.kotlinx:atomicfu:0.18.2")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.18.3")
                 // Http Client
                 val ktorVersion = "2.0.3"
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
@@ -54,8 +54,12 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                val kotestVersion = "5.4.1"
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
+                implementation("io.kotest:kotest-framework-engine:$kotestVersion")
+                implementation("io.kotest:kotest-assertions-core:$kotestVersion")
+
             }
         }
     }
