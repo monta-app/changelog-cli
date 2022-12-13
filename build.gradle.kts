@@ -43,7 +43,7 @@ kotlin {
                 // Serialization
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
                 // Atomic
-                implementation("org.jetbrains.kotlinx:atomicfu:0.18.3")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.18.5")
                 // Http Client
                 val ktorVersion = "2.2.1"
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
