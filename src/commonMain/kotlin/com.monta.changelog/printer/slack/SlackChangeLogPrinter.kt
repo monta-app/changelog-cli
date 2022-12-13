@@ -83,6 +83,7 @@ class SlackChangeLogPrinter(
     }
 
     private suspend fun makeRequest(slackMessageRequest: SlackMessageRequest) {
+
         val response = client.post("https://slack.com/api/chat.postMessage") {
             header("Authorization", "Bearer $slackToken")
             contentType(ContentType.Application.Json)
