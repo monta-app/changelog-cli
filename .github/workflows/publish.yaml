@@ -25,7 +25,8 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/build.gradle.kts') }}
       - name: Install dependencies
         run: |
-          sudo apt-get install libcurl4-openssl-dev
+          sudo apt update
+          sudo apt install libcurl4-openssl-dev
       - name: Build with Gradle
         run: ./gradlew commonBinaries
       - name: Move and apply correct permissions to binary
