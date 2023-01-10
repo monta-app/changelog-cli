@@ -14,6 +14,7 @@ class ChangeLogService(
     private val serviceName: String,
     private val jiraAppName: String?,
     private val githubRelease: Boolean,
+    private val update: Boolean,
     githubToken: String?,
 ) {
 
@@ -74,7 +75,11 @@ class ChangeLogService(
         )
 
         if (githubRelease) {
-            changeLog.githubReleaseUrl = gitHubService.createRelease(linkResolvers, changeLog)
+            changeLog.githubReleaseUrl = if (update) {
+                gitHubService.updateRelease(linkResolvers, changeLog)
+            } else {
+                gitHubService.createRelease(linkResolvers, changeLog)
+            }
         }
 
         changeLogPrinter.print(linkResolvers, changeLog)

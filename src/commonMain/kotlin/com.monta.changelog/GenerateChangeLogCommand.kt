@@ -42,6 +42,11 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_GITHUB_RELEASE"
     ).flag("--github-release", "-R", default = false)
 
+    private val update: Boolean by option(
+        help = "Must be set if the github release already exists and should be update with change log instead of created",
+        envvar = "CHANGELOG_GITHUB_UPDATE"
+    ).flag("--github-update", default = false)
+
     private val githubToken: String? by option(
         help = "Github Token used for creating releases",
         envvar = "CHANGELOG_GITHUB_TOKEN"
@@ -73,6 +78,7 @@ class GenerateChangeLogCommand : CliktCommand() {
                 serviceName = serviceName,
                 jiraAppName = jiraAppName,
                 githubRelease = githubRelease,
+                update = update,
                 githubToken = githubToken
             )
 
