@@ -10,6 +10,8 @@ import com.monta.changelog.util.resolve
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.header
+import io.ktor.client.request.get
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -59,6 +61,61 @@ class GitHubService(
             DebugLogger.error("returning with code 1")
             exit(1)
             return ""
+        }
+    }
+
+    suspend fun updateRelease(
+        linkResolvers: List<LinkResolver>,
+        changeLog: ChangeLog,
+    ): String {
+        val releaseId = getReleaseId(changeLog)
+
+        val url = "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases/$releaseId"
+
+        val response = client.patch(url) {
+            header("Authorization", "token $githubToken")
+            contentType(ContentType.Application.Json)
+            accept(ContentType.parse("application/vnd.github.v3+json"))
+            setBody(
+                UpdateReleaseRequest(
+                    body = buildBody(
+                        markdownFormatter = MarkdownFormatter.GitHub,
+                        linkResolvers = linkResolvers,
+                        groupedCommitMap = changeLog.groupedCommitMap
+                    ),
+                )
+            )
+        }
+
+        if (response.status.value in 200..299) {
+            println("successfully updated release ${response.bodyAsText()}")
+            val responseBody = response.body<ReleaseResponse>()
+            return responseBody.html_url
+        } else {
+            DebugLogger.error("failed to update release ${response.bodyAsText()}")
+            DebugLogger.error("returning with code 1")
+            exit(1)
+            return ""
+        }
+    }
+
+    private suspend fun getReleaseId(changeLog: ChangeLog): Int? {
+        val url = "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases/tags/${changeLog.tagName}"
+
+        val response = client.get(url) {
+            header("Authorization", "token $githubToken")
+            accept(ContentType.parse("application/vnd.github.v3+json"))
+        }
+
+        if (response.status.value == 200) {
+            println("found release ${response.bodyAsText()}")
+            val responseBody = response.body<ReleaseResponse>()
+            return responseBody.id
+        } else {
+            DebugLogger.error("could not find release ${response.bodyAsText()}")
+            DebugLogger.error("returning with code 1")
+            exit(1)
+            return null
         }
     }
 
@@ -115,6 +172,11 @@ class GitHubService(
         val name: String,
         val prerelease: Boolean,
         val tag_name: String,
+    )
+
+    @Serializable
+    data class UpdateReleaseRequest(
+        val body: String,
     )
 
     @Serializable
