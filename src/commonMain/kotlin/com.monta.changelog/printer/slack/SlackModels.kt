@@ -22,3 +22,9 @@ internal class SlackText(
     val text: String,
     val type: String,
 )
+
+@Serializable
+internal data class SlackMessageResponse(
+    val ok: Boolean,
+    val error: String?,
+)
