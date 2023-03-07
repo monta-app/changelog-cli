@@ -10,6 +10,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.options.split
 import com.monta.changelog.log.ChangeLogService
+import com.monta.changelog.model.VersionMode
 import com.monta.changelog.printer.ChangeLogPrinter
 import com.monta.changelog.printer.ConsoleChangeLogPrinter
 import com.monta.changelog.printer.slack.SlackChangeLogPrinter
@@ -45,7 +46,7 @@ class GenerateChangeLogCommand : CliktCommand() {
     private val update: Boolean by option(
         help = "Must be set if the github release already exists and should be update with change log instead of created",
         envvar = "CHANGELOG_GITHUB_UPDATE"
-    ).flag("--github-update", default = false)
+    ).flag("--github-update", default = true)
 
     private val githubToken: String? by option(
         help = "Github Token used for creating releases",
@@ -55,6 +56,11 @@ class GenerateChangeLogCommand : CliktCommand() {
     private val jiraAppName: String? by option(
         help = "Name of the Jira app used for generating Jira issue urls (optional)",
         envvar = "CHANGELOG_JIRA_APP_NAME"
+    )
+
+    private val versionMode: String? by option(
+        help = "Which version format is used in the tags (options: SemVer,DateVer) defaults to DateVer",
+        envvar = "CHANGELOG_VERSION_MODE",
     )
 
     private val output: PrintingConfig by option(
@@ -73,10 +79,13 @@ class GenerateChangeLogCommand : CliktCommand() {
         runBlocking {
             DebugLogger.info("\n" + banner)
 
+            val versionMode = VersionMode.fromString(versionMode) ?: VersionMode.DateVer
+
             val changeLogService = ChangeLogService(
                 debug = debug,
                 serviceName = serviceName,
                 jiraAppName = jiraAppName,
+                tagSorter = versionMode.sorter,
                 githubRelease = githubRelease,
                 update = update,
                 githubToken = githubToken

@@ -38,7 +38,9 @@ internal class GitCommandUtil {
     }
 
     fun getTags(): List<String> {
-        return executeCommand("git tag --sort=-v:refname").map { tag -> tag.trim() }
+        return executeCommand("git tag").map { tag ->
+            tag.trim()
+        }
     }
 
     fun getLogs(): List<LogItem> {

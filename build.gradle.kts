@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.monta.gradle.changelog"
-version = "1.4.0"
+version = "1.4.1"
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -54,7 +54,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                val kotestVersion = "5.5.5"
+                val kotestVersion = "5.5.4"
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation("io.kotest:kotest-framework-engine:$kotestVersion")

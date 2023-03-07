@@ -2,6 +2,7 @@ package com.monta.changelog.log
 
 import com.monta.changelog.git.CommitInfo
 import com.monta.changelog.git.GitService
+import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.github.GitHubService
 import com.monta.changelog.model.ChangeLog
 import com.monta.changelog.printer.ChangeLogPrinter
@@ -13,12 +14,13 @@ class ChangeLogService(
     debug: Boolean,
     private val serviceName: String,
     private val jiraAppName: String?,
+    tagSorter: TagSorter,
     private val githubRelease: Boolean,
     private val update: Boolean,
     githubToken: String?,
 ) {
 
-    private val gitService = GitService()
+    private val gitService = GitService(tagSorter)
     private val gitHubService = GitHubService(githubToken)
     private val repoInfo = gitService.getRepoInfo()
     private val linkResolvers = listOf(

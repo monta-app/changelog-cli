@@ -7,16 +7,10 @@ import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.client
 import com.monta.changelog.util.resolve
-import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.header
-import io.ktor.client.request.get
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import platform.posix.exit
@@ -28,7 +22,7 @@ class GitHubService(
     suspend fun createRelease(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog,
-    ): String {
+    ): String? {
 
         val url = "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases"
 
@@ -55,7 +49,7 @@ class GitHubService(
         if (response.status.value in 200..299) {
             println("successfully created release ${response.bodyAsText()}")
             val responseBody = response.body<ReleaseResponse>()
-            return responseBody.html_url
+            return responseBody.htmlUrl
         } else {
             DebugLogger.error("failed to create release ${response.bodyAsText()}")
             DebugLogger.error("returning with code 1")
@@ -67,7 +61,7 @@ class GitHubService(
     suspend fun updateRelease(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog,
-    ): String {
+    ): String? {
         val releaseId = getReleaseId(changeLog)
 
         val url = "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases/$releaseId"
@@ -90,7 +84,7 @@ class GitHubService(
         if (response.status.value in 200..299) {
             println("successfully updated release ${response.bodyAsText()}")
             val responseBody = response.body<ReleaseResponse>()
-            return responseBody.html_url
+            return responseBody.htmlUrl
         } else {
             DebugLogger.error("failed to update release ${response.bodyAsText()}")
             DebugLogger.error("returning with code 1")
@@ -100,7 +94,8 @@ class GitHubService(
     }
 
     private suspend fun getReleaseId(changeLog: ChangeLog): Int? {
-        val url = "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases/tags/${changeLog.tagName}"
+        val url =
+            "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases/tags/${changeLog.tagName}"
 
         val response = client.get(url) {
             header("Authorization", "token $githubToken")
@@ -159,9 +154,12 @@ class GitHubService(
 
     @Serializable
     data class ReleaseResponse(
-        val id: Int,
-        val name: String,
-        val html_url: String,
+        @SerialName("id")
+        val id: Int?,
+        @SerialName("name")
+        val name: String?,
+        @SerialName("html_url")
+        val htmlUrl: String?,
     )
 
     @Serializable

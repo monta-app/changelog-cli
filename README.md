@@ -1,18 +1,21 @@
 ### About
 
 A CLI project dedicated to generating a change log from commits the concept is simple:
-you take the last two tags, and you get all the commits in between you parse the commits based on a system known as "Conventional Commits"
+you take the last two tags, and you get all the commits in between you parse the commits based on a system known as "
+Conventional Commits"
 and you get a nice formatted ChangeLog for people to read!
 
 ### Usage
 
-Please run the following command, and you will get a list of all the options with relevant information on how to use them
+Please run the following command, and you will get a list of all the options with relevant information on how to use
+them
 
 `./changelog-cli --help`
 
 ### Env Vars
 
-Instead of using the CLI for entering values it's also possible to just setup environment variables (useful for GitHub actions)
+Instead of using the CLI for entering values it's also possible to just setup environment variables (useful for GitHub
+actions)
 
 ```shell
 CHANGELOG_GITHUB_RELEASE # (true,false) if set to true this will create a github release based on the latest tag [defaults to false]
@@ -30,13 +33,16 @@ At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is
 
 Create a tag with the following format `YYYY-DD-MM-HH-MM` and tag the commit you want to release up to
 
-In a situation where you're adding a tag to a fresh project (where there is no tags) then the plugin will look at the commit associated with
+In a situation where you're adding a tag to a fresh project (where there is no tags) then the plugin will look at the
+commit associated with
 the first tag you created and then the last commit in the repository and create a change log based on that
 
-In a situation where you're adding a tag to a repository that already has tags, then it will just look at the 2 latest tags and create a
+In a situation where you're adding a tag to a repository that already has tags, then it will just look at the 2 latest
+tags and create a
 change log with all the commits between those two tags
 
-_Note: please be sure to used [annotated tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging) when tagging your releases_
+_Note: please be sure to used [annotated tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging) when tagging your
+releases_
 
 ### Example Tag (on main branch)
 
@@ -52,6 +58,7 @@ git push --follow-tags
 ```
 
 ### Example GitHub Action Step
+
 ```yaml
   create-change-log:
     needs: build

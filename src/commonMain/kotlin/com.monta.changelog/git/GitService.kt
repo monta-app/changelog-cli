@@ -1,12 +1,15 @@
 package com.monta.changelog.git
 
+import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.model.Commit
 import com.monta.changelog.util.DebugLogger
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-class GitService {
+class GitService(
+    private val tagSorter: TagSorter,
+) {
 
     private val gitCommandUtil = GitCommandUtil()
     private val commitMapper = CommitMapper()
@@ -24,7 +27,10 @@ class GitService {
     }
 
     fun getCommits(): CommitInfo {
-        val tags = gitCommandUtil.getTags()
+
+        val tags = tagSorter.sort(
+            tags = gitCommandUtil.getTags()
+        )
 
         DebugLogger.debug("found tags: $tags")
 
@@ -36,20 +42,22 @@ class GitService {
                     commits = gitCommandUtil.getLogs().mapToCommits()
                 )
             }
+
             1 -> {
                 val latestTag = tags[0]
                 DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
                 return CommitInfo(
-                    tagName = latestTag.toFormattedDate(),
+                    tagName = latestTag.getTagValue(),
                     commits = gitCommandUtil.getLogs(gitCommandUtil.getHeadSha(), latestTag).mapToCommits()
                 )
             }
+
             else -> {
                 val latestTag = tags[0]
                 val previousTag = tags[1]
                 DebugLogger.info("returning commits between tag $latestTag and $previousTag")
                 return CommitInfo(
-                    tagName = latestTag.toFormattedDate(),
+                    tagName = latestTag.getTagValue(),
                     commits = gitCommandUtil.getLogs(latestTag, previousTag).mapToCommits()
                 )
             }
@@ -81,8 +89,8 @@ class GitService {
         return splitUrl[0] to splitUrl[1]
     }
 
-    private fun String.toFormattedDate(): String {
-        return this.split("/").last()
-    }
 }
 
+fun String.getTagValue(): String {
+    return this.split("/").last()
+}
