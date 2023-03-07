@@ -48,7 +48,6 @@ class SlackChangeLogPrinter(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog,
     ): List<List<SlackBlock>> {
-        val markdownFormatter = MarkdownFormatter.Slack
 
         val chunkBlockList = mutableListOf<List<SlackBlock>>()
 
@@ -74,7 +73,7 @@ class SlackChangeLogPrinter(
 
             currentChunk.extracted(
                 commitsGroupedByType = commitsGroupedByType,
-                markdownFormatter = markdownFormatter,
+                markdownFormatter = MarkdownFormatter.Slack,
                 linkResolvers = linkResolvers
             )
 
@@ -84,6 +83,8 @@ class SlackChangeLogPrinter(
                 currentChunk = mutableListOf()
             }
         }
+
+        chunkBlockList.add(currentChunk)
 
         return chunkBlockList
     }

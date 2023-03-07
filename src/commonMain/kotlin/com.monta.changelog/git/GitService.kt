@@ -32,11 +32,11 @@ class GitService(
             tags = gitCommandUtil.getTags()
         )
 
-        DebugLogger.debug("found tags: $tags")
+        DebugLogger.info("found tags: $tags")
 
         when (tags.size) {
             0 -> {
-                DebugLogger.info("only one tag found; returning from latest commit to last tag")
+                DebugLogger.info("no tags found; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
                     commits = gitCommandUtil.getLogs().mapToCommits()

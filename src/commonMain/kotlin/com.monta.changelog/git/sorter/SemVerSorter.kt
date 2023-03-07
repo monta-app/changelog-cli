@@ -11,7 +11,7 @@ class SemVerSorter : TagSorter {
             // Remove the V portion if it's there (Not required for sorting)
             tagValue = tagValue.replace("v", "")
             // We check it's a valid tag by seeing it contains three dots (there is 100% a better way to do this)
-            if (tag.count { it == '.' } == 3) {
+            if (tag.count { it == '.' } >= 2) {
                 tagValue to tag
             } else {
                 null
