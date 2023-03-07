@@ -6,6 +6,7 @@ import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.client
 import com.monta.changelog.util.resolve
+import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -23,14 +24,16 @@ class SlackChangeLogPrinter(
         changeLog: ChangeLog,
     ) {
         for (channel in slackChannels) {
-            makeRequest(SlackMessageRequest(
-                channel = channel,
-                text = changeLog.title,
-                blocks = buildRequest(
-                    linkResolvers = linkResolvers,
-                    changeLog = changeLog,
+            makeRequest(
+                SlackMessageRequest(
+                    channel = channel,
+                    text = changeLog.title,
+                    blocks = buildRequest(
+                        linkResolvers = linkResolvers,
+                        changeLog = changeLog,
+                    )
                 )
-            ))
+            )
         }
     }
 
@@ -90,7 +93,9 @@ class SlackChangeLogPrinter(
             setBody(slackMessageRequest)
         }
 
-        if (response.status.value in 200..299) {
+        val body = response.body<SlackMessageResponse>()
+
+        if (response.status.value in 200..299 && body.ok) {
             println("successfully posted message ${response.bodyAsText()}")
         } else {
             println("failed to post message ${response.bodyAsText()}")
