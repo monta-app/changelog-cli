@@ -59,7 +59,7 @@ class GitService {
     private fun List<LogItem>.mapToCommits(): List<Commit> {
         return this.mapNotNull { gitLogItem ->
             commitMapper.fromGitLogItem(gitLogItem)
-        }
+        }.toSet().toList()
     }
 
     private fun getGitOwnerAndRepo(): Pair<String, String> {
