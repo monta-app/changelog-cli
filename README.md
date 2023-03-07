@@ -21,6 +21,7 @@ actions)
 CHANGELOG_GITHUB_RELEASE # (true,false) if set to true this will create a github release based on the latest tag [defaults to false]
 CHANGELOG_GITHUB_TOKEN # (ght_xxx) the github PAT used for creating the release (requires write permission on the repository level) 
 CHANGELOG_JIRA_APP_NAME # (myapp) the jira app name used for generating issue urls [optional]
+CHANGELOG_VERSION_MODE # (SemVer,DateVer) what type of tagging format is being used defaults to DateVer
 CHANGELOG_OUTPUT # (console,slack) where should the CLI output [defaults to console]
 CHANGELOG_SLACK_TOKEN # If the output is set to slack then a slack app token should be entered here [only required if output is set to slack]
 CHANGELOG_SLACK_CHANNEL_NAME # the channel where the cli should be outputting to
@@ -73,6 +74,7 @@ git push --follow-tags
           github-release: true # Should it create a github release?
           github-token: ${{ secrets.GITHUB_TOKEN }} # shouldn't need to change this
           jira-app-name: "montaapp" # Name of the Jira app (used for linking issues)
+          version-mode: "DateVer" # version of the tag format you're using
           output: "slack" # Don't change this if you want to log to slack
           slack-token: ${{ secrets.SLACK_APP_TOKEN }} # Slack APP token
           slack-channel: "#releases" # Channel to print changelog to
@@ -88,8 +90,10 @@ Release 2022-03-21-13-00
 • added support for meter source, so now only data from the configured meter will be allowed into a charge point
 
 *🐛 Fix*
-• site meter controller - PUT -> POST - unit-test • site meter controller - PUT -> POST • explicit G1 GC selection (#114)
-• actually fixed failing tests • fixed failing tests • site meter update endpoint now accepts both the uuid and integer value • added
+• site meter controller - PUT -> POST - unit-test • site meter controller - PUT -> POST • explicit G1 GC selection (
+#114)
+• actually fixed failing tests • fixed failing tests • site meter update endpoint now accepts both the uuid and integer
+value • added
 missing places where meter source should be placed • start period should never be negative in the charging schedule
 
 *🧹 Chore*
