@@ -19,7 +19,7 @@ kotlin {
     // Cross Compilation
 
     val commonTarget = when {
-        hostOs == "Mac OS X" -> macosX64("common")
+        hostOs == "Mac OS X" -> macosArm64("common")
         hostOs == "Linux" -> linuxX64("common")
         hostOs.startsWith("Windows") -> mingwX64("common")
         else -> throw GradleException("Host OS is not supported in Kotlin/Native.")
@@ -37,7 +37,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // CLI
-                implementation("com.github.ajalt.clikt:clikt:3.5.0")
+                implementation("com.github.ajalt.clikt:clikt:3.5.2")
                 // Date Time Support
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
                 // Serialization
