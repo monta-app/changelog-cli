@@ -17,7 +17,7 @@ class ChangeLogService(
     tagSorter: TagSorter,
     private val githubRelease: Boolean,
     private val update: Boolean,
-    githubToken: String?,
+    githubToken: String?
 ) {
 
     private val gitService = GitService(tagSorter)
@@ -30,7 +30,7 @@ class ChangeLogService(
         LinkResolver.Github(
             repoOwner = repoInfo.repoOwner,
             repoName = repoInfo.repoName
-        ),
+        )
     )
 
     init {
@@ -50,7 +50,7 @@ class ChangeLogService(
     suspend fun generate(
         changeLogPrinter: ChangeLogPrinter,
         startSha: String,
-        endSha: String,
+        endSha: String
     ) = generateChangeLog(
         changeLogPrinter = changeLogPrinter,
         commitInfo = gitService.getCommits(
@@ -60,7 +60,7 @@ class ChangeLogService(
     )
 
     suspend fun generate(
-        changeLogPrinter: ChangeLogPrinter,
+        changeLogPrinter: ChangeLogPrinter
     ) = generateChangeLog(
         changeLogPrinter = changeLogPrinter,
         commitInfo = gitService.getCommits()
@@ -117,6 +117,3 @@ class ChangeLogService(
             .toMap()
     }
 }
-
-
-

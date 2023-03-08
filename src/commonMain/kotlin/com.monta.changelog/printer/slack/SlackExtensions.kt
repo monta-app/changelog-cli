@@ -35,7 +35,7 @@ internal fun MutableList<SlackBlock>.button(url: () -> String) {
                         text = "GitHub Release"
                     ),
                     url = url(),
-                    type = "button",
+                    type = "button"
                 )
             )
         )

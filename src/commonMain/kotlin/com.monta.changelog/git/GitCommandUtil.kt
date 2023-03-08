@@ -44,20 +44,24 @@ internal class GitCommandUtil {
     }
 
     fun getLogs(): List<LogItem> {
-        return executeCommand(buildString {
-            append("git log ")
-            append("--pretty=format:'$logJsonFormat'")
-        }).mapNotNull {
+        return executeCommand(
+            buildString {
+                append("git log ")
+                append("--pretty=format:'$logJsonFormat'")
+            }
+        ).mapNotNull {
             Json.decodeFromStringNullable(it)
         }
     }
 
     fun getLogs(latestTag: String, previousTag: String): List<LogItem> {
-        return executeCommand(buildString {
-            append("git log ")
-            append("--pretty=format:'$logJsonFormat' ")
-            append("$latestTag...$previousTag")
-        }).mapNotNull {
+        return executeCommand(
+            buildString {
+                append("git log ")
+                append("--pretty=format:'$logJsonFormat' ")
+                append("$latestTag...$previousTag")
+            }
+        ).mapNotNull {
             Json.decodeFromStringNullable(it)
         }
     }

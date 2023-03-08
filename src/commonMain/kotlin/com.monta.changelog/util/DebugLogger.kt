@@ -26,24 +26,23 @@ object DebugLogger {
 
     fun debug(message: String) {
         if (loggingLevel.value > Level.Debug) return
-        println("${ANSI_GREEN}${timeStamp} [DEBUG] $message$ANSI_RESET")
+        println("${ANSI_GREEN}$timeStamp [DEBUG] $message$ANSI_RESET")
     }
 
     fun info(message: String) {
         if (loggingLevel.value > Level.Info) return
-        println("${ANSI_BLUE}${timeStamp} [INFO ] $message$ANSI_RESET")
+        println("${ANSI_BLUE}$timeStamp [INFO ] $message$ANSI_RESET")
     }
 
     fun warn(message: String) {
         if (loggingLevel.value > Level.Warn) return
-        println("${ANSI_YELLOW}${timeStamp} [WARN ] $message$ANSI_RESET")
+        println("${ANSI_YELLOW}$timeStamp [WARN ] $message$ANSI_RESET")
     }
 
     fun error(message: String) {
-        println("${ANSI_RED}${timeStamp} [ERROR] $message$ANSI_RESET")
+        println("${ANSI_RED}$timeStamp [ERROR] $message$ANSI_RESET")
     }
 
     private val timeStamp: String
         get() = "[${Clock.System.now()}]"
-
 }

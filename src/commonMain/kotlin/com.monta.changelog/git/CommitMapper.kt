@@ -7,7 +7,7 @@ import com.monta.changelog.util.DebugLogger
 internal class CommitMapper {
 
     fun fromGitLogItem(
-        logItem: LogItem,
+        logItem: LogItem
     ): Commit? {
         return fromString(
             logItem.commit,
@@ -17,9 +17,8 @@ internal class CommitMapper {
 
     private fun fromString(
         id: String,
-        message: String,
+        message: String
     ): Commit? {
-
         val splitMessage = message.split(":", limit = 2)
 
         if (splitMessage.size <= 1) {
@@ -89,7 +88,6 @@ internal class CommitMapper {
             sentence = sentence.replace(innerValue, "")
             // Find new value
             innerValue = sentence.extractParenthesis()
-
         }
 
         return sentence to parentheses.map { it.stripParenthesis() }

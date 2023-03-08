@@ -7,25 +7,23 @@ import com.monta.changelog.printer.ChangeLogPrinter
 import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.client
+import com.monta.changelog.util.getBodySafe
 import com.monta.changelog.util.resolve
-import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 
 class SlackChangeLogPrinter(
     private val slackToken: String,
-    private val slackChannels: Set<String>,
+    private val slackChannels: Set<String>
 ) : ChangeLogPrinter {
 
     override suspend fun print(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog,
+        changeLog: ChangeLog
     ) {
-
         val blockChunks = buildRequest(
             linkResolvers = linkResolvers,
-            changeLog = changeLog,
+            changeLog = changeLog
         )
 
         for (channel in slackChannels) {
@@ -46,15 +44,13 @@ class SlackChangeLogPrinter(
 
     private fun buildRequest(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog,
+        changeLog: ChangeLog
     ): List<List<SlackBlock>> {
-
         val chunkBlockList = mutableListOf<List<SlackBlock>>()
 
         var currentChunk = mutableListOf<SlackBlock>()
 
         for ((scope, commitsGroupedByType) in changeLog.groupedCommitMap) {
-
             if (scope == null) {
                 currentChunk.header {
                     changeLog.title.split(" ").joinToString(" ") {
@@ -92,7 +88,7 @@ class SlackChangeLogPrinter(
     private fun MutableList<SlackBlock>.extracted(
         commitsGroupedByType: Map<ConventionalCommitType, List<Commit>>,
         markdownFormatter: MarkdownFormatter.Slack,
-        linkResolvers: List<LinkResolver>,
+        linkResolvers: List<LinkResolver>
     ) {
         commitsGroupedByType.map { (type, commits) ->
             text {
@@ -118,21 +114,12 @@ class SlackChangeLogPrinter(
     }
 
     private suspend fun makeRequest(slackMessageRequest: SlackMessageRequest): String? {
-
         val response = client.post("https://slack.com/api/chat.postMessage") {
             header("Authorization", "Bearer $slackToken")
             contentType(ContentType.Application.Json)
             setBody(slackMessageRequest)
         }
 
-        val body = response.body<SlackMessageResponse>()
-
-        return if (response.status.value in 200..299 && body.ok) {
-            println("successfully posted message ${response.bodyAsText()}")
-            body.ts
-        } else {
-            println("failed to post message ${response.bodyAsText()}")
-            null
-        }
+        return response.getBodySafe<SlackMessageResponse>()?.ts
     }
 }

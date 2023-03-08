@@ -7,5 +7,5 @@ data class Commit(
     val type: ConventionalCommitType,
     val scope: String?,
     val breaking: Boolean,
-    val message: String,
+    val message: String
 )

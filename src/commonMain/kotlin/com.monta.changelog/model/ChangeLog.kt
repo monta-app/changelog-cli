@@ -10,7 +10,7 @@ data class ChangeLog(
     val tagName: String,
     val repoOwner: String,
     val repoName: String,
-    val groupedCommitMap: GroupedCommitMap,
+    val groupedCommitMap: GroupedCommitMap
 ) {
     val title: String
         get() = "$serviceName release $tagName"

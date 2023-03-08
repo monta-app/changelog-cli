@@ -1,12 +1,11 @@
 package com.monta.changelog.util
 
-
 sealed interface LinkResolver {
     fun resolve(markdownFormatter: MarkdownFormatter, message: String): String
 
     class Github(
         private val repoOwner: String,
-        private val repoName: String,
+        private val repoName: String
     ) : LinkResolver {
 
         private val regex = Regex("#\\d+")
@@ -34,13 +33,12 @@ sealed interface LinkResolver {
     }
 
     class Jira(
-        private val jiraAppName: String?,
+        private val jiraAppName: String?
     ) : LinkResolver {
 
         private val jiraRegex = Regex("[A-Z]{2,}-\\d+")
 
         override fun resolve(markdownFormatter: MarkdownFormatter, message: String): String {
-
             if (jiraAppName == null) {
                 return message
             }
@@ -68,7 +66,7 @@ sealed interface LinkResolver {
                     matchResult.groupValues.firstOrNull()
                 }
                 .associateWith { jiraTicketName ->
-                    "https://${jiraAppName}.atlassian.net/browse/$jiraTicketName"
+                    "https://$jiraAppName.atlassian.net/browse/$jiraTicketName"
                 }
         }
     }

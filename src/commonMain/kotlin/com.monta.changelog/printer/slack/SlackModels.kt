@@ -12,7 +12,7 @@ internal data class SlackMessageRequest(
     @SerialName("text")
     val text: String,
     @SerialName("blocks")
-    val blocks: List<SlackBlock>,
+    val blocks: List<SlackBlock>
 )
 
 @Serializable
@@ -20,13 +20,13 @@ internal class SlackBlock(
     val text: SlackText? = null,
     val type: String,
     val url: String? = null,
-    val elements: List<SlackBlock>? = null,
+    val elements: List<SlackBlock>? = null
 )
 
 @Serializable
 internal class SlackText(
     val text: String,
-    val type: String,
+    val type: String
 )
 
 @Serializable
@@ -36,5 +36,5 @@ internal data class SlackMessageResponse(
     @SerialName("error")
     val error: String?,
     @SerialName("ts")
-    val ts: String,
+    val ts: String
 )

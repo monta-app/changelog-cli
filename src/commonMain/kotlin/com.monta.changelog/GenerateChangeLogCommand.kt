@@ -24,7 +24,7 @@ class GenerateChangeLogCommand : CliktCommand() {
 \ \ \-./\ \\ \ \/\ \\ \ \-.  \\/_/\ \/\ \  __ \  
  \ \_\ \ \_\\ \_____\\ \_\\"\_\  \ \_\ \ \_\ \_\ 
   \/_/  \/_/ \/_____/ \/_/ \/_/   \/_/  \/_/\/_/              
-        """.trimIndent()
+    """.trimIndent()
 
     private val debug: Boolean by option(
         help = "Enables debug logging"
@@ -60,7 +60,7 @@ class GenerateChangeLogCommand : CliktCommand() {
 
     private val versionMode: String? by option(
         help = "Which version format is used in the tags (options: SemVer,DateVer) defaults to DateVer",
-        envvar = "CHANGELOG_VERSION_MODE",
+        envvar = "CHANGELOG_VERSION_MODE"
     )
 
     private val output: PrintingConfig by option(
@@ -104,7 +104,6 @@ class GenerateChangeLogCommand : CliktCommand() {
                     changeLogPrinter = output.changeLogPrinter
                 )
             }
-
         }
     }
 
@@ -120,10 +119,10 @@ class GenerateChangeLogCommand : CliktCommand() {
 
     class CommitShaOptions : OptionGroup() {
         val startSha: String by option(
-            help = "The github commit sha to start the change log from",
+            help = "The github commit sha to start the change log from"
         ).required()
         val endSha: String by option(
-            help = "The github commit sha to end the change log on",
+            help = "The github commit sha to end the change log on"
         ).required()
     }
 
@@ -144,10 +143,13 @@ class GenerateChangeLogCommand : CliktCommand() {
         ).split(",")
 
         override val changeLogPrinter: ChangeLogPrinter by lazy {
-            SlackChangeLogPrinter(slackToken, buildSet {
-                slackChannel?.let { add(it) }
-                slackChannels?.let { addAll(it) }
-            })
+            SlackChangeLogPrinter(
+                slackToken,
+                buildSet {
+                    slackChannel?.let { add(it) }
+                    slackChannels?.let { addAll(it) }
+                }
+            )
         }
     }
 }

@@ -6,6 +6,7 @@ import com.monta.changelog.util.GroupedCommitMap
 import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.client
+import com.monta.changelog.util.getBodySafe
 import com.monta.changelog.util.resolve
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -16,20 +17,19 @@ import kotlinx.serialization.Serializable
 import platform.posix.exit
 
 class GitHubService(
-    private val githubToken: String?,
+    private val githubToken: String?
 ) {
 
     suspend fun createRelease(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog,
+        changeLog: ChangeLog
     ): String? {
-
-        val url = "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases"
+        val url = baseUrl(
+            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases"
+        )
 
         val response = client.post(url) {
-            header("Authorization", "token $githubToken")
-            contentType(ContentType.Application.Json)
-            accept(ContentType.parse("application/vnd.github.v3+json"))
+            withGithubDefaults()
             setBody(
                 ReleaseRequest(
                     body = buildBody(
@@ -46,78 +46,94 @@ class GitHubService(
             )
         }
 
-        if (response.status.value in 200..299) {
-            println("successfully created release ${response.bodyAsText()}")
-            val responseBody = response.body<ReleaseResponse>()
-            return responseBody.htmlUrl
-        } else {
+        val releaseResponse = response.getBodySafe<ReleaseResponse>()
+
+        if (releaseResponse == null) {
             DebugLogger.error("failed to create release ${response.bodyAsText()}")
             DebugLogger.error("returning with code 1")
             exit(1)
-            return ""
         }
+
+        DebugLogger.info("successfully created release")
+
+        return releaseResponse?.htmlUrl
     }
 
     suspend fun updateRelease(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog,
+        changeLog: ChangeLog
     ): String? {
         val releaseId = getReleaseId(changeLog)
 
-        val url = "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases/$releaseId"
+        val url = baseUrl(
+            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases/$releaseId"
+        )
 
         val response = client.patch(url) {
-            header("Authorization", "token $githubToken")
-            contentType(ContentType.Application.Json)
-            accept(ContentType.parse("application/vnd.github.v3+json"))
+            withGithubDefaults()
             setBody(
                 UpdateReleaseRequest(
                     body = buildBody(
                         markdownFormatter = MarkdownFormatter.GitHub,
                         linkResolvers = linkResolvers,
                         groupedCommitMap = changeLog.groupedCommitMap
-                    ),
+                    )
                 )
             )
         }
 
-        if (response.status.value in 200..299) {
-            println("successfully updated release ${response.bodyAsText()}")
-            val responseBody = response.body<ReleaseResponse>()
-            return responseBody.htmlUrl
-        } else {
+        val releaseResponse = response.getBodySafe<ReleaseResponse>()
+
+        if (releaseResponse == null) {
             DebugLogger.error("failed to update release ${response.bodyAsText()}")
             DebugLogger.error("returning with code 1")
             exit(1)
-            return ""
         }
+
+        DebugLogger.info("successfully updated release")
+
+        return releaseResponse?.htmlUrl
     }
 
     private suspend fun getReleaseId(changeLog: ChangeLog): Int? {
-        val url =
-            "https://api.github.com/repos/${changeLog.repoOwner}/${changeLog.repoName}/releases/tags/${changeLog.tagName}"
+        val url = baseUrl(
+            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases/tags/${changeLog.tagName}"
+        )
 
         val response = client.get(url) {
-            header("Authorization", "token $githubToken")
-            accept(ContentType.parse("application/vnd.github.v3+json"))
+            withGithubDefaults(false)
         }
 
-        if (response.status.value == 200) {
-            println("found release ${response.bodyAsText()}")
+        return if (response.status.value == 200) {
+            DebugLogger.info("found release ${response.bodyAsText()}")
             val responseBody = response.body<ReleaseResponse>()
-            return responseBody.id
+            responseBody.id
         } else {
             DebugLogger.error("could not find release ${response.bodyAsText()}")
             DebugLogger.error("returning with code 1")
             exit(1)
-            return null
+            null
         }
+    }
+
+    private fun baseUrl(path: String): String {
+        return "https://api.github.com/repos/$path"
+    }
+
+    private fun HttpRequestBuilder.withGithubDefaults(
+        isJson: Boolean = true
+    ) {
+        header("Authorization", "token $githubToken")
+        if (isJson) {
+            contentType(ContentType.Application.Json)
+        }
+        accept(ContentType.parse("application/vnd.github.v3+json"))
     }
 
     private fun buildBody(
         markdownFormatter: MarkdownFormatter,
         linkResolvers: List<LinkResolver>,
-        groupedCommitMap: GroupedCommitMap,
+        groupedCommitMap: GroupedCommitMap
     ): String {
         return buildString {
             groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
@@ -159,7 +175,7 @@ class GitHubService(
         @SerialName("name")
         val name: String?,
         @SerialName("html_url")
-        val htmlUrl: String?,
+        val htmlUrl: String?
     )
 
     @Serializable
@@ -169,12 +185,12 @@ class GitHubService(
         val generate_release_notes: Boolean,
         val name: String,
         val prerelease: Boolean,
-        val tag_name: String,
+        val tag_name: String
     )
 
     @Serializable
     data class UpdateReleaseRequest(
-        val body: String,
+        val body: String
     )
 
     @Serializable
@@ -184,7 +200,7 @@ class GitHubService(
         @SerialName("errors")
         val errors: List<Error>,
         @SerialName("message")
-        val message: String,
+        val message: String
     )
 
     @Serializable
@@ -196,6 +212,6 @@ class GitHubService(
         @SerialName("message")
         val message: String,
         @SerialName("resource")
-        val resource: String,
+        val resource: String
     )
 }

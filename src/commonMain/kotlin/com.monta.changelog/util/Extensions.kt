@@ -12,4 +12,3 @@ fun List<LinkResolver>.resolve(markdownFormatter: MarkdownFormatter, message: St
     }
     return newMessage
 }
-

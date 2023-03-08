@@ -8,7 +8,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 class GitService(
-    private val tagSorter: TagSorter,
+    private val tagSorter: TagSorter
 ) {
 
     private val gitCommandUtil = GitCommandUtil()
@@ -27,7 +27,6 @@ class GitService(
     }
 
     fun getCommits(): CommitInfo {
-
         val tags = tagSorter.sort(
             tags = gitCommandUtil.getTags()
         )
@@ -88,7 +87,6 @@ class GitService(
 
         return splitUrl[0] to splitUrl[1]
     }
-
 }
 
 fun String.getTagValue(): String {
