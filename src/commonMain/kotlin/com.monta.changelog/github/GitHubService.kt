@@ -6,8 +6,8 @@ import com.monta.changelog.util.GroupedCommitMap
 import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.client
-import com.monta.changelog.util.getBodySafe
 import com.monta.changelog.util.resolve
+import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -20,114 +20,139 @@ class GitHubService(
     private val githubToken: String?
 ) {
 
-    suspend fun createRelease(
+    suspend fun createOrUpdateRelease(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog
     ): String? {
-        val url = baseUrl(
-            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases"
-        )
+        val htmlUrl: String? = createRelease(linkResolvers, changeLog)
 
-        val response = client.post(url) {
-            withGithubDefaults()
-            setBody(
-                ReleaseRequest(
-                    body = buildBody(
-                        markdownFormatter = MarkdownFormatter.GitHub,
-                        linkResolvers = linkResolvers,
-                        groupedCommitMap = changeLog.groupedCommitMap
-                    ),
-                    draft = false,
-                    generate_release_notes = false,
-                    name = changeLog.tagName,
-                    prerelease = false,
-                    tag_name = changeLog.tagName
-                )
-            )
+        if (htmlUrl == null) {
+            return updateRelease(linkResolvers, changeLog)
         }
 
-        val releaseResponse = response.getBodySafe<ReleaseResponse>()
-
-        if (releaseResponse == null) {
-            DebugLogger.error("failed to create release ${response.bodyAsText()}")
-            DebugLogger.error("returning with code 1")
-            exit(1)
-        }
-
-        DebugLogger.info("successfully created release")
-
-        return releaseResponse?.htmlUrl
+        return htmlUrl
     }
 
-    suspend fun updateRelease(
+    private suspend fun createRelease(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog
     ): String? {
-        val releaseId = getReleaseId(changeLog)
+        DebugLogger.info("creating release")
 
-        val url = baseUrl(
-            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases/$releaseId"
+        val response = client.githubRequest(
+            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases",
+            httpMethod = HttpMethod.Post,
+            body = ReleaseRequest(
+                body = buildBody(
+                    markdownFormatter = MarkdownFormatter.GitHub,
+                    linkResolvers = linkResolvers,
+                    groupedCommitMap = changeLog.groupedCommitMap
+                ),
+                draft = false,
+                generateReleaseNotes = false,
+                name = changeLog.tagName,
+                prerelease = false,
+                tagName = changeLog.tagName
+            )
         )
 
-        val response = client.patch(url) {
-            withGithubDefaults()
-            setBody(
-                UpdateReleaseRequest(
-                    body = buildBody(
-                        markdownFormatter = MarkdownFormatter.GitHub,
-                        linkResolvers = linkResolvers,
-                        groupedCommitMap = changeLog.groupedCommitMap
-                    )
+        if (response.status.isSuccess()) {
+            try {
+                return response.body<ReleaseResponse>().htmlUrl
+            } catch (throwable: Throwable) {
+                DebugLogger.error("failed to deserialized ReleaseResponse body ${response.bodyAsText()}")
+                // No return just let it go to the general exit path at the end
+            }
+        } else {
+            try {
+                val errorResponse = response.body<ErrorResponse>()
+                if (errorResponse.hasReleaseAlreadyExists()) {
+                    // This is ok and we can recover from this, so we return here
+                    return null
+                }
+            } catch (throwable: Throwable) {
+                throwable.printStackTrace()
+                DebugLogger.error("failed to deserialized ErrorResponse body ${response.bodyAsText()}")
+                // No return just let it go to the general exit path at the end
+            }
+        }
+
+        DebugLogger.error("failed to create release ${response.bodyAsText()}")
+        DebugLogger.error("returning with code 1")
+        exit(1)
+        return null
+    }
+
+    private suspend fun updateRelease(
+        linkResolvers: List<LinkResolver>,
+        changeLog: ChangeLog
+    ): String? {
+        DebugLogger.info("updating release")
+
+        val releaseId = getReleaseId(changeLog)
+
+        val response = client.githubRequest(
+            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases/$releaseId",
+            httpMethod = HttpMethod.Patch,
+            body = ReleaseRequest(
+                body = buildBody(
+                    markdownFormatter = MarkdownFormatter.GitHub,
+                    linkResolvers = linkResolvers,
+                    groupedCommitMap = changeLog.groupedCommitMap
                 )
             )
+        )
+
+        if (response.status.isSuccess()) {
+            try {
+                return response.body<ReleaseResponse>().htmlUrl
+            } catch (throwable: Throwable) {
+                DebugLogger.error("failed to deserialized ReleaseResponse body ${response.bodyAsText()}")
+                // No return just let it go to the general exit path at the end
+            }
         }
 
-        val releaseResponse = response.getBodySafe<ReleaseResponse>()
-
-        if (releaseResponse == null) {
-            DebugLogger.error("failed to update release ${response.bodyAsText()}")
-            DebugLogger.error("returning with code 1")
-            exit(1)
-        }
-
-        DebugLogger.info("successfully updated release")
-
-        return releaseResponse?.htmlUrl
+        DebugLogger.error("failed to update release ${response.bodyAsText()}")
+        DebugLogger.error("returning with code 1")
+        exit(1)
+        return null
     }
 
     private suspend fun getReleaseId(changeLog: ChangeLog): Int? {
-        val url = baseUrl(
-            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases/tags/${changeLog.tagName}"
+        val response = client.githubRequest(
+            path = "${changeLog.repoOwner}/${changeLog.repoName}/releases/tags/${changeLog.tagName}",
+            httpMethod = HttpMethod.Get,
+            body = null as String?
         )
 
-        val response = client.get(url) {
-            withGithubDefaults(false)
-        }
-
-        return if (response.status.value == 200) {
+        if (response.status.isSuccess()) {
             DebugLogger.info("found release ${response.bodyAsText()}")
-            val responseBody = response.body<ReleaseResponse>()
-            responseBody.id
-        } else {
-            DebugLogger.error("could not find release ${response.bodyAsText()}")
-            DebugLogger.error("returning with code 1")
-            exit(1)
-            null
+            return response.body<ReleaseResponse>().id
         }
+
+        DebugLogger.error("could not find release ${response.bodyAsText()}")
+        DebugLogger.error("returning with code 1")
+        exit(1)
+        return null
     }
 
-    private fun baseUrl(path: String): String {
-        return "https://api.github.com/repos/$path"
-    }
-
-    private fun HttpRequestBuilder.withGithubDefaults(
-        isJson: Boolean = true
-    ) {
-        header("Authorization", "token $githubToken")
-        if (isJson) {
-            contentType(ContentType.Application.Json)
+    private suspend inline fun <reified T> HttpClient.githubRequest(
+        path: String,
+        httpMethod: HttpMethod,
+        body: T?
+    ): HttpResponse {
+        return request {
+            url {
+                url("https://api.github.com/repos/$path")
+                method = httpMethod
+            }
+            header("Authorization", "token $githubToken")
+            accept(ContentType.parse("application/vnd.github.v3+json"))
+            if (body != null) {
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
         }
-        accept(ContentType.parse("application/vnd.github.v3+json"))
     }
 
     private fun buildBody(
@@ -180,17 +205,18 @@ class GitHubService(
 
     @Serializable
     data class ReleaseRequest(
+        @SerialName("body")
         val body: String,
-        val draft: Boolean,
-        val generate_release_notes: Boolean,
-        val name: String,
-        val prerelease: Boolean,
-        val tag_name: String
-    )
-
-    @Serializable
-    data class UpdateReleaseRequest(
-        val body: String
+        @SerialName("draft")
+        val draft: Boolean? = null,
+        @SerialName("generate_release_notes")
+        val generateReleaseNotes: Boolean? = null,
+        @SerialName("name")
+        val name: String? = null,
+        @SerialName("prerelease")
+        val prerelease: Boolean? = null,
+        @SerialName("tag_name")
+        val tagName: String? = null
     )
 
     @Serializable
@@ -201,7 +227,14 @@ class GitHubService(
         val errors: List<Error>,
         @SerialName("message")
         val message: String
-    )
+    ) {
+        fun hasReleaseAlreadyExists(): Boolean {
+            val error = errors.find { error ->
+                error.resource == "Release" && error.code == "already_exists" && error.field == "tag_name"
+            }
+            return error != null
+        }
+    }
 
     @Serializable
     data class Error(
@@ -209,8 +242,6 @@ class GitHubService(
         val code: String,
         @SerialName("field")
         val `field`: String,
-        @SerialName("message")
-        val message: String,
         @SerialName("resource")
         val resource: String
     )
