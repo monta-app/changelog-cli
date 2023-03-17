@@ -32,18 +32,28 @@ At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is
 
 ### How to use
 
-Create a tag with the following format `YYYY-DD-MM-HH-MM` and tag the commit you want to release up to
+Create a tag with the following format `YYYY-DD-MM-HH-MM` and tag the commit you want to release up to.
+
+_Note: please be sure to used [annotated tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging) when tagging your
+releases_
+
+
+> **Define a git alias to do your tagging!**
+> 
+> Do this in your shell:
+> ```
+> git config --global alias.release '!git tag "`date -u +%Y-%m-%d-%H-%M`" -m "Release `date -u +%Y-%m-%d\ %H:%M\ UTC`" -a'
+> ```
+> This will add a global git alias, so that you can simply do `git release` to create your annotated, correctly formatted release tag! 
+
 
 In a situation where you're adding a tag to a fresh project (where there is no tags) then the plugin will look at the
 commit associated with
 the first tag you created and then the last commit in the repository and create a change log based on that
 
 In a situation where you're adding a tag to a repository that already has tags, then it will just look at the 2 latest
-tags and create a
-change log with all the commits between those two tags
+tags and create a change log with all the commits between those two tags
 
-_Note: please be sure to used [annotated tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging) when tagging your
-releases_
 
 ### Example Tag (on main branch)
 
@@ -51,8 +61,8 @@ releases_
 # checkout the main branch
 git checkout main
 
-# create the annotated tag, with a message
-git tag -a 2022-04-21-14-45 -m "Release 2022-04-21 14-45"
+# use the git alias from above to create your release tag
+git release
 
 # push the tag
 git push --follow-tags
