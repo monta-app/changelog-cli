@@ -12,40 +12,52 @@ enum class ConventionalCommitType(
         sortOrder = 0,
         values = listOf("feature", "feat")
     ),
+    Refactor(
+        title = "Refactor",
+        emoji = "\uD83C\uDFD7️",
+        sortOrder = 1,
+        values = listOf("refactor")
+    ),
+    Style(
+        title = "Style",
+        emoji = "\uD83C\uDFA8",
+        sortOrder = 2,
+        values = listOf("style")
+    ),
     Fix(
         title = "Fix",
         emoji = "\uD83D\uDC1B",
-        sortOrder = 1,
+        sortOrder = 3,
         values = listOf("fix")
     ),
     Test(
         title = "Test",
         emoji = "\uD83E\uDDEA",
-        sortOrder = 2,
+        sortOrder = 4,
         values = listOf("test")
     ),
     Docs(
         title = "Docs",
         emoji = "\uD83D\uDCDD",
-        sortOrder = 3,
+        sortOrder = 5,
         values = listOf("docs")
     ),
     Performance(
         title = "Performance",
         emoji = "\uD83C\uDFCE️",
-        sortOrder = 4,
+        sortOrder = 6,
         values = listOf("perf")
     ),
     Chore(
         title = "Chore",
         emoji = "\uD83E\uDDF9",
-        sortOrder = 5,
+        sortOrder = 7,
         values = listOf("chore")
     ),
     CI(
         title = "CI",
         emoji = "\uD83D\uDD27",
-        sortOrder = 6,
+        sortOrder = 8,
         values = listOf("ci")
     );
 
