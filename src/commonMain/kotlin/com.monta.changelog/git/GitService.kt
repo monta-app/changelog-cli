@@ -8,11 +8,13 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 class GitService(
-    private val tagSorter: TagSorter
+    private val tagSorter: TagSorter,
+    tagPattern: String?
 ) {
 
     private val gitCommandUtil = GitCommandUtil()
     private val commitMapper = CommitMapper()
+    private val tagPattern = if (tagPattern != null) Regex(tagPattern) else null
 
     fun getRepoInfo(): RepoInfo {
         val (repoOwner, repoName) = getGitOwnerAndRepo()
@@ -29,6 +31,16 @@ class GitService(
     fun getCommits(): CommitInfo {
         val tags = tagSorter.sort(
             tags = gitCommandUtil.getTags()
+                .mapNotNull { tag ->
+                    when (tagPattern) {
+                        null -> tag
+                        else -> {
+                            // there is a tag pattern, extract group 1
+                            val match = tagPattern.matchEntire(tag)
+                            if (match != null) match.groups[1]?.value else null
+                        }
+                    }
+                }
         )
 
         DebugLogger.info("found tags: $tags")

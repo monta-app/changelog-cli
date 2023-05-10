@@ -58,6 +58,11 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_VERSION_MODE"
     )
 
+    private val tagPattern: String? by option(
+        help = "Regex pattern used for matching tag patterns (group 1 in the pattern should match the 'version')",
+        envvar = "CHANGELOG_GITHUB_TAG_PATTERN"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -82,7 +87,8 @@ class GenerateChangeLogCommand : CliktCommand() {
                 jiraAppName = jiraAppName,
                 tagSorter = versionMode.sorter,
                 githubRelease = githubRelease,
-                githubToken = githubToken
+                githubToken = githubToken,
+                tagPattern = tagPattern
             )
 
             val commitShaOptions = commitShaOptions
