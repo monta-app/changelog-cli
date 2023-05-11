@@ -9,12 +9,14 @@ import kotlinx.datetime.toLocalDateTime
 
 class GitService(
     private val tagSorter: TagSorter,
-    tagPattern: String?
+    tagPattern: String?,
+    pathExcludePattern: String?
 ) {
 
     private val gitCommandUtil = GitCommandUtil()
     private val commitMapper = CommitMapper()
     private val tagPattern = if (tagPattern != null) Regex(tagPattern) else null
+    private val pathExcludePattern = if (pathExcludePattern != null) Regex(pathExcludePattern) else null
 
     fun getRepoInfo(): RepoInfo {
         val (repoOwner, repoName) = getGitOwnerAndRepo()
@@ -76,7 +78,15 @@ class GitService(
     }
 
     private fun List<LogItem>.mapToCommits(): List<Commit> {
-        return this.mapNotNull { gitLogItem ->
+        return this.filter { gitLogItem ->
+            when (pathExcludePattern) {
+                null -> true
+                else -> {
+                    val filesInCommit = gitCommandUtil.getFilesInCommit(gitLogItem.commit)
+                    filesInCommit.any { !pathExcludePattern.containsMatchIn(it) }
+                }
+            }
+        }.mapNotNull { gitLogItem ->
             commitMapper.fromGitLogItem(gitLogItem)
         }.toSet().toList()
     }

@@ -18,9 +18,10 @@ class ChangeLogService(
     private val githubRelease: Boolean,
     githubToken: String?,
     tagPattern: String?,
+    pathExcludePattern: String?
 ) {
 
-    private val gitService = GitService(tagSorter, tagPattern)
+    private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
     private val gitHubService = GitHubService(githubToken)
     private val repoInfo = gitService.getRepoInfo()
     private val linkResolvers = listOf(
@@ -47,6 +48,9 @@ class ChangeLogService(
         DebugLogger.info("repoName      ${repoInfo.repoName}")
         if (tagPattern != null) {
             DebugLogger.info("tagPattern    $tagPattern")
+        }
+        if (pathExcludePattern != null) {
+            DebugLogger.info("pathExclude   $pathExcludePattern")
         }
     }
 
