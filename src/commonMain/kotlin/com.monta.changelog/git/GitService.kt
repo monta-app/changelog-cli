@@ -15,8 +15,8 @@ class GitService(
 
     private val gitCommandUtil = GitCommandUtil()
     private val commitMapper = CommitMapper()
-    private val tagPattern = if (tagPattern != null) Regex(tagPattern) else null
-    private val pathExcludePattern = if (pathExcludePattern != null) Regex(pathExcludePattern) else null
+    private val tagPattern = tagPattern?.let(::Regex)
+    private val pathExcludePattern = pathExcludePattern?.let(::Regex)
 
     fun getRepoInfo(): RepoInfo {
         val (repoOwner, repoName) = getGitOwnerAndRepo()
