@@ -16,10 +16,12 @@ class ChangeLogService(
     private val jiraAppName: String?,
     tagSorter: TagSorter,
     private val githubRelease: Boolean,
-    githubToken: String?
+    githubToken: String?,
+    tagPattern: String?,
+    pathExcludePattern: String?
 ) {
 
-    private val gitService = GitService(tagSorter)
+    private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
     private val gitHubService = GitHubService(githubToken)
     private val repoInfo = gitService.getRepoInfo()
     private val linkResolvers = listOf(
@@ -44,6 +46,12 @@ class ChangeLogService(
         DebugLogger.info("githubRelease $githubRelease")
         DebugLogger.info("repoOwner     ${repoInfo.repoOwner}")
         DebugLogger.info("repoName      ${repoInfo.repoName}")
+        if (tagPattern != null) {
+            DebugLogger.info("tagPattern    $tagPattern")
+        }
+        if (pathExcludePattern != null) {
+            DebugLogger.info("pathExclude   $pathExcludePattern")
+        }
     }
 
     suspend fun generate(
