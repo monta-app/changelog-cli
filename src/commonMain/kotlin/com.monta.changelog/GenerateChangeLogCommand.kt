@@ -153,7 +153,12 @@ class GenerateChangeLogCommand : CliktCommand() {
                 slackToken,
                 buildSet {
                     slackChannel?.let { add(it) }
-                    slackChannels?.let { addAll(it) }
+                    slackChannels?.let { list ->
+                        val trimmed = list.filter {
+                            it.isNotEmpty()
+                        }
+                        addAll(trimmed)
+                    }
                 }
             )
         }

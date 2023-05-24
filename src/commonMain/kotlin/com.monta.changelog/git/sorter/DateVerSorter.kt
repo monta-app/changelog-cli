@@ -5,10 +5,11 @@ import kotlinx.datetime.LocalDateTime
 
 class DateVerSorter : TagSorter {
 
-    override fun sort(tags: List<String>): List<String> {
+    override fun sort(tags: List<Tag>): List<Tag> {
         return tags.mapNotNull { tag ->
+            val shortTag = tag.shortTag
             // Try to convert to a date
-            val localDateTime = tag.getTagValue().toDate()
+            val localDateTime = shortTag.getTagValue().toDate()
             // Skip if we don't have a valid date
             if (localDateTime == null) {
                 null
