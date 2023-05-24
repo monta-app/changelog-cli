@@ -1,5 +1,6 @@
 package com.monta.changelog.git
 
+import com.monta.changelog.git.sorter.Tag
 import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.model.Commit
 import com.monta.changelog.util.DebugLogger
@@ -35,11 +36,15 @@ class GitService(
             tags = gitCommandUtil.getTags()
                 .mapNotNull { tag ->
                     when (tagPattern) {
-                        null -> tag
+                        null -> Tag(tag)
                         else -> {
                             // there is a tag pattern, extract group 1
                             val match = tagPattern.matchEntire(tag)
-                            if (match != null) match.groups[1]?.value else null
+                            if (match != null) {
+                                match.groups[1]?.value?.let { Tag(it, tag) }
+                            } else {
+                                null
+                            }
                         }
                     }
                 }
@@ -57,7 +62,7 @@ class GitService(
             }
 
             1 -> {
-                val latestTag = tags[0]
+                val latestTag = tags[0].fullTag
                 DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
@@ -66,8 +71,8 @@ class GitService(
             }
 
             else -> {
-                val latestTag = tags[0]
-                val previousTag = tags[1]
+                val latestTag = tags[0].fullTag
+                val previousTag = tags[1].fullTag
                 DebugLogger.info("returning commits between tag $latestTag and $previousTag")
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),

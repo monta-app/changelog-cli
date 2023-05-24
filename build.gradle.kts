@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.monta.gradle.changelog"
-version = "1.6.0"
+version = "1.6.1"
 
 repositories {
     // Use Maven Central for resolving dependencies.
