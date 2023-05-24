@@ -58,6 +58,16 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_VERSION_MODE"
     )
 
+    private val tagPattern: String? by option(
+        help = "Regex pattern used for matching tag patterns (group 1 in the pattern should match the 'version')",
+        envvar = "CHANGELOG_GITHUB_TAG_PATTERN"
+    )
+
+    private val pathExcludePattern: String? by option(
+        help = "Regex pattern used for matching file patch for which commits should not be included. I.e. if a commit only contains files that match this, it will not be in the change log",
+        envvar = "CHANGELOG_GITHUB_PATH_EXCLUDE_PATTERN"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -82,7 +92,9 @@ class GenerateChangeLogCommand : CliktCommand() {
                 jiraAppName = jiraAppName,
                 tagSorter = versionMode.sorter,
                 githubRelease = githubRelease,
-                githubToken = githubToken
+                githubToken = githubToken,
+                tagPattern = tagPattern,
+                pathExcludePattern = pathExcludePattern
             )
 
             val commitShaOptions = commitShaOptions
@@ -141,7 +153,12 @@ class GenerateChangeLogCommand : CliktCommand() {
                 slackToken,
                 buildSet {
                     slackChannel?.let { add(it) }
-                    slackChannels?.let { addAll(it) }
+                    slackChannels?.let { list ->
+                        val trimmed = list.filter {
+                            it.isNotEmpty()
+                        }
+                        addAll(trimmed)
+                    }
                 }
             )
         }

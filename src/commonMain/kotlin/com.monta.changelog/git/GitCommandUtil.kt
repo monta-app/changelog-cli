@@ -43,6 +43,12 @@ internal class GitCommandUtil {
         }
     }
 
+    fun getFilesInCommit(commitId: String): List<String> {
+        return executeCommand("git diff-tree --no-commit-id --name-only $commitId -r").map { file ->
+            file.trim()
+        }
+    }
+
     fun getLogs(): List<LogItem> {
         return executeCommand(
             buildString {
