@@ -89,12 +89,12 @@ class GenerateChangeLogCommand : CliktCommand() {
             val changeLogService = ChangeLogService(
                 debug = debug,
                 serviceName = serviceName,
-                jiraAppName = jiraAppName,
+                jiraAppName = jiraAppName.valueOrNull(),
                 tagSorter = versionMode.sorter,
                 githubRelease = githubRelease,
-                githubToken = githubToken,
-                tagPattern = tagPattern,
-                pathExcludePattern = pathExcludePattern
+                githubToken = githubToken.valueOrNull(),
+                tagPattern = tagPattern.valueOrNull(),
+                pathExcludePattern = pathExcludePattern.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions
@@ -112,6 +112,12 @@ class GenerateChangeLogCommand : CliktCommand() {
             }
         }
     }
+
+    /**
+     * Needed for optional parameters as the return the empty string instead of null
+     * if set via ENV variables (as we do from our GitHub Actions)
+     */
+    private fun String?.valueOrNull() = if (this.isNullOrBlank()) null else this
 
     sealed class PrintingConfig(name: String) : OptionGroup(name) {
         abstract val changeLogPrinter: ChangeLogPrinter
