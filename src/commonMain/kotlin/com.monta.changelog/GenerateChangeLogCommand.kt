@@ -156,8 +156,8 @@ class GenerateChangeLogCommand : CliktCommand() {
 
         override val changeLogPrinter: ChangeLogPrinter by lazy {
             SlackChangeLogPrinter(
-                slackToken,
-                buildSet {
+                slackToken = slackToken,
+                slackChannels = buildSet {
                     slackChannel?.let { add(it) }
                     slackChannels?.let { list ->
                         val trimmed = list.filter {

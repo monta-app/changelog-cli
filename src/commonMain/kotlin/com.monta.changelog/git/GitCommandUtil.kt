@@ -2,6 +2,7 @@ package com.monta.changelog.git
 
 import com.monta.changelog.util.DebugLogger
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.refTo
 import kotlinx.cinterop.toKString
 import kotlinx.serialization.StringFormat
@@ -85,6 +86,7 @@ internal class GitCommandUtil {
         return executeCommand("git config --get remote.origin.url").firstOrNull()
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     private fun executeCommand(command: String): List<String> {
         val fp: CPointer<FILE>? = popen(command, "r")
         val buffer = ByteArray(4096)

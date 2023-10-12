@@ -224,12 +224,12 @@ class GitHubService(
         @SerialName("documentation_url")
         val documentationUrl: String,
         @SerialName("errors")
-        val errors: List<Error>,
+        val errors: List<Error>?,
         @SerialName("message")
         val message: String
     ) {
         fun hasReleaseAlreadyExists(): Boolean {
-            val error = errors.find { error ->
+            val error = errors?.find { error ->
                 error.resource == "Release" && error.code == "already_exists" && error.field == "tag_name"
             }
             return error != null

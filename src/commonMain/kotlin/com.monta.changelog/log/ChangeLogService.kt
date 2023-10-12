@@ -125,7 +125,7 @@ class ChangeLogService(
             // Then back to a map (hopefully in the correct order)
             .toMap()
     }
-    
+
     private fun String?.ifHasKebabCaseConvertToCapitalCase(): String? {
         return this?.split("-")
             ?.joinToString("") { joinString ->
