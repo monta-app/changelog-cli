@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform") version "1.8.21"
-    kotlin("plugin.serialization") version "1.8.21"
+    kotlin("multiplatform") version "1.9.10"
+    kotlin("plugin.serialization") version "1.9.10"
     id("io.kotest.multiplatform") version "5.6.2"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.2"
 }
@@ -40,7 +40,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // CLI
-                implementation("com.github.ajalt.clikt:clikt:3.5.2")
+                implementation("com.github.ajalt.clikt:clikt:4.2.0")
                 // Date Time Support
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
                 // Serialization
