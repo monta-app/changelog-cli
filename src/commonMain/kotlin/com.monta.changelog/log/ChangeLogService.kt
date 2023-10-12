@@ -73,7 +73,10 @@ class ChangeLogService(
         commitInfo = gitService.getCommits()
     )
 
-    private suspend fun generateChangeLog(changeLogPrinter: ChangeLogPrinter, commitInfo: CommitInfo) {
+    private suspend fun generateChangeLog(
+        changeLogPrinter: ChangeLogPrinter,
+        commitInfo: CommitInfo
+    ) {
         val changeLog = ChangeLog(
             serviceName = serviceName,
             jiraAppName = jiraAppName,
@@ -97,7 +100,7 @@ class ChangeLogService(
         return this.commits
             // Group them up by the scope
             .groupBy { commit ->
-                commit.scope
+                commit.scope.ifHasKebabCaseConvertToCapitalCase()
             }
             // Then the real work begins
             .map { (scope, commits) ->
@@ -121,5 +124,12 @@ class ChangeLogService(
             }
             // Then back to a map (hopefully in the correct order)
             .toMap()
+    }
+    
+    private fun String?.ifHasKebabCaseConvertToCapitalCase(): String? {
+        return this?.split("-")
+            ?.joinToString("") { joinString ->
+                joinString.capitalize()
+            }
     }
 }
