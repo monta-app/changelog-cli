@@ -30,6 +30,12 @@ CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channels where the chan
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
 
+### How to make a release
+- Bump the version number of the project in the `build.gradle.kts`
+- Make sure you merge up into main
+- Tag the release sha with `v<YOUR-VERSION>`
+- Once it is build please make sure to upgrade the [action repository](https://github.com/monta-app/changelog-cli-action) with your new version
+
 ### How to use
 
 Create a tag with the following format `YYYY-DD-MM-HH-MM` and tag the commit you want to release up to.
