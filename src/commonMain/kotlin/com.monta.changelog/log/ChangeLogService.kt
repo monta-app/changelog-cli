@@ -100,7 +100,7 @@ class ChangeLogService(
         return this.commits
             // Group them up by the scope
             .groupBy { commit ->
-                commit.scope.deAndreaImparatonize()
+                commit.scope. ifHasKebabCaseConvertToCapitalCase()
             }
             // Then the real work begins
             .map { (scope, commits) ->
@@ -126,7 +126,7 @@ class ChangeLogService(
             .toMap()
     }
 
-    private fun String?.deAndreaImparatonize(): String? {
+    private fun String?. ifHasKebabCaseConvertToCapitalCase(): String? {
         return this?.split("-")
             ?.joinToString(" ") { joinString ->
                 joinString.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
