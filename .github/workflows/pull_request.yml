@@ -22,16 +22,13 @@ jobs:
           sudo apt update
           sudo apt install libcurl4-openssl-dev
       - name: Build with Gradle
-        run: ./gradlew commonBinaries
-  review-dog:
-    name: ReviewDog
+        run: ./gradlew allTests
+  static-code-analysis:
+    name: Static Code Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        # Detekt
-      - name: Run Detekt
-        uses: alaegin/Detekt-Action@v1.19
+      - name: Run detekt
+        uses: monta-app/detekt-action@main
         with:
-          github_token: ${{ secrets.github_token }}
-          detekt_config: ./.github/detekt.yml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
