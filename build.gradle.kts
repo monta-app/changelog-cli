@@ -1,7 +1,7 @@
 plugins {
-    kotlin("multiplatform") version "1.9.10"
-    kotlin("plugin.serialization") version "1.9.10"
-    id("io.kotest.multiplatform") version "5.6.2"
+    kotlin("multiplatform") version "1.9.21"
+    kotlin("plugin.serialization") version "1.9.21"
+    id("io.kotest.multiplatform") version "5.8.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.6.1"
 }
 
@@ -44,11 +44,11 @@ kotlin {
                 // Date Time Support
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
                 // Atomic
-                implementation("org.jetbrains.kotlinx:atomicfu:0.22.0")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.23.1")
                 // Http Client
-                val ktorVersion = "2.3.5"
+                val ktorVersion = "2.3.6"
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-curl:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
@@ -57,7 +57,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                val kotestVersion = "5.6.2"
+                val kotestVersion = "5.8.0"
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation("io.kotest:kotest-framework-engine:$kotestVersion")
