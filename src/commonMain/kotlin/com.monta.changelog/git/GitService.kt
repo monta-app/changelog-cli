@@ -11,7 +11,7 @@ import kotlinx.datetime.toLocalDateTime
 class GitService(
     private val tagSorter: TagSorter,
     tagPattern: String?,
-    pathExcludePattern: String?
+    pathExcludePattern: String?,
 ) {
 
     private val gitCommandUtil = GitCommandUtil()

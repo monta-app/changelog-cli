@@ -16,12 +16,12 @@ import io.ktor.utils.io.charsets.*
 
 class SlackChangeLogPrinter(
     private val slackToken: String,
-    private val slackChannels: Set<String>
+    private val slackChannels: Set<String>,
 ) : ChangeLogPrinter {
 
     override suspend fun print(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog
+        changeLog: ChangeLog,
     ) {
         val blockChunks = buildRequest(
             linkResolvers = linkResolvers,
@@ -46,7 +46,7 @@ class SlackChangeLogPrinter(
 
     private fun buildRequest(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog
+        changeLog: ChangeLog,
     ): List<List<SlackBlock>> {
         val chunkBlockList = mutableListOf<List<SlackBlock>>()
 
@@ -90,7 +90,7 @@ class SlackChangeLogPrinter(
     private fun MutableList<SlackBlock>.extracted(
         commitsGroupedByType: Map<ConventionalCommitType, List<Commit>>,
         markdownFormatter: MarkdownFormatter.Slack,
-        linkResolvers: List<LinkResolver>
+        linkResolvers: List<LinkResolver>,
     ) {
         commitsGroupedByType.map { (type, commits) ->
             text {

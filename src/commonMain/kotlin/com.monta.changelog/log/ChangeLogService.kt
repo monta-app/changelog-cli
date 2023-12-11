@@ -18,7 +18,7 @@ class ChangeLogService(
     private val githubRelease: Boolean,
     githubToken: String?,
     tagPattern: String?,
-    pathExcludePattern: String?
+    pathExcludePattern: String?,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -57,7 +57,7 @@ class ChangeLogService(
     suspend fun generate(
         changeLogPrinter: ChangeLogPrinter,
         startSha: String,
-        endSha: String
+        endSha: String,
     ) = generateChangeLog(
         changeLogPrinter = changeLogPrinter,
         commitInfo = gitService.getCommits(
@@ -67,7 +67,7 @@ class ChangeLogService(
     )
 
     suspend fun generate(
-        changeLogPrinter: ChangeLogPrinter
+        changeLogPrinter: ChangeLogPrinter,
     ) = generateChangeLog(
         changeLogPrinter = changeLogPrinter,
         commitInfo = gitService.getCommits()
@@ -75,7 +75,7 @@ class ChangeLogService(
 
     private suspend fun generateChangeLog(
         changeLogPrinter: ChangeLogPrinter,
-        commitInfo: CommitInfo
+        commitInfo: CommitInfo,
     ) {
         val changeLog = ChangeLog(
             serviceName = serviceName,

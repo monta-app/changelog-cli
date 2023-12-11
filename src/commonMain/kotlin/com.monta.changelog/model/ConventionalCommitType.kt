@@ -4,7 +4,7 @@ enum class ConventionalCommitType(
     val title: String,
     val emoji: String,
     val sortOrder: Int? = null,
-    private val values: List<String>
+    private val values: List<String>,
 ) {
     Feature(
         title = "Feature",
@@ -59,7 +59,8 @@ enum class ConventionalCommitType(
         emoji = "\uD83D\uDD27",
         sortOrder = 8,
         values = listOf("ci")
-    );
+    ),
+    ;
 
     companion object {
         fun fromString(value: String): ConventionalCommitType? {

@@ -5,7 +5,7 @@ sealed interface LinkResolver {
 
     class Github(
         private val repoOwner: String,
-        private val repoName: String
+        private val repoName: String,
     ) : LinkResolver {
 
         private val regex = Regex("#\\d+")
@@ -33,7 +33,7 @@ sealed interface LinkResolver {
     }
 
     class Jira(
-        private val jiraAppName: String?
+        private val jiraAppName: String?,
     ) : LinkResolver {
 
         private val jiraRegex = Regex("[A-Z]{2,}-\\d+")

@@ -17,12 +17,12 @@ import kotlinx.serialization.Serializable
 import platform.posix.exit
 
 class GitHubService(
-    private val githubToken: String?
+    private val githubToken: String?,
 ) {
 
     suspend fun createOrUpdateRelease(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog
+        changeLog: ChangeLog,
     ): String? {
         val htmlUrl: String? = createRelease(linkResolvers, changeLog)
 
@@ -35,7 +35,7 @@ class GitHubService(
 
     private suspend fun createRelease(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog
+        changeLog: ChangeLog,
     ): String? {
         DebugLogger.info("creating release")
 
@@ -85,7 +85,7 @@ class GitHubService(
 
     private suspend fun updateRelease(
         linkResolvers: List<LinkResolver>,
-        changeLog: ChangeLog
+        changeLog: ChangeLog,
     ): String? {
         DebugLogger.info("updating release")
 
@@ -139,7 +139,7 @@ class GitHubService(
     private suspend inline fun <reified T> HttpClient.githubRequest(
         path: String,
         httpMethod: HttpMethod,
-        body: T?
+        body: T?,
     ): HttpResponse {
         return request {
             url {
@@ -158,7 +158,7 @@ class GitHubService(
     private fun buildBody(
         markdownFormatter: MarkdownFormatter,
         linkResolvers: List<LinkResolver>,
-        groupedCommitMap: GroupedCommitMap
+        groupedCommitMap: GroupedCommitMap,
     ): String {
         return buildString {
             groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
@@ -200,7 +200,7 @@ class GitHubService(
         @SerialName("name")
         val name: String?,
         @SerialName("html_url")
-        val htmlUrl: String?
+        val htmlUrl: String?,
     )
 
     @Serializable
@@ -216,7 +216,7 @@ class GitHubService(
         @SerialName("prerelease")
         val prerelease: Boolean? = null,
         @SerialName("tag_name")
-        val tagName: String? = null
+        val tagName: String? = null,
     )
 
     @Serializable
@@ -226,7 +226,7 @@ class GitHubService(
         @SerialName("errors")
         val errors: List<Error>?,
         @SerialName("message")
-        val message: String
+        val message: String,
     ) {
         fun hasReleaseAlreadyExists(): Boolean {
             val error = errors?.find { error ->
@@ -243,6 +243,6 @@ class GitHubService(
         @SerialName("field")
         val `field`: String,
         @SerialName("resource")
-        val resource: String
+        val resource: String,
     )
 }

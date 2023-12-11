@@ -9,7 +9,7 @@ object DebugLogger {
         Debug,
         Info,
         Warn,
-        Error;
+        Error,
     }
 
     private const val ANSI_RESET = "\u001B[0m"

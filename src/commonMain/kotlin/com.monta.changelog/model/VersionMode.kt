@@ -5,14 +5,15 @@ import com.monta.changelog.git.sorter.SemVerSorter
 import com.monta.changelog.git.sorter.TagSorter
 
 enum class VersionMode(
-    val sorter: TagSorter
+    val sorter: TagSorter,
 ) {
     SemVer(
         sorter = SemVerSorter()
     ),
     DateVer(
         sorter = DateVerSorter()
-    );
+    ),
+    ;
 
     companion object {
         fun fromString(value: String?): VersionMode? {
