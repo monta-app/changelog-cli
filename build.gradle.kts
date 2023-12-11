@@ -42,13 +42,13 @@ kotlin {
                 // CLI
                 implementation("com.github.ajalt.clikt:clikt:4.2.1")
                 // Date Time Support
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
                 // Atomic
                 implementation("org.jetbrains.kotlinx:atomicfu:0.23.1")
                 // Http Client
-                val ktorVersion = "2.3.6"
+                val ktorVersion = "2.3.7"
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-curl:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
