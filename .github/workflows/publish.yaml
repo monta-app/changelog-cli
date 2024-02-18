@@ -34,7 +34,7 @@ jobs:
           cp build/bin/common/releaseExecutable/changelog-cli.kexe ./changelog-cli
           chmod +x ./changelog-cli
       - name: Upload executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: changelog-cli
           path: changelog-cli
@@ -47,7 +47,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download a single artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: changelog-cli
       - name: Give artifact correct permissions
