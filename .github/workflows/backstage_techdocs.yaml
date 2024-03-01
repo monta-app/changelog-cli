@@ -20,7 +20,7 @@ jobs:
       AWS_REGION: 'eu-west-1'
       ENTITY_NAMESPACE: 'default'
       ENTITY_KIND: 'Component'
-      ENTITY_NAME: 'backstage'
+      ENTITY_NAME: ${{ github.event.repository.name }}
 
     steps:
       - name: Checkout code
