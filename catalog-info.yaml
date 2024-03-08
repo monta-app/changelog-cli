@@ -9,36 +9,21 @@ metadata:
   annotations:
     backstage.io/techdocs-ref: dir:.
 
-  # TODO: Please set the service tier manually,
-  # See notion page for more info: https://www.notion.so/montaapp/Service-Tiers-035d974e192d496a962f409bc0808a53?pvs=4
   labels:
     tier: '3'
 
   # These links are just examples, set them to what you think is the most relevant.
   links:
-    # Slack channel to write in for communicating with the resposible team.
-  - title: Team Slack Channel
-    url: https://monta-app01.slack.com/archives/C04JANZMTQV # TODO: Please set manually
-    type: Slack
-    icon: chat
-    # Page in notion documenting the purpose and function of the service 
   - title: Notion
-    url: 
-      https://www.notion.so/montaapp/Framework-Micronaut-2ae59cfc3a9c4261bb14e1194c80bd45?pvs=4      # TODO: Please set manually
+    url: https://www.notion.so/montaapp/changelog-cli-88c53f278ce44b599d9dff5e4f760e2d?pvs=4
     type: Notion
     icon: docs
-    # Link to the most relevant grafana dashboard, i recommend a "4 golden signals" dashboard
-  - url: 
-      https://grafana.monta.app/d/e6faee93-c3b3-4b0d-a5e9-e236ee37903c/sre-monitor-1?orgId=1&refresh=1m      # TODO: Please set manually
-    title: Grafana
-    icon: dashboard
-    type: metrics-dashboard
+
 
 # The spec defines who becomes the owner of the system in backstage
 spec:
   type: cli
-  # See lifecycle common values: https://backstage.io/docs/features/software-catalog/descriptor-format/#speclifecycle-required
-  lifecycle: undefined # TODO: Please set manually
+  lifecycle: experimental 
   # Name of the squad responsible for the project, e.g. sre or cpi
   owner: SRE
   # Name of the greater system, e.g. "solar" is a part of the home system
