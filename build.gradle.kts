@@ -40,7 +40,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // CLI
-                implementation("com.github.ajalt.clikt:clikt:4.4.0")
+                implementation("com.github.ajalt.clikt:clikt:5.0.3")
                 // Date Time Support
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
                 // Serialization
