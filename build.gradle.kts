@@ -1,8 +1,8 @@
 plugins {
-    kotlin("multiplatform") version "1.9.24"
-    kotlin("plugin.serialization") version "1.9.24"
+    kotlin("multiplatform") version "1.9.25"
+    kotlin("plugin.serialization") version "1.9.25"
     id("io.kotest.multiplatform") version "5.9.1"
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
+    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
 }
 
 group = "com.monta.gradle.changelog"
@@ -42,13 +42,13 @@ kotlin {
                 // CLI
                 implementation("com.github.ajalt.clikt:clikt:4.4.0")
                 // Date Time Support
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
                 // Atomic
-                implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
                 // Http Client
-                val ktorVersion = "2.3.11"
+                val ktorVersion = "2.3.13"
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-curl:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
