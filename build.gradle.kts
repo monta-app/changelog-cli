@@ -54,7 +54,7 @@ kotlin {
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
                 // Semver parser
-                implementation("io.github.z4kn4fein:semver:2.0.0")
+                implementation("io.github.z4kn4fein:semver:3.0.0")
             }
         }
         val commonTest by getting {
