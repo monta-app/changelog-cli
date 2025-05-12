@@ -43,6 +43,8 @@ kotlin {
                 implementation("com.github.ajalt.clikt:clikt:4.4.0")
                 // Date Time Support
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+                // Coroutines
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
                 // Serialization
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
                 // Atomic

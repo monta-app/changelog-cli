@@ -6,17 +6,18 @@
   ],
   "packageRules": [
     {
-      "groupName": "upgrade all non-major gradle dependencies",
+      "groupName": "upgrade all gradle dependencies",
       "matchManagers": [
         "gradle"
       ],
       "matchPackagePatterns": [
         "*"
       ],
-      "groupSlug": "gradle-all",
+      "groupSlug": "gradle",
       "matchUpdateTypes": [
         "minor",
-        "patch"
+        "patch",
+        "major"
       ]
     }
   ]
