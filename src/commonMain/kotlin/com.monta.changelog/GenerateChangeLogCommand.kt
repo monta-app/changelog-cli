@@ -19,11 +19,11 @@ import kotlinx.coroutines.runBlocking
 
 class GenerateChangeLogCommand : CliktCommand() {
     private val banner = """
- __    __   ______   __   __   ______  ______    
-/\ "-./  \ /\  __ \ /\ "-.\ \ /\__  _\/\  __ \   
-\ \ \-./\ \\ \ \/\ \\ \ \-.  \\/_/\ \/\ \  __ \  
- \ \_\ \ \_\\ \_____\\ \_\\"\_\  \ \_\ \ \_\ \_\ 
-  \/_/  \/_/ \/_____/ \/_/ \/_/   \/_/  \/_/\/_/              
+ __    __   ______   __   __   ______  ______
+/\ "-./  \ /\  __ \ /\ "-.\ \ /\__  _\/\  __ \
+\ \ \-./\ \\ \ \/\ \\ \ \-.  \\/_/\ \/\ \  __ \
+ \ \_\ \ \_\\ \_____\\ \_\\"\_\  \ \_\ \ \_\ \_\
+  \/_/  \/_/ \/_____/ \/_/ \/_/   \/_/  \/_/\/_/
     """.trimIndent()
 
     private val debug: Boolean by option(
@@ -158,10 +158,14 @@ class GenerateChangeLogCommand : CliktCommand() {
             SlackChangeLogPrinter(
                 slackToken = slackToken,
                 slackChannels = buildSet {
-                    slackChannel?.let { add(it) }
+                    slackChannel?.let {
+                        if (it.isNotBlank()) {
+                            add(it)
+                        }
+                    }
                     slackChannels?.let { list ->
                         val trimmed = list.filter {
-                            it.isNotEmpty()
+                            it.isNotBlank()
                         }
                         addAll(trimmed)
                     }

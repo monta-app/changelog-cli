@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.monta.gradle.changelog"
-version = "1.7.0"
+version = "1.8.0"
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -55,6 +55,8 @@ kotlin {
                 implementation("io.ktor:ktor-client-curl:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+                // Semver parser
+                implementation("io.github.z4kn4fein:semver:2.0.0")
             }
         }
         val commonTest by getting {
