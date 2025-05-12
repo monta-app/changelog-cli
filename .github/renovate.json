@@ -10,14 +10,14 @@
       "matchManagers": [
         "gradle"
       ],
-      "matchPackagePatterns": [
-        "*"
-      ],
       "groupSlug": "gradle",
       "matchUpdateTypes": [
         "minor",
         "patch",
         "major"
+      ],
+      "matchPackageNames": [
+        "*"
       ]
     }
   ]
