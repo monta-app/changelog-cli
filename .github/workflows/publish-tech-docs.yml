@@ -1,0 +1,19 @@
+name: Publish TechDocs Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish_tech_docs.yml"
+      - "docs/**"
+      - "mkdocs.yml"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish Tech Docs to S3
+    uses: monta-app/github-workflows/.github/workflows/publish-tech-docs.yaml@v3
+    secrets:
+      TECHDOCS_AWS_ACCESS_KEY_ID: ${{ secrets.TECHDOCS_AWS_ACCESS_KEY_ID }}
+      TECHDOCS_AWS_SECRET_ACCESS_KEY: ${{ secrets.TECHDOCS_AWS_SECRET_ACCESS_KEY }}
