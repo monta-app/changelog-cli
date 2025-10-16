@@ -1,30 +1,25 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  # Name of the project 
+  # Name of the project
   name: changelog-cli
-  description: A Kotlin native CLI tool used for generating change logs based off
-    commits using conventional commits
+  description: A Kotlin native CLI tool used for generating change logs based off commits using conventional commits
   # Specifies the directory of the docs
   annotations:
     backstage.io/techdocs-ref: dir:.
-
   labels:
     tier: '3'
-
   # These links are just examples, set them to what you think is the most relevant.
   links:
-  - title: Notion
-    url: https://www.notion.so/montaapp/changelog-cli-88c53f278ce44b599d9dff5e4f760e2d?pvs=4
-    type: Notion
-    icon: docs
-
-
+    - title: Notion
+      url: https://www.notion.so/montaapp/changelog-cli-88c53f278ce44b599d9dff5e4f760e2d?pvs=4
+      type: Notion
+      icon: docs
 # The spec defines who becomes the owner of the system in backstage
 spec:
   type: cli
-  lifecycle: experimental 
+  lifecycle: experimental
   # Name of the squad responsible for the project, e.g. sre or cpi
-  owner: SRE
+  owner: sre
   # Name of the greater system, e.g. "solar" is a part of the home system
-  system: Platform
+  system: platform-division
