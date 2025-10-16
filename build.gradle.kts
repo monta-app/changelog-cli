@@ -1,8 +1,8 @@
 plugins {
     kotlin("multiplatform") version "2.1.20"
     kotlin("plugin.serialization") version "2.1.20"
-    id("io.kotest.multiplatform") version "5.9.1"
-    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    id("io.kotest.multiplatform") version "6.0.0-LOCAL"
+    id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
 }
 
 group = "com.monta.gradle.changelog"
@@ -62,8 +62,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("io.kotest:kotest-framework-engine:5.9.1")
-                implementation("io.kotest:kotest-assertions-core:5.9.1")
+                implementation("io.kotest:kotest-framework-engine:6.0.4")
+                implementation("io.kotest:kotest-assertions-core:6.0.4")
             }
         }
     }
