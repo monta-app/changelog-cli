@@ -1,8 +1,8 @@
 plugins {
-    kotlin("multiplatform") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
+    kotlin("multiplatform") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.20"
     id("io.kotest.multiplatform") version "5.9.1"
-    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    id("org.jlleitschuh.gradle.ktlint") version "12.3.0"
 }
 
 group = "com.monta.gradle.changelog"
@@ -42,18 +42,18 @@ kotlin {
                 // CLI
                 implementation("com.github.ajalt.clikt:clikt:5.0.3")
                 // Date Time Support
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")
                 // Coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
                 // Atomic
-                implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.29.0")
                 // Http Client
-                implementation("io.ktor:ktor-client-core:3.1.3")
-                implementation("io.ktor:ktor-client-curl:3.1.3")
-                implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
+                implementation("io.ktor:ktor-client-core:3.3.1")
+                implementation("io.ktor:ktor-client-curl:3.3.1")
+                implementation("io.ktor:ktor-client-content-negotiation:3.3.1")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.1")
                 // Semver parser
                 implementation("io.github.z4kn4fein:semver:3.0.0")
             }
