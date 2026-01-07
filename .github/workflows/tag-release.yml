@@ -1,0 +1,9 @@
+name: tag.yml
+on:
+  workflow_dispatch:
+  # push:
+  #  branches:
+  #    - main
+jobs:
+  create-tag:
+    uses: monta-app/github-workflows/.github/workflows/create-release-tag.yml@main
