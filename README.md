@@ -37,9 +37,9 @@ At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is
 When you merge a PR to the `main` branch, the release workflow automatically:
 1. ✅ Increments the patch version (e.g., `v1.8.2` → `v1.8.3`)
 2. ✅ Creates and pushes the new tag
-3. ✅ Builds the native binary
+3. ✅ Builds native binaries for x64 and ARM64 architectures
 4. ✅ Generates the changelog using conventional commits
-5. ✅ Creates a GitHub release with the binary attached
+5. ✅ Creates a GitHub release with both binaries attached
 6. ✅ Posts the changelog to Slack
 
 **Manual release:**
@@ -50,8 +50,33 @@ You can trigger a release manually via GitHub Actions:
    - **minor** (v1.8.3 → v1.9.0) - New features, backwards compatible
    - **major** (v1.8.3 → v2.0.0) - Breaking changes
 
+**Manual version bump before merging PR:**
+For major or minor version changes, create and push the tag before merging the PR:
+```bash
+# Get the latest tag
+LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
+echo "Latest tag: $LATEST_TAG"
+
+# Create the new tag (e.g., for minor version bump)
+NEW_VERSION="v1.9.0"  # Update this with your desired version
+git tag "$NEW_VERSION" -m "Release $NEW_VERSION" -a
+
+# Push the tag
+git push origin "$NEW_VERSION"
+
+# Now merge the PR
+```
+Then merge your PR. The existing tag will be picked up by the release workflow.
+
 **After a release:**
 - Update the [action repository](https://github.com/monta-app/changelog-cli-action) with the new version if needed
+
+**Architecture support:**
+Each release includes binaries for both Linux architectures:
+- `changelog-cli-x64` - For Linux x86_64 systems
+- `changelog-cli-arm64` - For Linux ARM64 systems (e.g., AWS Graviton, Raspberry Pi, Apple Silicon in Linux VMs)
+
+Download the appropriate binary for your architecture from the [releases page](https://github.com/monta-app/changelog-cli/releases).
 
 ---
 

@@ -85,12 +85,17 @@ jobs:
           sudo apt update
           sudo apt install libcurl4-openssl-dev
       - name: Build with Gradle
-        run: ./gradlew commonBinaries
-      - name: Upload executable
+        run: ./gradlew prepareReleaseBinaries
+      - name: Upload x64 executable
         uses: actions/upload-artifact@v6
         with:
-          name: changelog-cli
-          path: changelog-cli
+          name: changelog-cli-x64
+          path: build/release/changelog-cli-x64
+      - name: Upload ARM64 executable
+        uses: actions/upload-artifact@v6
+        with:
+          name: changelog-cli-arm64
+          path: build/release/changelog-cli-arm64
 
   create-release:
     runs-on: ubuntu-latest
@@ -100,15 +105,23 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Download a single artifact
+      - name: Download x64 artifact
         uses: actions/download-artifact@v7
         with:
-          name: changelog-cli
-      - name: Give artifact correct permissions
-        run: chmod +x ./changelog-cli
-      - name: Run changelog
+          name: changelog-cli-x64
+          path: ./binaries
+      - name: Download ARM64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: changelog-cli-arm64
+          path: ./binaries
+      - name: Give artifacts correct permissions
+        run: |
+          chmod +x ./binaries/changelog-cli-x64
+          chmod +x ./binaries/changelog-cli-arm64
+      - name: Run changelog (using x64 binary)
         id: changelog
-        run: ./changelog-cli
+        run: ./binaries/changelog-cli-x64
         env:
           CHANGELOG_SERVICE_NAME: "Changelog Generator"
           CHANGELOG_GITHUB_RELEASE: true
@@ -118,11 +131,19 @@ jobs:
           CHANGELOG_OUTPUT: "slack"
           CHANGELOG_SLACK_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
           CHANGELOG_SLACK_CHANNEL_NAME: "C02PDBL6GAU"
-      - name: Upload binaries to release
+      - name: Upload x64 binary to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: changelog-cli
-          asset_name: changelog-cli
+          file: ./binaries/changelog-cli-x64
+          asset_name: changelog-cli-x64
+          tag: ${{ needs.create-tag-and-build.outputs.new_version }}
+          overwrite: true
+      - name: Upload ARM64 binary to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./binaries/changelog-cli-arm64
+          asset_name: changelog-cli-arm64
           tag: ${{ needs.create-tag-and-build.outputs.new_version }}
           overwrite: true
