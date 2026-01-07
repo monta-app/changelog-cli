@@ -16,12 +16,10 @@ jobs:
       - name: Cache Kotlin Native dependencies
         uses: actions/cache@v5
         with:
-          path: |
-            ~/.konan/dependencies
-            ~/.konan/kotlin-native-prebuilt-*
-          key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml', '**/build.gradle.kts', 'gradle.properties') }}
+          path: ~/.konan/dependencies
+          key: ${{ runner.os }}-konan-deps-${{ hashFiles('**/*.gradle.kts', 'gradle.properties') }}
           restore-keys: |
-            ${{ runner.os }}-konan-
+            ${{ runner.os }}-konan-deps-
       - name: Install dependencies
         run: |
           sudo apt update
