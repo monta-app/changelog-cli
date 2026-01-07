@@ -24,8 +24,8 @@ CHANGELOG_JIRA_APP_NAME # (myapp) the jira app name used for generating issue ur
 CHANGELOG_VERSION_MODE # (SemVer,DateVer) what type of tagging format is being used defaults to DateVer
 CHANGELOG_OUTPUT # (console,slack) where should the CLI output [defaults to console]
 CHANGELOG_SLACK_TOKEN # If the output is set to slack then a slack app token should be entered here [only required if output is set to slack]
-CHANGELOG_SLACK_CHANNEL_NAME # the channel where the cli should be outputting to
-CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channels where the changelog will be posted.
+CHANGELOG_SLACK_CHANNEL_NAME # Slack channel ID (e.g., C02PDBL6GAU) or channel name (e.g., #my-channel) where the CLI should output to. Channel IDs are recommended.
+CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channel IDs (e.g., C02PDBL6GAU,C03ABCDEFGH) or channel names. Channel IDs are recommended.
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
