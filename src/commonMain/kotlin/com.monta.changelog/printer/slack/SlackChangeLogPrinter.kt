@@ -16,6 +16,7 @@ import io.ktor.utils.io.charsets.*
 
 class SlackChangeLogPrinter(
     private val slackToken: String,
+    private val repositoryUrl: String?,
     private val slackChannels: Set<String>,
 ) : ChangeLogPrinter {
 
@@ -55,10 +56,15 @@ class SlackChangeLogPrinter(
         for ((scope, commitsGroupedByType) in changeLog.groupedCommitMap) {
             if (scope == null) {
                 currentChunk.header {
-                    changeLog.title.split(" ").joinToString(" ") {
+                    val titleText = changeLog.title.split(" ").joinToString(" ") {
                         it.replaceFirstChar { char ->
                             char.uppercaseChar()
                         }
+                    }
+                    if (repositoryUrl != null) {
+                        "<$repositoryUrl|$titleText>"
+                    } else {
+                        titleText
                     }
                 }
             } else {

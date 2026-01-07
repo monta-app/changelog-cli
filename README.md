@@ -26,6 +26,7 @@ CHANGELOG_OUTPUT # (console,slack) where should the CLI output [defaults to cons
 CHANGELOG_SLACK_TOKEN # If the output is set to slack then a slack app token should be entered here [only required if output is set to slack]
 CHANGELOG_SLACK_CHANNEL_NAME # Slack channel ID (e.g., C02PDBL6GAU) or channel name (e.g., #my-channel) where the CLI should output to. Channel IDs are recommended.
 CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channel IDs (e.g., C02PDBL6GAU,C03ABCDEFGH) or channel names. Channel IDs are recommended.
+CHANGELOG_REPOSITORY_URL # Repository URL (e.g., https://github.com/org/repo) to link in the Slack message title [optional]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
