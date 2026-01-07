@@ -30,13 +30,32 @@ CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channels where the chan
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
 
-### How to make a release
-- Bump the version number of the project in the `build.gradle.kts`
-- Make sure you merge up into main
-- Tag the release sha with `v<YOUR-VERSION>`
-- Once it is build please make sure to upgrade the [action repository](https://github.com/monta-app/changelog-cli-action) with your new version
+### How to Release This Project
 
-### How to use
+**This project uses SemVer versioning and automated releases.**
+
+When you merge a PR to the `main` branch, the release workflow automatically:
+1. ✅ Increments the patch version (e.g., `v1.8.2` → `v1.8.3`)
+2. ✅ Creates and pushes the new tag
+3. ✅ Builds the native binary
+4. ✅ Generates the changelog using conventional commits
+5. ✅ Creates a GitHub release with the binary attached
+6. ✅ Posts the changelog to Slack
+
+**Manual release:**
+You can trigger a release manually via GitHub Actions:
+1. Go to **Actions** → "Release new version" → "Run workflow"
+2. Select version bump type:
+   - **patch** (v1.8.3 → v1.8.4) - Bug fixes, small updates
+   - **minor** (v1.8.3 → v1.9.0) - New features, backwards compatible
+   - **major** (v1.8.3 → v2.0.0) - Breaking changes
+
+**After a release:**
+- Update the [action repository](https://github.com/monta-app/changelog-cli-action) with the new version if needed
+
+---
+
+### How to Use This Tool (for other projects)
 
 Create a tag with the following format `YYYY-DD-MM-HH-MM` and tag the commit you want to release up to.
 
