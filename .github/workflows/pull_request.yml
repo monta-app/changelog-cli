@@ -13,28 +13,21 @@ jobs:
           java-version: '21'
           distribution: 'corretto'
           cache: 'gradle'
-      - uses: actions/cache@v5
+      - name: Cache Kotlin Native dependencies
+        uses: actions/cache@v5
         with:
           path: |
-              ~/.gradle/caches
-              ~/.gradle/wrapper
-          key: ${{ runner.os }}-${{github.ref_name}}-${{ hashFiles('**/build.gradle.kts') }}
+            ~/.konan/dependencies
+            ~/.konan/kotlin-native-prebuilt-*
+          key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml', '**/build.gradle.kts', 'gradle.properties') }}
           restore-keys: |
-            ${{ runner.os }}-${{github.ref_name}}-${{ hashFiles('**/build.gradle.kts') }}
-            ${{ runner.os }}-${{github.ref_name}}
-            ${{ runner.os }}
+            ${{ runner.os }}-konan-
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install libcurl4-openssl-dev
       - name: Build with Gradle
-        run: ./gradlew allTests
-      - name: Check directories to cache
-        run: |
-          pwd
-          ls -la /home/runner/.konan
-          ls -la ~/.gradle/caches
-          ls -la ~/.gradle/wrapper
+        run: ./gradlew allTests --build-cache --configuration-cache
   static-code-analysis:
     name: Static Code Analysis
     runs-on: ubuntu-latest
