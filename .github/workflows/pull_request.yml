@@ -17,8 +17,49 @@ jobs:
         run: |
           sudo apt update
           sudo apt install libcurl4-openssl-dev
-      - name: Build with Gradle
+      - name: Build and test
         run: ./gradlew allTests
+      - name: Build release binaries
+        run: ./gradlew prepareReleaseBinaries
+      - name: Upload x64 binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: changelog-cli-x64
+          path: build/release/changelog-cli-x64
+      - name: Upload ARM64 binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: changelog-cli-arm64
+          path: build/release/changelog-cli-arm64
+
+  verify-x64:
+    name: Verify x64 binary
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download x64 binary
+        uses: actions/download-artifact@v7
+        with:
+          name: changelog-cli-x64
+      - name: Make binary executable
+        run: chmod +x changelog-cli-x64
+      - name: Test binary
+        run: ./changelog-cli-x64 --help
+
+  verify-arm64:
+    name: Verify ARM64 binary
+    runs-on: ubuntu-24.04-arm
+    needs: build
+    steps:
+      - name: Download ARM64 binary
+        uses: actions/download-artifact@v7
+        with:
+          name: changelog-cli-arm64
+      - name: Make binary executable
+        run: chmod +x changelog-cli-arm64
+      - name: Test binary
+        run: ./changelog-cli-arm64 --help
+
   static-code-analysis:
     name: Static Code Analysis
     runs-on: ubuntu-latest
