@@ -40,9 +40,9 @@ jobs:
 
           # Parse version numbers (assuming format vMAJOR.MINOR.PATCH)
           VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
-          MAJOR=$(echo $VERSION | cut -d. -f1)
-          MINOR=$(echo $VERSION | cut -d. -f2)
-          PATCH=$(echo $VERSION | cut -d. -f3)
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
 
           # Determine version bump type (default to patch for push events)
           BUMP_TYPE="${{ inputs.version_bump || 'patch' }}"
@@ -65,7 +65,7 @@ jobs:
           esac
 
           echo "Creating new tag: $NEW_VERSION"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
           # Create annotated tag
           git tag "$NEW_VERSION" -m "Release $NEW_VERSION" -a
@@ -150,7 +150,7 @@ jobs:
 
   update-action-repo:
     runs-on: ubuntu-latest
-    needs: create-release
+    needs: [create-release, create-tag-and-build]
     steps:
       - name: Checkout changelog-cli-action
         uses: actions/checkout@v6
