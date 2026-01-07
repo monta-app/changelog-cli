@@ -165,27 +165,58 @@ jobs:
 
           # Show the diff
           git diff action.yml
-      - name: Create PR
+      - name: Create or update PR
         env:
           GH_TOKEN: ${{ secrets.ACTION_REPO_TOKEN }}
         run: |
           VERSION="${{ needs.create-tag-and-build.outputs.new_version }}"
-          BRANCH_NAME="chore/update-cli-version-$VERSION"
+          BRANCH_NAME="chore/update-cli-version"
 
           # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Create branch and commit
-          git checkout -b "$BRANCH_NAME"
-          git add action.yml
-          git commit -m "chore: update changelog-cli to $VERSION"
-          git push origin "$BRANCH_NAME"
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number' || echo "")
 
-          # Create PR
-          gh pr create \
-            --title "chore: update changelog-cli to $VERSION" \
-            --body "Automatically generated PR to update changelog-cli version.
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Found existing PR #$EXISTING_PR, updating it..."
+
+            # Update existing branch
+            git fetch origin "$BRANCH_NAME"
+            git checkout "$BRANCH_NAME"
+            git add action.yml
+            git commit -m "chore: update changelog-cli to $VERSION" || echo "No changes to commit"
+            git push origin "$BRANCH_NAME" --force
+
+            # Update PR title and body
+            gh pr edit "$EXISTING_PR" \
+              --title "chore: update changelog-cli to $VERSION" \
+              --body "Automatically generated PR to update changelog-cli version.
+
+## Changes
+- Update changelog-cli to **$VERSION**
+
+## Release Notes
+See the [changelog-cli $VERSION release](https://github.com/monta-app/changelog-cli/releases/tag/$VERSION) for details.
+
+🤖 Automated by changelog-cli release workflow
+_Updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
+
+            echo "✅ Updated existing PR #$EXISTING_PR"
+          else
+            echo "No existing PR found, creating new one..."
+
+            # Create new branch and commit
+            git checkout -b "$BRANCH_NAME"
+            git add action.yml
+            git commit -m "chore: update changelog-cli to $VERSION"
+            git push origin "$BRANCH_NAME"
+
+            # Create PR
+            gh pr create \
+              --title "chore: update changelog-cli to $VERSION" \
+              --body "Automatically generated PR to update changelog-cli version.
 
 ## Changes
 - Update changelog-cli to **$VERSION**
@@ -194,5 +225,8 @@ jobs:
 See the [changelog-cli $VERSION release](https://github.com/monta-app/changelog-cli/releases/tag/$VERSION) for details.
 
 🤖 Automated by changelog-cli release workflow" \
-            --base main \
-            --head "$BRANCH_NAME"
+              --base main \
+              --head "$BRANCH_NAME"
+
+            echo "✅ Created new PR"
+          fi
