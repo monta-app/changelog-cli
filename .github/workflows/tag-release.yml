@@ -13,6 +13,10 @@ jobs:
           fetch-depth: 0  # Fetch all tags
       - name: Create and push new patch version tag
         run: |
+          # Configure git committer
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
           # Get the latest tag
           LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
           echo "Latest tag: $LATEST_TAG"
