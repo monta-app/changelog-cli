@@ -50,6 +50,24 @@ You can trigger a release manually via GitHub Actions:
    - **minor** (v1.8.3 → v1.9.0) - New features, backwards compatible
    - **major** (v1.8.3 → v2.0.0) - Breaking changes
 
+**Manual version bump before merging PR:**
+For major or minor version changes, create and push the tag before merging the PR:
+```bash
+# Get the latest tag
+LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
+echo "Latest tag: $LATEST_TAG"
+
+# Create the new tag (e.g., for minor version bump)
+NEW_VERSION="v1.9.0"  # Update this with your desired version
+git tag "$NEW_VERSION" -m "Release $NEW_VERSION" -a
+
+# Push the tag
+git push origin "$NEW_VERSION"
+
+# Now merge the PR
+```
+Then merge your PR. The existing tag will be picked up by the release workflow.
+
 **After a release:**
 - Update the [action repository](https://github.com/monta-app/changelog-cli-action) with the new version if needed
 
