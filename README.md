@@ -42,16 +42,16 @@ When you merge a PR to the `main` branch, the release workflow automatically:
 5. ✅ Creates a GitHub release with the binary attached
 6. ✅ Posts the changelog to Slack
 
-**Manual release (optional):**
-You can also trigger a release manually via GitHub Actions:
-- Go to Actions → "Release new version" → "Run workflow"
+**Manual release:**
+You can trigger a release manually via GitHub Actions:
+1. Go to **Actions** → "Release new version" → "Run workflow"
+2. Select version bump type:
+   - **patch** (v1.8.3 → v1.8.4) - Bug fixes, small updates
+   - **minor** (v1.8.3 → v1.9.0) - New features, backwards compatible
+   - **major** (v1.8.3 → v2.0.0) - Breaking changes
 
 **After a release:**
 - Update the [action repository](https://github.com/monta-app/changelog-cli-action) with the new version if needed
-
-**Version management:**
-- Patch versions increment automatically (bug fixes, small updates)
-- For minor/major version bumps, manually create a tag with the desired version
 
 ---
 
