@@ -16,7 +16,6 @@ import io.ktor.utils.io.charsets.*
 
 class SlackChangeLogPrinter(
     private val slackToken: String,
-    private val repositoryUrl: String?,
     private val slackChannels: Set<String>,
 ) : ChangeLogPrinter {
 
@@ -61,8 +60,8 @@ class SlackChangeLogPrinter(
                             char.uppercaseChar()
                         }
                     }
-                    if (repositoryUrl != null) {
-                        "<$repositoryUrl|$titleText>"
+                    if (changeLog.repositoryUrl != null) {
+                        "<${changeLog.repositoryUrl}|$titleText>"
                     } else {
                         titleText
                     }

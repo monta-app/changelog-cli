@@ -24,6 +24,7 @@ class ChangeLogService(
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
     private val gitHubService = GitHubService(githubToken)
     private val repoInfo = gitService.getRepoInfo()
+    private val repositoryUrl = gitService.getRepositoryUrl()
     private val linkResolvers = listOf(
         LinkResolver.Jira(
             jiraAppName = jiraAppName
@@ -83,6 +84,7 @@ class ChangeLogService(
             tagName = commitInfo.tagName,
             repoOwner = repoInfo.repoOwner,
             repoName = repoInfo.repoName,
+            repositoryUrl = repositoryUrl,
             groupedCommitMap = commitInfo.toGroupedCommitMap()
         )
 

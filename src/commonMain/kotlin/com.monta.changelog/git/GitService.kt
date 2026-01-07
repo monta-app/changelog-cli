@@ -24,6 +24,21 @@ class GitService(
         return RepoInfo(repoOwner, repoName)
     }
 
+    fun getRepositoryUrl(): String? {
+        return try {
+            val remoteUrl = gitCommandUtil.getRemoteUrl() ?: return null
+            // Convert git remote URL to HTTPS URL
+            remoteUrl
+                .removePrefix("ssh@github.com:")
+                .removePrefix("git@github.com:")
+                .removePrefix("https://github.com/")
+                .removeSuffix(".git")
+                .let { "https://github.com/$it" }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun getCommits(startSha: String, endSha: String): CommitInfo {
         return CommitInfo(
             tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),

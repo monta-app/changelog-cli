@@ -160,15 +160,9 @@ class GenerateChangeLogCommand : CliktCommand() {
             envvar = "CHANGELOG_SLACK_CHANNELS"
         ).split(",")
 
-        private val repositoryUrl: String? by option(
-            help = "Repository URL (e.g., https://github.com/org/repo) to link in the Slack message title",
-            envvar = "CHANGELOG_REPOSITORY_URL"
-        )
-
         override val changeLogPrinter: ChangeLogPrinter by lazy {
             SlackChangeLogPrinter(
                 slackToken = slackToken,
-                repositoryUrl = repositoryUrl,
                 slackChannels = buildSet {
                     slackChannel?.let {
                         if (it.isNotBlank()) {
