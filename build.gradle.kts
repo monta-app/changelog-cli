@@ -47,7 +47,7 @@ kotlin {
                 // Coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
                 // Atomic
                 implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
                 // Http Client
