@@ -86,10 +86,6 @@ jobs:
           sudo apt install libcurl4-openssl-dev
       - name: Build with Gradle
         run: ./gradlew commonBinaries
-      - name: Move and apply correct permissions to binary
-        run: |
-          cp build/bin/common/releaseExecutable/changelog-cli.kexe ./changelog-cli
-          chmod +x ./changelog-cli
       - name: Upload executable
         uses: actions/upload-artifact@v6
         with:
