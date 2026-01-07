@@ -3,22 +3,5 @@
   "extends": [
     "config:recommended",
     ":semanticCommitTypeAll(chore)"
-  ],
-  "packageRules": [
-    {
-      "groupName": "upgrade all gradle dependencies",
-      "matchManagers": [
-        "gradle"
-      ],
-      "groupSlug": "gradle",
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "major"
-      ],
-      "matchPackageNames": [
-        "*"
-      ]
-    }
   ]
 }
