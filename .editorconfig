@@ -18,5 +18,9 @@ ij_kotlin_allow_trailing_comma = true
 ktlint_code_style = intellij_idea
 ktlint_standard_discouraged-comment-location = disabled
 
+# Disable ktlint for generated KSP files
+[**/generated/ksp/**]
+ktlint_disabled_rules = filename,import-ordering,no-unused-imports,indent,spacing-between-declarations-with-comments,spacing-between-declarations-with-annotations,trailing-comma-on-call-site,no-trailing-spaces
+
 [{*.markdown,*.md}]
 ij_wrap_on_typing = true

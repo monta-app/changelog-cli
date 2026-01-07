@@ -1,7 +1,8 @@
 plugins {
-    kotlin("multiplatform") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
-    id("io.kotest.multiplatform") version "5.9.1"
+    kotlin("multiplatform") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.20"
+    id("com.google.devtools.ksp") version "2.2.20-2.0.4"
+    id("io.kotest") version "6.0.7"
     id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
 }
 
@@ -60,10 +61,8 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-                implementation("io.kotest:kotest-framework-engine:5.9.1")
-                implementation("io.kotest:kotest-assertions-core:5.9.1")
+                implementation("io.kotest:kotest-framework-engine:6.0.7")
+                implementation("io.kotest:kotest-assertions-core:6.0.7")
             }
         }
     }
@@ -72,5 +71,17 @@ kotlin {
 kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
     binaries.all {
         freeCompilerArgs = freeCompilerArgs + "-Xdisable-phases=EscapeAnalysis"
+    }
+}
+
+// KSP configuration for Kotest
+dependencies {
+    add("kspCommonMainMetadata", "io.kotest:kotest-framework-engine:6.0.7")
+}
+
+// Configure ktlint to exclude generated KSP files
+tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
+    exclude {
+        it.file.path.contains("generated")
     }
 }
