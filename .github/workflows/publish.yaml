@@ -59,7 +59,7 @@ jobs:
           CHANGELOG_VERSION_MODE: "SemVer"
           CHANGELOG_OUTPUT: "slack"
           CHANGELOG_SLACK_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
-          CHANGELOG_SLACK_CHANNEL_NAME: "#info-releases"
+          CHANGELOG_SLACK_CHANNEL_NAME: "C02PDBL6GAU"
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
