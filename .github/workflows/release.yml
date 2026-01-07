@@ -1,18 +1,53 @@
-name: Build binary
-
+name: Release new version
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  create-tag-and-build:
     runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.create_tag.outputs.new_version }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Fetch all tags
+      - name: Create new patch version tag
+        id: create_tag
+        run: |
+          # Configure git committer
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Get the latest tag
+          LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
+          echo "Latest tag: $LATEST_TAG"
+
+          # Parse version numbers (assuming format vMAJOR.MINOR.PATCH)
+          VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+          echo "Creating new tag: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Create annotated tag
+          git tag "$NEW_VERSION" -m "Release $NEW_VERSION" -a
+
+          # Push the tag
+          git push origin "$NEW_VERSION"
+
+          echo "✅ Successfully created and pushed tag $NEW_VERSION"
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -34,9 +69,10 @@ jobs:
         with:
           name: changelog-cli
           path: changelog-cli
-  change-log:
+
+  create-release:
     runs-on: ubuntu-latest
-    needs: build
+    needs: create-tag-and-build
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -66,5 +102,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: changelog-cli
           asset_name: changelog-cli
-          tag: ${{ github.ref }}
+          tag: ${{ needs.create-tag-and-build.outputs.new_version }}
           overwrite: true
