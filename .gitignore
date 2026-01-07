@@ -2,6 +2,9 @@
 /build/
 /plugin/build
 
+# Local changelog-cli binary
+changelog-cli
+
 # Ignore Gradle GUI config
 gradle-app.setting
 

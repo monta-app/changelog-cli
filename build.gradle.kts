@@ -85,3 +85,16 @@ tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().config
         it.file.path.contains("generated")
     }
 }
+
+// Copy binary to root for easier access
+tasks.register<Copy>("copyBinary") {
+    dependsOn("linkReleaseExecutableCommon")
+    from(layout.buildDirectory.file("bin/common/releaseExecutable/changelog-cli.kexe"))
+    into(layout.projectDirectory)
+    rename { "changelog-cli" }
+}
+
+// Make commonBinaries also copy the binary
+tasks.named("commonBinaries") {
+    finalizedBy("copyBinary")
+}
