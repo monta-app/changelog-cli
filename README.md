@@ -30,11 +30,6 @@ CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channels where the chan
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
 
-### Repository Configuration
-
-**Required GitHub Secrets:**
-- `ACTION_REPO_TOKEN` - A GitHub Personal Access Token with write access to the [changelog-cli-action](https://github.com/monta-app/changelog-cli-action) repository. This is used to automatically create PRs when new releases are published.
-
 ### How to Release This Project
 
 **This project uses SemVer versioning and automated releases.**
