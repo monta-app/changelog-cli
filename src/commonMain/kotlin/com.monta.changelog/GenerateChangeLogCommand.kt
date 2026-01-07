@@ -145,12 +145,12 @@ class GenerateChangeLogCommand : CliktCommand() {
         ).required()
 
         private val slackChannel: String? by option(
-            help = "Slack channel where the changelog will be published to (i.e #my-channel)",
+            help = "Slack channel ID where the changelog will be published to (e.g., C02PDBL6GAU)",
             envvar = "CHANGELOG_SLACK_CHANNEL_NAME"
         )
 
         private val slackChannels: List<String>? by option(
-            help = "Comma-separated list of Slack channels where the changelog will be posted",
+            help = "Comma-separated list of Slack channel IDs where the changelog will be posted (e.g., C02PDBL6GAU,C03ABCDEFGH)",
             envvar = "CHANGELOG_SLACK_CHANNELS"
         ).split(",")
 
