@@ -40,9 +40,9 @@ jobs:
 
           # Parse version numbers (assuming format vMAJOR.MINOR.PATCH)
           VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
-          MAJOR=$(echo $VERSION | cut -d. -f1)
-          MINOR=$(echo $VERSION | cut -d. -f2)
-          PATCH=$(echo $VERSION | cut -d. -f3)
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
 
           # Determine version bump type (default to patch for push events)
           BUMP_TYPE="${{ inputs.version_bump || 'patch' }}"
@@ -65,7 +65,7 @@ jobs:
           esac
 
           echo "Creating new tag: $NEW_VERSION"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
           # Create annotated tag
           git tag "$NEW_VERSION" -m "Release $NEW_VERSION" -a
@@ -150,7 +150,7 @@ jobs:
 
   update-action-repo:
     runs-on: ubuntu-latest
-    needs: create-release
+    needs: [create-release, create-tag-and-build]
     steps:
       - name: Checkout changelog-cli-action
         uses: actions/checkout@v6
@@ -190,18 +190,23 @@ jobs:
             git push origin "$BRANCH_NAME" --force
 
             # Update PR title and body
+            PR_BODY=$(cat <<EOF
+          Automatically generated PR to update changelog-cli version.
+
+          ## Changes
+          - Update changelog-cli to **$VERSION**
+
+          ## Release Notes
+          See the [changelog-cli $VERSION release](https://github.com/monta-app/changelog-cli/releases/tag/$VERSION) for details.
+
+          🤖 Automated by changelog-cli release workflow
+          _Updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_
+          EOF
+            )
+
             gh pr edit "$EXISTING_PR" \
               --title "chore: update changelog-cli to $VERSION" \
-              --body "Automatically generated PR to update changelog-cli version.
-
-## Changes
-- Update changelog-cli to **$VERSION**
-
-## Release Notes
-See the [changelog-cli $VERSION release](https://github.com/monta-app/changelog-cli/releases/tag/$VERSION) for details.
-
-🤖 Automated by changelog-cli release workflow
-_Updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
+              --body "$PR_BODY"
 
             echo "✅ Updated existing PR #$EXISTING_PR"
           else
@@ -214,17 +219,22 @@ _Updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
             git push origin "$BRANCH_NAME"
 
             # Create PR
+            PR_BODY=$(cat <<EOF
+          Automatically generated PR to update changelog-cli version.
+
+          ## Changes
+          - Update changelog-cli to **$VERSION**
+
+          ## Release Notes
+          See the [changelog-cli $VERSION release](https://github.com/monta-app/changelog-cli/releases/tag/$VERSION) for details.
+
+          🤖 Automated by changelog-cli release workflow
+          EOF
+            )
+
             gh pr create \
               --title "chore: update changelog-cli to $VERSION" \
-              --body "Automatically generated PR to update changelog-cli version.
-
-## Changes
-- Update changelog-cli to **$VERSION**
-
-## Release Notes
-See the [changelog-cli $VERSION release](https://github.com/monta-app/changelog-cli/releases/tag/$VERSION) for details.
-
-🤖 Automated by changelog-cli release workflow" \
+              --body "$PR_BODY" \
               --base main \
               --head "$BRANCH_NAME"
 

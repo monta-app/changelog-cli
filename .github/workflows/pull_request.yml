@@ -60,6 +60,19 @@ jobs:
       - name: Test binary
         run: ./changelog-cli-arm64 --help
 
+  lint-workflows:
+    name: Lint GitHub Workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run actionlint
+        uses: reviewdog/action-actionlint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          filter_mode: nofilter
+          fail_level: error
+
   static-code-analysis:
     name: Static Code Analysis
     runs-on: ubuntu-latest
