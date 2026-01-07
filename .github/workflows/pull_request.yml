@@ -12,14 +12,22 @@ jobs:
         with:
           java-version: '21'
           distribution: 'corretto'
-          cache: 'gradle'
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
       - name: Cache Kotlin Native dependencies
         uses: actions/cache@v5
         with:
           path: |
             ~/.konan/dependencies
             ~/.konan/kotlin-native-prebuilt-*
-          key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml', '**/build.gradle.kts', 'gradle.properties') }}
+          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts', 'gradle.properties') }}
           restore-keys: |
             ${{ runner.os }}-konan-
       - name: Install dependencies
