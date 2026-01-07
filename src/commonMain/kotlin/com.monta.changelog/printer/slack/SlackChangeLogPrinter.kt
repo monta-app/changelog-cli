@@ -55,16 +55,7 @@ class SlackChangeLogPrinter(
         for ((scope, commitsGroupedByType) in changeLog.groupedCommitMap) {
             if (scope == null) {
                 currentChunk.header {
-                    val titleText = changeLog.title.split(" ").joinToString(" ") {
-                        it.replaceFirstChar { char ->
-                            char.uppercaseChar()
-                        }
-                    }
-                    if (changeLog.repositoryUrl != null) {
-                        "<${changeLog.repositoryUrl}|$titleText>"
-                    } else {
-                        titleText
-                    }
+                    changeLog.getSlackTitle()
                 }
             } else {
                 currentChunk.header {

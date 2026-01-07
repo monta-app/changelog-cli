@@ -3,10 +3,10 @@ package com.monta.changelog.printer.slack
 internal fun MutableList<SlackBlock>.header(text: () -> String) {
     block {
         SlackBlock(
-            type = "header",
+            type = "section",
             text = SlackText(
-                type = "plain_text",
-                text = text()
+                type = "mrkdwn",
+                text = "*${text()}*"
             )
         )
     }
