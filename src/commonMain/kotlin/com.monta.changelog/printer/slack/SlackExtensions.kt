@@ -19,21 +19,31 @@ internal fun buildSlackBlocks(
     val chunkBlockList = mutableListOf<List<SlackBlock>>()
     var currentChunk = mutableListOf<SlackBlock>()
 
-    // Add title at the beginning
-    currentChunk.text {
-        "*${changeLog.title.split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercaseChar() } }}*"
-    }
+    // Add title at the beginning using proper header block for larger text
+    currentChunk.add(
+        SlackBlock(
+            type = "header",
+            text = SlackText(
+                type = "plain_text",
+                text = changeLog.title.split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercaseChar() } }
+            )
+        )
+    )
     // Add visual separator
     currentChunk.divider()
 
     for ((scope, commitsGroupedByType) in changeLog.groupedCommitMap) {
         // Add scope header if this is a scoped section
         if (scope != null) {
-            currentChunk.header {
-                (scope).replaceFirstChar { char ->
-                    char.uppercaseChar()
-                }
-            }
+            currentChunk.add(
+                SlackBlock(
+                    type = "header",
+                    text = SlackText(
+                        type = "plain_text",
+                        text = scope.replaceFirstChar { char -> char.uppercaseChar() }
+                    )
+                )
+            )
         }
 
         currentChunk.addCommitBlocks(
