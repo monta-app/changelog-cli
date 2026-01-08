@@ -35,6 +35,7 @@ val generateVersionInfo by tasks.registering {
                 .start()
             proc.inputStream.bufferedReader().readText().trim()
         } catch (e: Exception) {
+            println("Warning: Could not determine version from git: ${e.message}")
             "dev"
         }
 
@@ -45,6 +46,7 @@ val generateVersionInfo by tasks.registering {
                 .start()
             proc.inputStream.bufferedReader().readText().trim()
         } catch (e: Exception) {
+            println("Warning: Could not determine git SHA: ${e.message}")
             "unknown"
         }
 
