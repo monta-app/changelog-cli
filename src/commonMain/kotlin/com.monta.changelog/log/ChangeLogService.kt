@@ -55,7 +55,7 @@ class ChangeLogService(
         }
     }
 
-    suspend fun generate(
+    suspend fun generateFromShas(
         changeLogPrinter: ChangeLogPrinter,
         startSha: String,
         endSha: String,
@@ -64,6 +64,18 @@ class ChangeLogService(
         commitInfo = gitService.getCommits(
             startSha = startSha,
             endSha = endSha
+        )
+    )
+
+    suspend fun generateFromTags(
+        changeLogPrinter: ChangeLogPrinter,
+        fromTag: String,
+        toTag: String,
+    ) = generateChangeLog(
+        changeLogPrinter = changeLogPrinter,
+        commitInfo = gitService.getCommitsBetweenTags(
+            fromTag = fromTag,
+            toTag = toTag
         )
     )
 

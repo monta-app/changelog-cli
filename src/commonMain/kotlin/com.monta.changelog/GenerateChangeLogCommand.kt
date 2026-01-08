@@ -85,6 +85,7 @@ class GenerateChangeLogCommand : CliktCommand() {
     ).required()
 
     private val commitShaOptions by CommitShaOptions().cooccurring()
+    private val tagOptions by TagOptions().cooccurring()
 
     override fun run() {
         runBlocking {
@@ -105,17 +106,28 @@ class GenerateChangeLogCommand : CliktCommand() {
             )
 
             val commitShaOptions = commitShaOptions
+            val tagOptions = tagOptions
 
-            if (commitShaOptions != null) {
-                changeLogService.generate(
-                    startSha = commitShaOptions.startSha,
-                    endSha = commitShaOptions.endSha,
-                    changeLogPrinter = output.changeLogPrinter
-                )
-            } else {
-                changeLogService.generate(
-                    changeLogPrinter = output.changeLogPrinter
-                )
+            when {
+                commitShaOptions != null -> {
+                    changeLogService.generateFromShas(
+                        startSha = commitShaOptions.startSha,
+                        endSha = commitShaOptions.endSha,
+                        changeLogPrinter = output.changeLogPrinter
+                    )
+                }
+                tagOptions != null -> {
+                    changeLogService.generateFromTags(
+                        fromTag = tagOptions.fromTag,
+                        toTag = tagOptions.toTag,
+                        changeLogPrinter = output.changeLogPrinter
+                    )
+                }
+                else -> {
+                    changeLogService.generate(
+                        changeLogPrinter = output.changeLogPrinter
+                    )
+                }
             }
         }
     }
@@ -142,6 +154,17 @@ class GenerateChangeLogCommand : CliktCommand() {
         ).required()
         val endSha: String by option(
             help = "The github commit sha to end the change log on"
+        ).required()
+    }
+
+    class TagOptions : OptionGroup("Specify version range (both required together, or omit both for auto-detection)") {
+        val fromTag: String by option(
+            help = "The git tag to generate changelog from (e.g., v1.9.18)",
+            names = arrayOf("--from-tag")
+        ).required()
+        val toTag: String by option(
+            help = "The git tag to generate changelog to (e.g., v1.9.20)",
+            names = arrayOf("--to-tag")
         ).required()
     }
 
