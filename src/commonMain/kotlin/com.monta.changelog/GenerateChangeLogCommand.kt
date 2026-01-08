@@ -79,7 +79,8 @@ class GenerateChangeLogCommand : CliktCommand() {
     ).groupChoice(
         choices = mapOf(
             "console" to ConsolePrintingConfig(),
-            "slack" to SlackPrintingConfig()
+            "slack" to SlackPrintingConfig(),
+            "slack-json" to SlackJsonPrintingConfig()
         )
     ).required()
 
@@ -177,6 +178,12 @@ class GenerateChangeLogCommand : CliktCommand() {
                     }
                 }
             )
+        }
+    }
+
+    class SlackJsonPrintingConfig : PrintingConfig("Options for printing Slack JSON to stdout") {
+        override val changeLogPrinter: ChangeLogPrinter by lazy {
+            com.monta.changelog.printer.slack.SlackJsonPrinter()
         }
     }
 }

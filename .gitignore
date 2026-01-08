@@ -5,6 +5,10 @@
 # Local changelog-cli binary
 changelog-cli
 
+# Detekt
+detekt-cli-*.jar
+detekt.yml
+
 # Ignore Gradle GUI config
 gradle-app.setting
 

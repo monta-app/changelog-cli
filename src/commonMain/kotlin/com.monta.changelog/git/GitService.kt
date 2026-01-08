@@ -24,12 +24,21 @@ class GitService(
         return RepoInfo(repoOwner, repoName)
     }
 
-    fun getCommits(startSha: String, endSha: String): CommitInfo {
-        return CommitInfo(
-            tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
-            commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
-        )
+    fun getRepositoryUrl(): String? {
+        return try {
+            val remoteUrl = gitCommandUtil.getRemoteUrl() ?: return null
+            normalizeGitHubUrl(remoteUrl)
+        } catch (e: Exception) {
+            DebugLogger.debug("Could not determine repository URL: ${e.message}")
+            null
+        }
     }
+
+    fun getCommits(startSha: String, endSha: String): CommitInfo = CommitInfo(
+        tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+        previousTagName = null,
+        commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
+    )
 
     fun getCommits(): CommitInfo {
         val tags = tagSorter.sort(
@@ -57,6 +66,7 @@ class GitService(
                 DebugLogger.info("no tags found; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+                    previousTagName = null,
                     commits = gitCommandUtil.getLogs().mapToCommits()
                 )
             }
@@ -66,6 +76,7 @@ class GitService(
                 DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
+                    previousTagName = null,
                     commits = gitCommandUtil.getLogs(gitCommandUtil.getHeadSha(), latestTag).mapToCommits()
                 )
             }
@@ -76,46 +87,51 @@ class GitService(
                 DebugLogger.info("returning commits between tag $latestTag and $previousTag")
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
+                    previousTagName = previousTag.getTagValue(),
                     commits = gitCommandUtil.getLogs(latestTag, previousTag).mapToCommits()
                 )
             }
         }
     }
 
-    private fun List<LogItem>.mapToCommits(): List<Commit> {
-        return this.filter { gitLogItem ->
-            when (pathExcludePattern) {
-                null -> true
-                else -> {
-                    val filesInCommit = gitCommandUtil.getFilesInCommit(gitLogItem.commit)
-                    filesInCommit.any { !pathExcludePattern.containsMatchIn(it) }
-                }
+    private fun List<LogItem>.mapToCommits(): List<Commit> = this.filter { gitLogItem ->
+        when (pathExcludePattern) {
+            null -> true
+            else -> {
+                val filesInCommit = gitCommandUtil.getFilesInCommit(gitLogItem.commit)
+                filesInCommit.any { !pathExcludePattern.containsMatchIn(it) }
             }
-        }.mapNotNull { gitLogItem ->
-            commitMapper.fromGitLogItem(gitLogItem)
-        }.toSet().toList()
-    }
+        }
+    }.mapNotNull { gitLogItem ->
+        commitMapper.fromGitLogItem(gitLogItem)
+    }.toSet().toList()
 
-    private fun getGitOwnerAndRepo(): Pair<String, String> {
-        return getGitOwnerAndRepo(
-            url = requireNotNull(
-                gitCommandUtil.getRemoteUrl()
-            )
+    private fun getGitOwnerAndRepo(): Pair<String, String> = getGitOwnerAndRepo(
+        url = requireNotNull(
+            gitCommandUtil.getRemoteUrl()
         )
-    }
+    )
 
     private fun getGitOwnerAndRepo(url: String): Pair<String, String> {
-        val splitUrl = url.removePrefix("ssh@github.com:")
-            .removePrefix("git@github.com:")
-            .removePrefix("https://github.com/")
-            .removeSuffix(".git")
-            .split("/")
-            .map { it.trim() }
-
+        val normalizedPath = normalizeGitHubPath(url)
+        val splitUrl = normalizedPath.split("/").map { it.trim() }
         return splitUrl[0] to splitUrl[1]
     }
+
+    /**
+     * Normalizes a GitHub remote URL to the owner/repo path format.
+     * Handles SSH, HTTPS, and git@ URL formats.
+     */
+    private fun normalizeGitHubPath(url: String): String = url
+        .removePrefix("ssh@github.com:")
+        .removePrefix("git@github.com:")
+        .removePrefix("https://github.com/")
+        .removeSuffix(".git")
+
+    /**
+     * Normalizes a GitHub remote URL to a standard HTTPS URL.
+     */
+    private fun normalizeGitHubUrl(url: String): String = "https://github.com/${normalizeGitHubPath(url)}"
 }
 
-fun String.getTagValue(): String {
-    return this.split("/").last()
-}
+fun String.getTagValue(): String = this.split("/").last()

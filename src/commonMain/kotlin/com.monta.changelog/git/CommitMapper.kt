@@ -8,12 +8,10 @@ internal class CommitMapper {
 
     fun fromGitLogItem(
         logItem: LogItem,
-    ): Commit? {
-        return fromString(
-            logItem.commit,
-            logItem.subject
-        )
-    }
+    ): Commit? = fromString(
+        logItem.commit,
+        logItem.subject
+    )
 
     private fun fromString(
         id: String,
@@ -103,7 +101,5 @@ internal class CommitMapper {
         return this.substring(startOf, endOf + 1)
     }
 
-    private fun String.stripParenthesis(): String {
-        return this.replace("(", "").replace(")", "")
-    }
+    private fun String.stripParenthesis(): String = this.replace("(", "").replace(")", "")
 }

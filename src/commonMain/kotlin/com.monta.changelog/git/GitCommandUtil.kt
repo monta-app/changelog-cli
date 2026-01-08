@@ -34,57 +34,43 @@ internal class GitCommandUtil {
         }
     """.replace("\n", "").trimIndent()
 
-    fun getHeadSha(): String {
-        return executeCommand("git rev-parse --verify HEAD").first()
+    fun getHeadSha(): String = executeCommand("git rev-parse --verify HEAD").first()
+
+    fun getTags(): List<String> = executeCommand("git tag").map { tag ->
+        tag.trim()
     }
 
-    fun getTags(): List<String> {
-        return executeCommand("git tag").map { tag ->
-            tag.trim()
+    fun getFilesInCommit(commitId: String): List<String> = executeCommand("git diff-tree --no-commit-id --name-only $commitId -r").map { file ->
+        file.trim()
+    }
+
+    fun getLogs(): List<LogItem> = executeCommand(
+        buildString {
+            append("git log ")
+            append("--pretty=format:'$logJsonFormat'")
         }
+    ).mapNotNull {
+        Json.decodeFromStringNullable(it)
     }
 
-    fun getFilesInCommit(commitId: String): List<String> {
-        return executeCommand("git diff-tree --no-commit-id --name-only $commitId -r").map { file ->
-            file.trim()
+    fun getLogs(latestTag: String, previousTag: String): List<LogItem> = executeCommand(
+        buildString {
+            append("git log ")
+            append("--pretty=format:'$logJsonFormat' ")
+            append("$latestTag...$previousTag")
         }
+    ).mapNotNull {
+        Json.decodeFromStringNullable(it)
     }
 
-    fun getLogs(): List<LogItem> {
-        return executeCommand(
-            buildString {
-                append("git log ")
-                append("--pretty=format:'$logJsonFormat'")
-            }
-        ).mapNotNull {
-            Json.decodeFromStringNullable(it)
-        }
+    private inline fun <reified T> StringFormat.decodeFromStringNullable(string: String): T? = try {
+        decodeFromString(string)
+    } catch (exception: Exception) {
+        DebugLogger.warn("exception while parsing commit: $string - ${exception.message}")
+        null
     }
 
-    fun getLogs(latestTag: String, previousTag: String): List<LogItem> {
-        return executeCommand(
-            buildString {
-                append("git log ")
-                append("--pretty=format:'$logJsonFormat' ")
-                append("$latestTag...$previousTag")
-            }
-        ).mapNotNull {
-            Json.decodeFromStringNullable(it)
-        }
-    }
-
-    private inline fun <reified T> StringFormat.decodeFromStringNullable(string: String): T? {
-        return try {
-            decodeFromString(string)
-        } catch (exception: Exception) {
-            DebugLogger.warn("exception while parsing commit: $string")
-            null
-        }
-    }
-
-    fun getRemoteUrl(): String? {
-        return executeCommand("git config --get remote.origin.url").firstOrNull()
-    }
+    fun getRemoteUrl(): String? = executeCommand("git config --get remote.origin.url").firstOrNull()
 
     @OptIn(ExperimentalForeignApi::class)
     private fun executeCommand(command: String): List<String> {

@@ -16,10 +16,8 @@ enum class VersionMode(
     ;
 
     companion object {
-        fun fromString(value: String?): VersionMode? {
-            return values().find { versionMode ->
-                versionMode.name.equals(value, true)
-            }
+        fun fromString(value: String?): VersionMode? = values().find { versionMode ->
+            versionMode.name.equals(value, true)
         }
     }
 }
