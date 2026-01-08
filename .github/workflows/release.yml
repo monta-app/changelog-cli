@@ -183,18 +183,14 @@ jobs:
           # Check if PR already exists
           EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number' || echo "")
 
-          if [ -n "$EXISTING_PR" ]; then
-            echo "Found existing PR #$EXISTING_PR, updating it..."
+          # Always start from main and create/update the branch
+          git checkout -B "$BRANCH_NAME"
+          git add action.yml
+          git commit -m "chore: update changelog-cli to $VERSION"
+          git push origin "$BRANCH_NAME" --force
 
-            # Update existing branch
-            git fetch origin "$BRANCH_NAME"
-            git checkout "$BRANCH_NAME"
-            git add action.yml
-            git commit -m "chore: update changelog-cli to $VERSION" || echo "No changes to commit"
-            git push origin "$BRANCH_NAME" --force
-
-            # Update PR title and body
-            PR_BODY=$(cat <<EOF
+          # Prepare PR body
+          PR_BODY=$(cat <<EOF
           Automatically generated PR to update changelog-cli version.
 
           ## Changes
@@ -206,7 +202,10 @@ jobs:
           🤖 Automated by changelog-cli release workflow
           _Updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_
           EOF
-            )
+          )
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Found existing PR #$EXISTING_PR, updating it..."
 
             gh pr edit "$EXISTING_PR" \
               --title "chore: update changelog-cli to $VERSION" \
@@ -215,26 +214,6 @@ jobs:
             echo "✅ Updated existing PR #$EXISTING_PR"
           else
             echo "No existing PR found, creating new one..."
-
-            # Create new branch and commit
-            git checkout -b "$BRANCH_NAME"
-            git add action.yml
-            git commit -m "chore: update changelog-cli to $VERSION"
-            git push origin "$BRANCH_NAME"
-
-            # Create PR
-            PR_BODY=$(cat <<EOF
-          Automatically generated PR to update changelog-cli version.
-
-          ## Changes
-          - Update changelog-cli to **$VERSION**
-
-          ## Release Notes
-          See the [changelog-cli $VERSION release](https://github.com/monta-app/changelog-cli/releases/tag/$VERSION) for details.
-
-          🤖 Automated by changelog-cli release workflow
-          EOF
-            )
 
             gh pr create \
               --title "chore: update changelog-cli to $VERSION" \
