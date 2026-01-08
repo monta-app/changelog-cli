@@ -90,6 +90,9 @@ class ChangeLogService(
         changeLogPrinter: ChangeLogPrinter,
         commitInfo: CommitInfo,
     ) {
+        // Extract PRs and their bodies
+        val prInfos = extractPullRequestsWithBodies(commitInfo.commits)
+
         val changeLog = ChangeLog(
             serviceName = serviceName,
             jiraAppName = jiraAppName,
@@ -99,8 +102,8 @@ class ChangeLogService(
             repoName = repoInfo.repoName,
             repositoryUrl = repositoryUrl,
             groupedCommitMap = commitInfo.toGroupedCommitMap(),
-            pullRequests = extractPullRequests(commitInfo.commits),
-            jiraTickets = extractJiraTickets(commitInfo.commits)
+            pullRequests = prInfos.map { it.number.toString() }.distinct().sortedBy { it.toIntOrNull() ?: 0 },
+            jiraTickets = extractJiraTickets(commitInfo.commits, prInfos)
         )
 
         if (githubRelease) {
@@ -113,29 +116,71 @@ class ChangeLogService(
         changeLogPrinter.print(linkResolvers, changeLog)
     }
 
-    private fun extractPullRequests(commits: List<com.monta.changelog.model.Commit>): List<String> {
+    private suspend fun extractPullRequestsWithBodies(commits: List<com.monta.changelog.model.Commit>): List<com.monta.changelog.github.GitHubService.PullRequestInfo> {
         val prRegex = Regex("#(\\d+)")
-        return commits
-            .flatMap { commit ->
-                // Only extract PRs from the commit message (subject), not body
-                // PRs in the body are often just references or examples
-                prRegex.findAll(commit.message).map { it.groupValues[1] }.toList()
+        val allPrInfos = mutableListOf<com.monta.changelog.github.GitHubService.PullRequestInfo>()
+
+        for (commit in commits) {
+            // Extract PRs from commit message
+            val prsFromMessage = prRegex.findAll(commit.message).map { it.groupValues[1].toInt() }.toList()
+
+            if (prsFromMessage.isNotEmpty()) {
+                DebugLogger.debug("Found PR(s) in message for ${commit.sha.take(7)}: ${prsFromMessage.joinToString()}")
+                // Add PRs from message with empty body
+                allPrInfos.addAll(prsFromMessage.map { com.monta.changelog.github.GitHubService.PullRequestInfo(it, "") })
             }
-            .distinct()
-            .sortedBy { it.toIntOrNull() ?: 0 }
+
+            // Also query GitHub API to find associated PRs (for merge commits)
+            val prsFromApi = gitHubService.getPullRequestsForCommit(
+                repoOwner = repoInfo.repoOwner,
+                repoName = repoInfo.repoName,
+                commitSha = commit.sha
+            )
+
+            if (prsFromApi.isNotEmpty()) {
+                DebugLogger.debug("Found PR(s) from API for ${commit.sha.take(7)}: ${prsFromApi.map { it.number }.joinToString()}")
+            }
+
+            allPrInfos.addAll(prsFromApi)
+        }
+
+        // Deduplicate by PR number, preferring entries with bodies
+        val uniquePrs = allPrInfos.groupBy { it.number }.map { (_, infos) ->
+            infos.firstOrNull { it.body.isNotEmpty() } ?: infos.first()
+        }
+
+        DebugLogger.debug("Total PRs extracted: ${uniquePrs.map { it.number }.sorted()}")
+
+        return uniquePrs
     }
 
-    private fun extractJiraTickets(commits: List<com.monta.changelog.model.Commit>): List<String> {
+    private fun extractJiraTickets(
+        commits: List<com.monta.changelog.model.Commit>,
+        prInfos: List<com.monta.changelog.github.GitHubService.PullRequestInfo>,
+    ): List<String> {
         val jiraIdRegex = Regex("[A-Z]{2,}-\\d+")
         val jiraUrlRegex = Regex("https://[^/]+\\.atlassian\\.net/browse/([A-Z]{2,}-\\d+)")
 
-        return commits
-            .flatMap { commit ->
-                val fullText = "${commit.message}\n${commit.body}"
-                val ticketsFromIds = jiraIdRegex.findAll(fullText).map { it.value }
-                val ticketsFromUrls = jiraUrlRegex.findAll(fullText).map { it.groupValues[1] }
-                (ticketsFromIds + ticketsFromUrls).toList()
+        // Extract from commits
+        val ticketsFromCommits = commits.flatMap { commit ->
+            val fullText = "${commit.message}\n${commit.body}"
+            val ticketsFromIds = jiraIdRegex.findAll(fullText).map { it.value }
+            val ticketsFromUrls = jiraUrlRegex.findAll(fullText).map { it.groupValues[1] }
+            (ticketsFromIds + ticketsFromUrls).toList()
+        }
+
+        // Extract from PR bodies
+        val ticketsFromPRs = prInfos.flatMap { prInfo ->
+            val ticketsFromIds = jiraIdRegex.findAll(prInfo.body).map { it.value }
+            val ticketsFromUrls = jiraUrlRegex.findAll(prInfo.body).map { it.groupValues[1] }
+            val tickets = (ticketsFromIds + ticketsFromUrls).toList()
+            if (tickets.isNotEmpty()) {
+                DebugLogger.debug("Found JIRA ticket(s) in PR #${prInfo.number}: ${tickets.joinToString()}")
             }
+            tickets
+        }
+
+        return (ticketsFromCommits + ticketsFromPRs)
             .distinct()
             .sorted()
     }

@@ -241,4 +241,68 @@ class GitHubService(
         @SerialName("resource")
         val resource: String,
     )
+
+    /**
+     * Represents a PR with its number and body text.
+     */
+    data class PullRequestInfo(
+        val number: Int,
+        val body: String,
+    )
+
+    /**
+     * Gets the PR info (number and body) associated with a commit SHA.
+     * Returns empty list if no token is provided or if the API call fails.
+     */
+    suspend fun getPullRequestsForCommit(
+        repoOwner: String,
+        repoName: String,
+        commitSha: String,
+    ): List<PullRequestInfo> {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping API query for commit ${commitSha.take(7)}")
+            return emptyList()
+        }
+
+        DebugLogger.debug("Querying GitHub API for PRs associated with commit ${commitSha.take(7)}")
+
+        return try {
+            val response = client.githubRequest<String?>(
+                path = "$repoOwner/$repoName/commits/$commitSha/pulls",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                val prs = response.body<List<PullRequestResponse>>().mapNotNull { pr ->
+                    pr.number?.let { number ->
+                        PullRequestInfo(
+                            number = number,
+                            body = pr.body ?: ""
+                        )
+                    }
+                }
+                DebugLogger.debug("GitHub API returned ${prs.size} PR(s) for commit ${commitSha.take(7)}: ${prs.map { it.number }.joinToString()}")
+                prs
+            } else {
+                DebugLogger.debug("Failed to get PRs for commit $commitSha: ${response.status}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            DebugLogger.debug("Exception getting PRs for commit $commitSha: ${e.message}")
+            emptyList()
+        }
+    }
+
+    @Serializable
+    data class PullRequestResponse(
+        @SerialName("number")
+        val number: Int?,
+        @SerialName("title")
+        val title: String?,
+        @SerialName("body")
+        val body: String?,
+        @SerialName("html_url")
+        val htmlUrl: String?,
+    )
 }

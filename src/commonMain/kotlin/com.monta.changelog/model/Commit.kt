@@ -9,4 +9,5 @@ data class Commit(
     val breaking: Boolean,
     val message: String,
     val body: String = "",
+    val sha: String = "",
 )
