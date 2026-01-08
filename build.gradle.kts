@@ -1,3 +1,5 @@
+import java.time.Instant
+
 plugins {
     kotlin("multiplatform") version "2.3.0"
     kotlin("plugin.serialization") version "2.3.0"
@@ -15,6 +17,57 @@ repositories {
 }
 
 defaultTasks("hostBinaries")
+
+// Task to generate version information
+val generateVersionInfo by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/kotlin")
+    val versionFile = outputDir.get().file("com/monta/changelog/Version.kt").asFile
+
+    outputs.dir(outputDir)
+
+    doLast {
+        versionFile.parentFile.mkdirs()
+
+        // Get version from latest git tag
+        val version = try {
+            val proc = ProcessBuilder("git", "describe", "--tags", "--abbrev=0")
+                .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                .start()
+            proc.inputStream.bufferedReader().readText().trim()
+        } catch (e: Exception) {
+            println("Warning: Could not determine version from git: ${e.message}")
+            "dev"
+        }
+
+        // Get git commit SHA
+        val gitSha = try {
+            val proc = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                .start()
+            proc.inputStream.bufferedReader().readText().trim()
+        } catch (e: Exception) {
+            println("Warning: Could not determine git SHA: ${e.message}")
+            "unknown"
+        }
+
+        // Get build timestamp
+        val buildTime = Instant.now().toString()
+
+        versionFile.writeText(
+            """
+            package com.monta.changelog
+
+            object Version {
+                const val VERSION = "$version"
+                const val GIT_SHA = "$gitSha"
+                const val BUILD_TIME = "$buildTime"
+
+                fun format(): String = "changelog-cli ${'$'}VERSION (commit: ${'$'}GIT_SHA, built: ${'$'}BUILD_TIME)"
+            }
+            """.trimIndent()
+        )
+    }
+}
 
 kotlin {
 
@@ -50,6 +103,7 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/kotlin"))
             dependencies {
                 // CLI
                 implementation("com.github.ajalt.clikt:clikt:5.0.3")
@@ -85,13 +139,19 @@ kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarge
     }
 }
 
+// Make Kotlin compilation depend on version generation
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    dependsOn(generateVersionInfo)
+}
+
 // KSP configuration for Kotest
 dependencies {
     add("kspCommonMainMetadata", "io.kotest:kotest-framework-engine:6.0.7")
 }
 
-// Configure ktlint to exclude generated KSP files
+// Configure ktlint to exclude generated files and depend on version generation
 tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
+    dependsOn(generateVersionInfo)
     exclude {
         it.file.path.contains("generated")
     }
