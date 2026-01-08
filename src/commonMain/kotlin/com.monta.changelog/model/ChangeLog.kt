@@ -17,6 +17,7 @@ data class ChangeLog(
     val jiraTickets: List<String> = emptyList(),
     val jobUrl: String? = null,
     val triggeredBy: String? = null,
+    val triggeredByName: String? = null,
 ) {
     val title: String
         get() = "$serviceName release $tagName"

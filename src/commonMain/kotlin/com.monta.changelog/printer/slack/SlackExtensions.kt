@@ -129,10 +129,15 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
     // Add triggered by if available
     if (changeLog.triggeredBy != null) {
         val username = changeLog.triggeredBy.removePrefix("@")
+        val displayText = if (changeLog.triggeredByName != null) {
+            "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
+        } else {
+            "<https://github.com/$username|@$username>"
+        }
         fields.add(
             SlackField(
                 type = "mrkdwn",
-                text = "*Triggered By:*\n<https://github.com/$username|@$username>"
+                text = "*Triggered By:*\n$displayText"
             )
         )
     }
