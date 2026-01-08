@@ -36,6 +36,7 @@ class GitService(
 
     fun getCommits(startSha: String, endSha: String): CommitInfo = CommitInfo(
         tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+        previousTagName = null,
         commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
     )
 
@@ -65,6 +66,7 @@ class GitService(
                 DebugLogger.info("no tags found; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+                    previousTagName = null,
                     commits = gitCommandUtil.getLogs().mapToCommits()
                 )
             }
@@ -74,6 +76,7 @@ class GitService(
                 DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
+                    previousTagName = null,
                     commits = gitCommandUtil.getLogs(gitCommandUtil.getHeadSha(), latestTag).mapToCommits()
                 )
             }
@@ -84,6 +87,7 @@ class GitService(
                 DebugLogger.info("returning commits between tag $latestTag and $previousTag")
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
+                    previousTagName = previousTag.getTagValue(),
                     commits = gitCommandUtil.getLogs(latestTag, previousTag).mapToCommits()
                 )
             }

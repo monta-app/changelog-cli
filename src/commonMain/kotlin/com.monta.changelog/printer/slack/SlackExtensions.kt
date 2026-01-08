@@ -67,18 +67,35 @@ internal fun buildSlackBlocks(
  */
 internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
     val blocks = mutableListOf<SlackBlock>()
+    val fields = mutableListOf<SlackField>()
 
     // Add repository field if available
     if (changeLog.repositoryUrl != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Repository:*\n<${changeLog.repositoryUrl}|${changeLog.serviceName}>"
+            )
+        )
+    }
+
+    // Add changelog compare link if both current and previous tags are available
+    if (changeLog.repositoryUrl != null && changeLog.previousTagName != null) {
+        val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Changelog:*\n<$compareUrl|${changeLog.previousTagName}...${changeLog.tagName}>"
+            )
+        )
+    }
+
+    // Add all fields as a single section block
+    if (fields.isNotEmpty()) {
         blocks.add(
             SlackBlock(
                 type = "section",
-                fields = listOf(
-                    SlackField(
-                        type = "mrkdwn",
-                        text = "*Repository:*\n<${changeLog.repositoryUrl}|${changeLog.serviceName}>"
-                    )
-                )
+                fields = fields
             )
         )
     }

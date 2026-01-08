@@ -12,6 +12,7 @@ data class RepoInfo(
 @Serializable
 data class CommitInfo(
     val tagName: String,
+    val previousTagName: String?,
     val commits: List<Commit>,
 )
 

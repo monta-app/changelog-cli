@@ -82,6 +82,7 @@ class ChangeLogService(
             serviceName = serviceName,
             jiraAppName = jiraAppName,
             tagName = commitInfo.tagName,
+            previousTagName = commitInfo.previousTagName,
             repoOwner = repoInfo.repoOwner,
             repoName = repoInfo.repoName,
             repositoryUrl = repositoryUrl,
