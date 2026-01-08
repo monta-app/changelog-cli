@@ -241,4 +241,46 @@ class GitHubService(
         @SerialName("resource")
         val resource: String,
     )
+
+    /**
+     * Gets the PR numbers associated with a commit SHA.
+     * Returns empty list if no token is provided or if the API call fails.
+     */
+    suspend fun getPullRequestsForCommit(
+        repoOwner: String,
+        repoName: String,
+        commitSha: String,
+    ): List<Int> {
+        if (githubToken == null) {
+            return emptyList()
+        }
+
+        return try {
+            val response = client.githubRequest<String?>(
+                path = "$repoOwner/$repoName/commits/$commitSha/pulls",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                response.body<List<PullRequestResponse>>().mapNotNull { it.number }
+            } else {
+                DebugLogger.debug("Failed to get PRs for commit $commitSha: ${response.status}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            DebugLogger.debug("Exception getting PRs for commit $commitSha: ${e.message}")
+            emptyList()
+        }
+    }
+
+    @Serializable
+    data class PullRequestResponse(
+        @SerialName("number")
+        val number: Int?,
+        @SerialName("title")
+        val title: String?,
+        @SerialName("html_url")
+        val htmlUrl: String?,
+    )
 }

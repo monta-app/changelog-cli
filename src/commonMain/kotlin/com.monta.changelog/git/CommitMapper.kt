@@ -49,7 +49,8 @@ internal class CommitMapper {
             scope = scope,
             breaking = breaking,
             message = commitMessage,
-            body = body
+            body = body,
+            sha = id
         )
     }
 

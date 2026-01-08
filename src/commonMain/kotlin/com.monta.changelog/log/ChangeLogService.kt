@@ -113,14 +113,26 @@ class ChangeLogService(
         changeLogPrinter.print(linkResolvers, changeLog)
     }
 
-    private fun extractPullRequests(commits: List<com.monta.changelog.model.Commit>): List<String> {
+    private suspend fun extractPullRequests(commits: List<com.monta.changelog.model.Commit>): List<String> {
         val prRegex = Regex("#(\\d+)")
-        return commits
-            .flatMap { commit ->
-                // Only extract PRs from the commit message (subject), not body
-                // PRs in the body are often just references or examples
-                prRegex.findAll(commit.message).map { it.groupValues[1] }.toList()
-            }
+        val allPrs = mutableListOf<String>()
+
+        for (commit in commits) {
+            // Extract PRs from commit message
+            val prsFromMessage = prRegex.findAll(commit.message).map { it.groupValues[1] }.toList()
+            allPrs.addAll(prsFromMessage)
+
+            // Also query GitHub API to find associated PRs (for merge commits)
+            val prsFromApi = gitHubService.getPullRequestsForCommit(
+                repoOwner = repoInfo.repoOwner,
+                repoName = repoInfo.repoName,
+                commitSha = commit.sha
+            ).map { it.toString() }
+            allPrs.addAll(prsFromApi)
+        }
+
+        // Combine and deduplicate all PRs from both sources
+        return allPrs
             .distinct()
             .sortedBy { it.toIntOrNull() ?: 0 }
     }
