@@ -9,6 +9,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.options.split
+import com.github.ajalt.clikt.parameters.options.versionOption
 import com.monta.changelog.log.ChangeLogService
 import com.monta.changelog.model.VersionMode
 import com.monta.changelog.printer.ChangeLogPrinter
@@ -18,6 +19,10 @@ import com.monta.changelog.util.DebugLogger
 import kotlinx.coroutines.runBlocking
 
 class GenerateChangeLogCommand : CliktCommand() {
+    init {
+        versionOption(Version.format())
+    }
+
     private val banner = """
  __    __   ______   __   __   ______  ______
 /\ "-./  \ /\  __ \ /\ "-.\ \ /\__  _\/\  __ \
