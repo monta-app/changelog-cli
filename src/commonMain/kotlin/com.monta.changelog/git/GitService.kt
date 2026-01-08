@@ -50,7 +50,7 @@ class GitService(
                 }
         )
 
-        DebugLogger.info("found tags: $tags")
+        DebugLogger.debug("found tags: $tags")
 
         when (tags.size) {
             0 -> {
