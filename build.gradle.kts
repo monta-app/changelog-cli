@@ -54,7 +54,7 @@ kotlin {
                 // CLI
                 implementation("com.github.ajalt.clikt:clikt:5.0.3")
                 // Date Time Support
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")
                 // Coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
                 // Serialization
