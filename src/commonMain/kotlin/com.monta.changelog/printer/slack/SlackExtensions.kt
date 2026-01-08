@@ -116,6 +116,26 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
+    // Add job URL if available
+    if (changeLog.jobUrl != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Job:*\n<${changeLog.jobUrl}|View Job>"
+            )
+        )
+    }
+
+    // Add triggered by if available
+    if (changeLog.triggeredBy != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Triggered By:*\n${changeLog.triggeredBy}"
+            )
+        )
+    }
+
     // Add all fields as a single section block
     if (fields.isNotEmpty()) {
         blocks.add(
