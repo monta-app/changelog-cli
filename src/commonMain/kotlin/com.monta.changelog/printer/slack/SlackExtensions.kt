@@ -90,6 +90,32 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
+    // Add pull requests if available
+    if (changeLog.pullRequests.isNotEmpty() && changeLog.repositoryUrl != null) {
+        val prLinks = changeLog.pullRequests.joinToString("\n") { prNumber ->
+            "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
+        }
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Pull Requests:*\n$prLinks"
+            )
+        )
+    }
+
+    // Add JIRA tickets if available
+    if (changeLog.jiraTickets.isNotEmpty() && changeLog.jiraAppName != null) {
+        val jiraLinks = changeLog.jiraTickets.joinToString("\n") { ticket ->
+            "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
+        }
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*JIRA Tickets:*\n$jiraLinks"
+            )
+        )
+    }
+
     // Add all fields as a single section block
     if (fields.isNotEmpty()) {
         blocks.add(
