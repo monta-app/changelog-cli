@@ -21,12 +21,19 @@ internal class SlackBlock(
     val type: String,
     val url: String? = null,
     val elements: List<SlackBlock>? = null,
+    val fields: List<SlackField>? = null,
 )
 
 @Serializable
 internal class SlackText(
     val text: String,
     val type: String,
+)
+
+@Serializable
+internal class SlackField(
+    val type: String,
+    val text: String,
 )
 
 @Serializable

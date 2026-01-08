@@ -26,6 +26,8 @@ class SlackJsonPrinter : ChangeLogPrinter {
             changeLog = changeLog
         )
 
+        val metadataBlocks = buildMetadataBlocks(changeLog)
+
         // Print each chunk as a separate JSON payload
         blockChunks.forEachIndexed { index, blocks ->
             if (index > 0) {
@@ -33,11 +35,23 @@ class SlackJsonPrinter : ChangeLogPrinter {
             }
             val messageRequest = SlackMessageRequest(
                 channel = "PREVIEW",
-                threadTs = null,
+                threadTs = if (index == 0) null else "1234567890.123456",
                 text = changeLog.title,
                 blocks = blocks
             )
             println(json.encodeToString(messageRequest))
+        }
+
+        // Print metadata message in thread if available
+        if (metadataBlocks.isNotEmpty()) {
+            println("\n--- Metadata Message (in thread) ---\n")
+            val metadataRequest = SlackMessageRequest(
+                channel = "PREVIEW",
+                threadTs = "1234567890.123456",
+                text = "Metadata",
+                blocks = metadataBlocks
+            )
+            println(json.encodeToString(metadataRequest))
         }
     }
 }

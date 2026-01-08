@@ -24,9 +24,12 @@ class SlackChangeLogPrinter(
             changeLog = changeLog
         )
 
+        val metadataBlocks = buildMetadataBlocks(changeLog)
+
         for (channel in slackChannels) {
             var threadTs: String? = null
 
+            // Send all changelog chunks
             blockChunks.forEach { blocks ->
                 threadTs = makeRequest(
                     SlackMessageRequest(
@@ -34,6 +37,18 @@ class SlackChangeLogPrinter(
                         threadTs = threadTs,
                         text = changeLog.title,
                         blocks = blocks
+                    )
+                )
+            }
+
+            // Send metadata message in the thread if we have metadata and a thread
+            if (metadataBlocks.isNotEmpty() && threadTs != null) {
+                makeRequest(
+                    SlackMessageRequest(
+                        channel = channel,
+                        threadTs = threadTs,
+                        text = "Metadata",
+                        blocks = metadataBlocks
                     )
                 )
             }

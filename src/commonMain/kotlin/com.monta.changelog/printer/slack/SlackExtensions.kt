@@ -21,9 +21,9 @@ internal fun buildSlackBlocks(
 
     for ((scope, commitsGroupedByType) in changeLog.groupedCommitMap) {
         if (scope == null) {
-            // Add title with link (if available)
+            // Add title (capitalized)
             currentChunk.text {
-                "*${formatSlackTitle(changeLog)}*"
+                "*${changeLog.title.split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercaseChar() } }}*"
             }
             // Add visual separator
             currentChunk.divider()
@@ -53,17 +53,28 @@ internal fun buildSlackBlocks(
 }
 
 /**
- * Formats the changelog title for Slack with optional repository link.
- * If repository URL is available, only the service name is linked.
+ * Builds metadata blocks for the threaded message.
+ * Contains additional information about the changelog like repository link.
  */
-internal fun formatSlackTitle(changeLog: ChangeLog): String = if (changeLog.repositoryUrl != null) {
-    // Link only the service name, not the version
-    "<${changeLog.repositoryUrl}|${changeLog.serviceName}> Release ${changeLog.tagName}"
-} else {
-    // Capitalize title when no link is available
-    changeLog.title.split(" ").joinToString(" ") {
-        it.replaceFirstChar { char -> char.uppercaseChar() }
+internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
+    val blocks = mutableListOf<SlackBlock>()
+
+    // Add repository field if available
+    if (changeLog.repositoryUrl != null) {
+        blocks.add(
+            SlackBlock(
+                type = "section",
+                fields = listOf(
+                    SlackField(
+                        type = "mrkdwn",
+                        text = "*Repository:*\n<${changeLog.repositoryUrl}|${changeLog.serviceName}>"
+                    )
+                )
+            )
+        )
     }
+
+    return blocks
 }
 
 /**
