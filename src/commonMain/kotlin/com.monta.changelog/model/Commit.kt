@@ -8,4 +8,5 @@ data class Commit(
     val scope: String?,
     val breaking: Boolean,
     val message: String,
+    val body: String = "",
 )

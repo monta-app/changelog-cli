@@ -34,6 +34,8 @@ internal class GitCommandUtil {
         }
     """.replace("\n", "").trimIndent()
 
+    private val commitBodyDelimiter = "---COMMIT-BODY-END---"
+
     fun getHeadSha(): String = executeCommand("git rev-parse --verify HEAD").first()
 
     fun getTags(): List<String> = executeCommand("git tag").map { tag ->
@@ -44,23 +46,46 @@ internal class GitCommandUtil {
         file.trim()
     }
 
-    fun getLogs(): List<LogItem> = executeCommand(
-        buildString {
-            append("git log ")
-            append("--pretty=format:'$logJsonFormat'")
-        }
-    ).mapNotNull {
-        Json.decodeFromStringNullable(it)
-    }
+    fun getLogs(): List<LogItem> = parseLogsWithBody(
+        executeCommand(
+            buildString {
+                append("git log ")
+                append("--pretty=format:'$logJsonFormat%n%B%n$commitBodyDelimiter'")
+            }
+        )
+    )
 
-    fun getLogs(latestTag: String, previousTag: String): List<LogItem> = executeCommand(
-        buildString {
-            append("git log ")
-            append("--pretty=format:'$logJsonFormat' ")
-            append("$latestTag...$previousTag")
+    fun getLogs(latestTag: String, previousTag: String): List<LogItem> = parseLogsWithBody(
+        executeCommand(
+            buildString {
+                append("git log ")
+                append("--pretty=format:'$logJsonFormat%n%B%n$commitBodyDelimiter' ")
+                append("$latestTag...$previousTag")
+            }
+        )
+    )
+
+    private fun parseLogsWithBody(lines: List<String>): List<LogItem> {
+        val commits = mutableListOf<LogItem>()
+        val currentLines = mutableListOf<String>()
+
+        for (line in lines) {
+            if (line == commitBodyDelimiter && currentLines.isNotEmpty()) {
+                // Parse accumulated lines as one commit
+                val jsonLine = currentLines.first()
+                val bodyLines = currentLines.drop(1)
+                val body = bodyLines.joinToString("\n").trim()
+
+                Json.decodeFromStringNullable<LogItem>(jsonLine)?.let { logItem ->
+                    commits.add(logItem.copy(body = body))
+                }
+                currentLines.clear()
+            } else {
+                currentLines.add(line)
+            }
         }
-    ).mapNotNull {
-        Json.decodeFromStringNullable(it)
+
+        return commits
     }
 
     private inline fun <reified T> StringFormat.decodeFromStringNullable(string: String): T? = try {

@@ -10,12 +10,14 @@ internal class CommitMapper {
         logItem: LogItem,
     ): Commit? = fromString(
         logItem.commit,
-        logItem.subject
+        logItem.subject,
+        logItem.body
     )
 
     private fun fromString(
         id: String,
         message: String,
+        body: String = "",
     ): Commit? {
         val splitMessage = message.split(":", limit = 2)
 
@@ -46,7 +48,8 @@ internal class CommitMapper {
             type = type,
             scope = scope,
             breaking = breaking,
-            message = commitMessage
+            message = commitMessage,
+            body = body
         )
     }
 
