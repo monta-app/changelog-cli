@@ -3,7 +3,7 @@ plugins {
     kotlin("plugin.serialization") version "2.3.0"
     id("com.google.devtools.ksp") version "2.3.4"
     id("io.kotest") version "6.0.7"
-    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
 }
 
 group = "com.monta.gradle.changelog"
