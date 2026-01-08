@@ -8,7 +8,7 @@ typealias GroupedCommitMap = Map<String?, Map<ConventionalCommitType, List<Commi
 fun List<LinkResolver>.resolve(markdownFormatter: MarkdownFormatter, message: String): String {
     var newMessage = message
     this.forEach { linkResolver ->
-        newMessage = linkResolver.resolve(markdownFormatter, message)
+        newMessage = linkResolver.resolve(markdownFormatter, newMessage)
     }
     return newMessage
 }
