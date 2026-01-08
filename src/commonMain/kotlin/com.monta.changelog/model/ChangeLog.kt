@@ -13,6 +13,8 @@ data class ChangeLog(
     val repoName: String,
     val repositoryUrl: String?,
     val groupedCommitMap: GroupedCommitMap,
+    val pullRequests: List<String> = emptyList(),
+    val jiraTickets: List<String> = emptyList(),
 ) {
     val title: String
         get() = "$serviceName release $tagName"

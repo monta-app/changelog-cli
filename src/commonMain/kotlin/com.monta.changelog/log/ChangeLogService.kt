@@ -98,7 +98,9 @@ class ChangeLogService(
             repoOwner = repoInfo.repoOwner,
             repoName = repoInfo.repoName,
             repositoryUrl = repositoryUrl,
-            groupedCommitMap = commitInfo.toGroupedCommitMap()
+            groupedCommitMap = commitInfo.toGroupedCommitMap(),
+            pullRequests = extractPullRequests(commitInfo.commits),
+            jiraTickets = extractJiraTickets(commitInfo.commits)
         )
 
         if (githubRelease) {
@@ -109,6 +111,30 @@ class ChangeLogService(
         }
 
         changeLogPrinter.print(linkResolvers, changeLog)
+    }
+
+    private fun extractPullRequests(commits: List<com.monta.changelog.model.Commit>): List<String> {
+        val prRegex = Regex("#(\\d+)")
+        return commits
+            .flatMap { commit ->
+                prRegex.findAll(commit.message).map { it.groupValues[1] }.toList()
+            }
+            .distinct()
+            .sortedBy { it.toIntOrNull() ?: 0 }
+    }
+
+    private fun extractJiraTickets(commits: List<com.monta.changelog.model.Commit>): List<String> {
+        val jiraIdRegex = Regex("[A-Z]{2,}-\\d+")
+        val jiraUrlRegex = Regex("https://[^/]+\\.atlassian\\.net/browse/([A-Z]{2,}-\\d+)")
+
+        return commits
+            .flatMap { commit ->
+                val ticketsFromIds = jiraIdRegex.findAll(commit.message).map { it.value }
+                val ticketsFromUrls = jiraUrlRegex.findAll(commit.message).map { it.groupValues[1] }
+                (ticketsFromIds + ticketsFromUrls).toList()
+            }
+            .distinct()
+            .sorted()
     }
 
     private fun CommitInfo.toGroupedCommitMap(): GroupedCommitMap = this.commits
