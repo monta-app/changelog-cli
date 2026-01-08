@@ -66,7 +66,7 @@ internal class GitCommandUtil {
     private inline fun <reified T> StringFormat.decodeFromStringNullable(string: String): T? = try {
         decodeFromString(string)
     } catch (exception: Exception) {
-        DebugLogger.warn("exception while parsing commit: $string")
+        DebugLogger.warn("exception while parsing commit: $string - ${exception.message}")
         null
     }
 

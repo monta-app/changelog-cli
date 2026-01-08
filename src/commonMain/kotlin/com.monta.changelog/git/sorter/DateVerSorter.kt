@@ -1,6 +1,7 @@
 package com.monta.changelog.git.sorter
 
 import com.monta.changelog.git.getTagValue
+import com.monta.changelog.util.DebugLogger
 import kotlinx.datetime.LocalDateTime
 
 class DateVerSorter : TagSorter {
@@ -40,6 +41,7 @@ class DateVerSorter : TagSorter {
             values[4]
         )
     } catch (exception: Exception) {
+        DebugLogger.debug("Failed to parse date from tag '$this': ${exception.message}")
         null
     }
 }

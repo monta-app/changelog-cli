@@ -15,7 +15,7 @@ class SemVerSorter : TagSorter {
         try {
             Version.parse(tagValue) to tag
         } catch (e: Exception) {
-            DebugLogger.warn("Failed to parse tag '$tagValue' - ignored")
+            DebugLogger.warn("Failed to parse tag '$tagValue': ${e.message}")
             null
         }
     }
