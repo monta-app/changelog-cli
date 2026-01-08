@@ -243,14 +243,22 @@ class GitHubService(
     )
 
     /**
-     * Gets the PR numbers associated with a commit SHA.
+     * Represents a PR with its number and body text.
+     */
+    data class PullRequestInfo(
+        val number: Int,
+        val body: String,
+    )
+
+    /**
+     * Gets the PR info (number and body) associated with a commit SHA.
      * Returns empty list if no token is provided or if the API call fails.
      */
     suspend fun getPullRequestsForCommit(
         repoOwner: String,
         repoName: String,
         commitSha: String,
-    ): List<Int> {
+    ): List<PullRequestInfo> {
         if (githubToken == null) {
             DebugLogger.debug("No GitHub token provided, skipping API query for commit ${commitSha.take(7)}")
             return emptyList()
@@ -266,8 +274,15 @@ class GitHubService(
             )
 
             if (response.status.isSuccess()) {
-                val prs = response.body<List<PullRequestResponse>>().mapNotNull { it.number }
-                DebugLogger.debug("GitHub API returned ${prs.size} PR(s) for commit ${commitSha.take(7)}: ${prs.joinToString()}")
+                val prs = response.body<List<PullRequestResponse>>().mapNotNull { pr ->
+                    pr.number?.let { number ->
+                        PullRequestInfo(
+                            number = number,
+                            body = pr.body ?: ""
+                        )
+                    }
+                }
+                DebugLogger.debug("GitHub API returned ${prs.size} PR(s) for commit ${commitSha.take(7)}: ${prs.map { it.number }.joinToString()}")
                 prs
             } else {
                 DebugLogger.debug("Failed to get PRs for commit $commitSha: ${response.status}")
@@ -285,6 +300,8 @@ class GitHubService(
         val number: Int?,
         @SerialName("title")
         val title: String?,
+        @SerialName("body")
+        val body: String?,
         @SerialName("html_url")
         val htmlUrl: String?,
     )
