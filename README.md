@@ -19,13 +19,15 @@ actions)
 
 ```shell
 CHANGELOG_GITHUB_RELEASE # (true,false) if set to true this will create a github release based on the latest tag [defaults to false]
-CHANGELOG_GITHUB_TOKEN # (ght_xxx) the github PAT used for creating the release (requires write permission on the repository level) 
+CHANGELOG_GITHUB_TOKEN # (ght_xxx) the github PAT used for creating the release (requires write permission on the repository level)
 CHANGELOG_JIRA_APP_NAME # (myapp) the jira app name used for generating issue urls [optional]
 CHANGELOG_VERSION_MODE # (SemVer,DateVer) what type of tagging format is being used defaults to DateVer
 CHANGELOG_OUTPUT # (console,slack) where should the CLI output [defaults to console]
 CHANGELOG_SLACK_TOKEN # If the output is set to slack then a slack app token should be entered here [only required if output is set to slack]
 CHANGELOG_SLACK_CHANNEL_NAME # Slack channel ID (e.g., C02PDBL6GAU) or channel name (e.g., #my-channel) where the CLI should output to. Channel IDs are recommended.
 CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channel IDs (e.g., C02PDBL6GAU,C03ABCDEFGH) or channel names. Channel IDs are recommended.
+CHANGELOG_JOB_URL # URL to the CI/CD job that triggered this changelog generation (shown in Slack metadata) [optional]
+CHANGELOG_TRIGGERED_BY # GitHub username of the person who triggered the job (shown in Slack metadata) [optional]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`

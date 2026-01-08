@@ -305,4 +305,48 @@ class GitHubService(
         @SerialName("html_url")
         val htmlUrl: String?,
     )
+
+    /**
+     * Gets the user's real name from their GitHub username.
+     * Returns null if no token is provided or if the API call fails.
+     */
+    suspend fun getUserName(username: String): String? {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping user info query for $username")
+            return null
+        }
+
+        val cleanUsername = username.removePrefix("@")
+        DebugLogger.debug("Querying GitHub API for user info: $cleanUsername")
+
+        return try {
+            val response = client.githubRequest<String?>(
+                path = "../users/$cleanUsername",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                val user = response.body<UserResponse>()
+                DebugLogger.debug("GitHub API returned name for $cleanUsername: ${user.name}")
+                user.name
+            } else {
+                DebugLogger.debug("Failed to get user info for $cleanUsername: ${response.status}")
+                null
+            }
+        } catch (e: Exception) {
+            DebugLogger.debug("Exception getting user info for $cleanUsername: ${e.message}")
+            null
+        }
+    }
+
+    @Serializable
+    data class UserResponse(
+        @SerialName("login")
+        val login: String?,
+        @SerialName("name")
+        val name: String?,
+        @SerialName("email")
+        val email: String?,
+    )
 }

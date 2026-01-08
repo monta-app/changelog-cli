@@ -19,6 +19,8 @@ class ChangeLogService(
     githubToken: String?,
     tagPattern: String?,
     pathExcludePattern: String?,
+    private val jobUrl: String?,
+    private val triggeredBy: String?,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -93,6 +95,13 @@ class ChangeLogService(
         // Extract PRs and their bodies
         val prInfos = extractPullRequestsWithBodies(commitInfo.commits)
 
+        // Fetch the user's real name from GitHub if triggeredBy is provided
+        val triggeredByName = if (triggeredBy != null) {
+            gitHubService.getUserName(triggeredBy)
+        } else {
+            null
+        }
+
         val changeLog = ChangeLog(
             serviceName = serviceName,
             jiraAppName = jiraAppName,
@@ -103,7 +112,10 @@ class ChangeLogService(
             repositoryUrl = repositoryUrl,
             groupedCommitMap = commitInfo.toGroupedCommitMap(),
             pullRequests = prInfos.map { it.number.toString() }.distinct().sortedBy { it.toIntOrNull() ?: 0 },
-            jiraTickets = extractJiraTickets(commitInfo.commits, prInfos)
+            jiraTickets = extractJiraTickets(commitInfo.commits, prInfos),
+            jobUrl = jobUrl,
+            triggeredBy = triggeredBy,
+            triggeredByName = triggeredByName
         )
 
         if (githubRelease) {

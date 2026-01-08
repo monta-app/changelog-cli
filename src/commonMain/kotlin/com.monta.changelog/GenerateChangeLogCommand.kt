@@ -73,6 +73,16 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_GITHUB_PATH_EXCLUDE_PATTERN"
     )
 
+    private val jobUrl: String? by option(
+        help = "URL to the CI/CD job that triggered this changelog generation (optional)",
+        envvar = "CHANGELOG_JOB_URL"
+    )
+
+    private val triggeredBy: String? by option(
+        help = "GitHub username of the person who triggered the job (optional)",
+        envvar = "CHANGELOG_TRIGGERED_BY"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -102,7 +112,9 @@ class GenerateChangeLogCommand : CliktCommand() {
                 githubRelease = githubRelease,
                 githubToken = githubToken.valueOrNull(),
                 tagPattern = tagPattern.valueOrNull(),
-                pathExcludePattern = pathExcludePattern.valueOrNull()
+                pathExcludePattern = pathExcludePattern.valueOrNull(),
+                jobUrl = jobUrl.valueOrNull(),
+                triggeredBy = triggeredBy.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions
