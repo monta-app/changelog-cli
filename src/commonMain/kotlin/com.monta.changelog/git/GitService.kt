@@ -29,6 +29,7 @@ class GitService(
             val remoteUrl = gitCommandUtil.getRemoteUrl() ?: return null
             normalizeGitHubUrl(remoteUrl)
         } catch (e: Exception) {
+            DebugLogger.debug("Could not determine repository URL: ${e.message}")
             null
         }
     }
