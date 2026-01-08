@@ -110,6 +110,11 @@ tasks.named("hostBinaries") {
     finalizedBy("copyBinary")
 }
 
+// Make build task also copy the binary to root
+tasks.named("build") {
+    finalizedBy("copyBinary")
+}
+
 val hostOs = System.getProperty("os.name")
 val isLinux = hostOs == "Linux"
 
