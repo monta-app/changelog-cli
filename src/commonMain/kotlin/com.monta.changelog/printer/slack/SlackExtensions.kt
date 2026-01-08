@@ -29,8 +29,6 @@ internal fun buildSlackBlocks(
             )
         )
     )
-    // Add visual separator
-    currentChunk.divider()
 
     for ((scope, commitsGroupedByType) in changeLog.groupedCommitMap) {
         // Add scope header if this is a scoped section
