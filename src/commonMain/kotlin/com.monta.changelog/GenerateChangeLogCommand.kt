@@ -88,6 +88,7 @@ class GenerateChangeLogCommand : CliktCommand() {
     override fun run() {
         runBlocking {
             DebugLogger.info("\n" + banner)
+            DebugLogger.info(Version.format())
 
             val versionMode = VersionMode.fromString(versionMode) ?: VersionMode.DateVer
 
