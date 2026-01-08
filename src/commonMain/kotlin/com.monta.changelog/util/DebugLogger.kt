@@ -1,7 +1,7 @@
 package com.monta.changelog.util
 
 import kotlinx.atomicfu.atomic
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 object DebugLogger {
     enum class Level {

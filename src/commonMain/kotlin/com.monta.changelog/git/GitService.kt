@@ -4,9 +4,7 @@ import com.monta.changelog.git.sorter.Tag
 import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.model.Commit
 import com.monta.changelog.util.DebugLogger
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 class GitService(
     private val tagSorter: TagSorter,
@@ -35,7 +33,7 @@ class GitService(
     }
 
     fun getCommits(startSha: String, endSha: String): CommitInfo = CommitInfo(
-        tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+        tagName = Clock.System.now().toString(),
         previousTagName = null,
         commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
     )
@@ -74,7 +72,7 @@ class GitService(
             0 -> {
                 DebugLogger.info("no tags found; returning from latest commit to last tag")
                 return CommitInfo(
-                    tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+                    tagName = Clock.System.now().toString(),
                     previousTagName = null,
                     commits = gitCommandUtil.getLogs().mapToCommits()
                 )
