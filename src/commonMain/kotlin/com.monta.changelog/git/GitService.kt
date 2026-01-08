@@ -27,13 +27,7 @@ class GitService(
     fun getRepositoryUrl(): String? {
         return try {
             val remoteUrl = gitCommandUtil.getRemoteUrl() ?: return null
-            // Convert git remote URL to HTTPS URL
-            remoteUrl
-                .removePrefix("ssh@github.com:")
-                .removePrefix("git@github.com:")
-                .removePrefix("https://github.com/")
-                .removeSuffix(".git")
-                .let { "https://github.com/$it" }
+            normalizeGitHubUrl(remoteUrl)
         } catch (e: Exception) {
             null
         }
@@ -114,15 +108,25 @@ class GitService(
     )
 
     private fun getGitOwnerAndRepo(url: String): Pair<String, String> {
-        val splitUrl = url.removePrefix("ssh@github.com:")
-            .removePrefix("git@github.com:")
-            .removePrefix("https://github.com/")
-            .removeSuffix(".git")
-            .split("/")
-            .map { it.trim() }
-
+        val normalizedPath = normalizeGitHubPath(url)
+        val splitUrl = normalizedPath.split("/").map { it.trim() }
         return splitUrl[0] to splitUrl[1]
     }
+
+    /**
+     * Normalizes a GitHub remote URL to the owner/repo path format.
+     * Handles SSH, HTTPS, and git@ URL formats.
+     */
+    private fun normalizeGitHubPath(url: String): String = url
+        .removePrefix("ssh@github.com:")
+        .removePrefix("git@github.com:")
+        .removePrefix("https://github.com/")
+        .removeSuffix(".git")
+
+    /**
+     * Normalizes a GitHub remote URL to a standard HTTPS URL.
+     */
+    private fun normalizeGitHubUrl(url: String): String = "https://github.com/${normalizeGitHubPath(url)}"
 }
 
 fun String.getTagValue(): String = this.split("/").last()
