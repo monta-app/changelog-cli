@@ -98,41 +98,37 @@ class ChangeLogService(
         changeLogPrinter.print(linkResolvers, changeLog)
     }
 
-    private fun CommitInfo.toGroupedCommitMap(): GroupedCommitMap {
-        return this.commits
-            // Group them up by the scope
-            .groupBy { commit ->
-                commit.scope.toReadableScope()
-            }
-            // Then the real work begins
-            .map { (scope, commits) ->
-                // Then after we've grouped our commits by scope we need to further sort them by
-                // Type as there is a sorting order there
-                scope to commits
-                    // So first we start off by grouping by type
-                    .groupBy { commit ->
-                        commit.type
-                    }
-                    // Then we turn that into a list (as only these are sortable)
-                    .toList()
-                    .sortedBy { (type, _) ->
-                        type.sortOrder
-                    }
-                    .toMap()
-            }
-            // Sort by the scope (in this instance null will be first)
-            .sortedBy { (scope, _) ->
-                scope
-            }
-            // Then back to a map (hopefully in the correct order)
-            .toMap()
-    }
+    private fun CommitInfo.toGroupedCommitMap(): GroupedCommitMap = this.commits
+        // Group them up by the scope
+        .groupBy { commit ->
+            commit.scope.toReadableScope()
+        }
+        // Then the real work begins
+        .map { (scope, commits) ->
+            // Then after we've grouped our commits by scope we need to further sort them by
+            // Type as there is a sorting order there
+            scope to commits
+                // So first we start off by grouping by type
+                .groupBy { commit ->
+                    commit.type
+                }
+                // Then we turn that into a list (as only these are sortable)
+                .toList()
+                .sortedBy { (type, _) ->
+                    type.sortOrder
+                }
+                .toMap()
+        }
+        // Sort by the scope (in this instance null will be first)
+        .sortedBy { (scope, _) ->
+            scope
+        }
+        // Then back to a map (hopefully in the correct order)
+        .toMap()
 
-    private fun String?.toReadableScope(): String? {
-        return this?.split("-")
-            ?.joinToString(" ") { joinString ->
-                joinString.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-            }
-            ?.replace(" Api", " API", true)
-    }
+    private fun String?.toReadableScope(): String? = this?.split("-")
+        ?.joinToString(" ") { joinString ->
+            joinString.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        }
+        ?.replace(" Api", " API", true)
 }

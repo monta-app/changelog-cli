@@ -39,12 +39,10 @@ class GitService(
         }
     }
 
-    fun getCommits(startSha: String, endSha: String): CommitInfo {
-        return CommitInfo(
-            tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
-            commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
-        )
-    }
+    fun getCommits(startSha: String, endSha: String): CommitInfo = CommitInfo(
+        tagName = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString(),
+        commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
+    )
 
     fun getCommits(): CommitInfo {
         val tags = tagSorter.sort(
@@ -97,27 +95,23 @@ class GitService(
         }
     }
 
-    private fun List<LogItem>.mapToCommits(): List<Commit> {
-        return this.filter { gitLogItem ->
-            when (pathExcludePattern) {
-                null -> true
-                else -> {
-                    val filesInCommit = gitCommandUtil.getFilesInCommit(gitLogItem.commit)
-                    filesInCommit.any { !pathExcludePattern.containsMatchIn(it) }
-                }
+    private fun List<LogItem>.mapToCommits(): List<Commit> = this.filter { gitLogItem ->
+        when (pathExcludePattern) {
+            null -> true
+            else -> {
+                val filesInCommit = gitCommandUtil.getFilesInCommit(gitLogItem.commit)
+                filesInCommit.any { !pathExcludePattern.containsMatchIn(it) }
             }
-        }.mapNotNull { gitLogItem ->
-            commitMapper.fromGitLogItem(gitLogItem)
-        }.toSet().toList()
-    }
+        }
+    }.mapNotNull { gitLogItem ->
+        commitMapper.fromGitLogItem(gitLogItem)
+    }.toSet().toList()
 
-    private fun getGitOwnerAndRepo(): Pair<String, String> {
-        return getGitOwnerAndRepo(
-            url = requireNotNull(
-                gitCommandUtil.getRemoteUrl()
-            )
+    private fun getGitOwnerAndRepo(): Pair<String, String> = getGitOwnerAndRepo(
+        url = requireNotNull(
+            gitCommandUtil.getRemoteUrl()
         )
-    }
+    )
 
     private fun getGitOwnerAndRepo(url: String): Pair<String, String> {
         val splitUrl = url.removePrefix("ssh@github.com:")
@@ -131,6 +125,4 @@ class GitService(
     }
 }
 
-fun String.getTagValue(): String {
-    return this.split("/").last()
-}
+fun String.getTagValue(): String = this.split("/").last()

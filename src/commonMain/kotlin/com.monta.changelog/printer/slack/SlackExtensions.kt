@@ -56,15 +56,13 @@ internal fun buildSlackBlocks(
  * Formats the changelog title for Slack with optional repository link.
  * If repository URL is available, only the service name is linked.
  */
-internal fun formatSlackTitle(changeLog: ChangeLog): String {
-    return if (changeLog.repositoryUrl != null) {
-        // Link only the service name, not the version
-        "<${changeLog.repositoryUrl}|${changeLog.serviceName}> Release ${changeLog.tagName}"
-    } else {
-        // Capitalize title when no link is available
-        changeLog.title.split(" ").joinToString(" ") {
-            it.replaceFirstChar { char -> char.uppercaseChar() }
-        }
+internal fun formatSlackTitle(changeLog: ChangeLog): String = if (changeLog.repositoryUrl != null) {
+    // Link only the service name, not the version
+    "<${changeLog.repositoryUrl}|${changeLog.serviceName}> Release ${changeLog.tagName}"
+} else {
+    // Capitalize title when no link is available
+    changeLog.title.split(" ").joinToString(" ") {
+        it.replaceFirstChar { char -> char.uppercaseChar() }
     }
 }
 

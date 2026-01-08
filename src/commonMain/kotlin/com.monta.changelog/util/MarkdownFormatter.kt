@@ -7,38 +7,22 @@ sealed interface MarkdownFormatter {
     fun hyperlink(text: String, link: String): String
 
     object GitHub : MarkdownFormatter {
-        override fun header(value: String): String {
-            return "## $value\n"
-        }
+        override fun header(value: String): String = "## $value\n"
 
-        override fun title(value: String): String {
-            return "### $value\n"
-        }
+        override fun title(value: String): String = "### $value\n"
 
-        override fun listItem(value: String): String {
-            return "- $value\n"
-        }
+        override fun listItem(value: String): String = "- $value\n"
 
-        override fun hyperlink(text: String, link: String): String {
-            return "[$text]($link)"
-        }
+        override fun hyperlink(text: String, link: String): String = "[$text]($link)"
     }
 
     object Slack : MarkdownFormatter {
-        override fun header(value: String): String {
-            return "*$value*\n"
-        }
+        override fun header(value: String): String = "*$value*\n"
 
-        override fun title(value: String): String {
-            return "*$value*\n"
-        }
+        override fun title(value: String): String = "*$value*\n"
 
-        override fun listItem(value: String): String {
-            return "• $value\n"
-        }
+        override fun listItem(value: String): String = "• $value\n"
 
-        override fun hyperlink(text: String, link: String): String {
-            return "<$link|$text>"
-        }
+        override fun hyperlink(text: String, link: String): String = "<$link|$text>"
     }
 }

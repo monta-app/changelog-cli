@@ -63,8 +63,6 @@ enum class ConventionalCommitType(
     ;
 
     companion object {
-        fun fromString(value: String): ConventionalCommitType? {
-            return values().firstOrNull { it.values.contains(value) }
-        }
+        fun fromString(value: String): ConventionalCommitType? = values().firstOrNull { it.values.contains(value) }
     }
 }

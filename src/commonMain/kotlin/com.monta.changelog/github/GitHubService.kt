@@ -140,18 +140,16 @@ class GitHubService(
         path: String,
         httpMethod: HttpMethod,
         body: T?,
-    ): HttpResponse {
-        return request {
-            url {
-                url("https://api.github.com/repos/$path")
-                method = httpMethod
-            }
-            header("Authorization", "token $githubToken")
-            accept(ContentType.parse("application/vnd.github.v3+json"))
-            if (body != null) {
-                contentType(ContentType.Application.Json)
-                setBody(body)
-            }
+    ): HttpResponse = request {
+        url {
+            url("https://api.github.com/repos/$path")
+            method = httpMethod
+        }
+        header("Authorization", "token $githubToken")
+        accept(ContentType.parse("application/vnd.github.v3+json"))
+        if (body != null) {
+            contentType(ContentType.Application.Json)
+            setBody(body)
         }
     }
 
@@ -159,37 +157,35 @@ class GitHubService(
         markdownFormatter: MarkdownFormatter,
         linkResolvers: List<LinkResolver>,
         groupedCommitMap: GroupedCommitMap,
-    ): String {
-        return buildString {
-            groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
-                if (scope != null) {
-                    appendLine()
-                    append(
-                        markdownFormatter.header(
-                            (scope).replaceFirstChar { char ->
-                                char.uppercaseChar()
-                            }
-                        )
+    ): String = buildString {
+        groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
+            if (scope != null) {
+                appendLine()
+                append(
+                    markdownFormatter.header(
+                        (scope).replaceFirstChar { char ->
+                            char.uppercaseChar()
+                        }
                     )
-                    appendLine()
-                }
-                commitsGroupedByType.forEach { (type, commits) ->
-                    append(
-                        markdownFormatter.title("${type.emoji} ${type.title}")
-                    )
-                    commits.forEach { commit ->
-                        append(
-                            markdownFormatter.listItem(
-                                linkResolvers.resolve(
-                                    markdownFormatter = markdownFormatter,
-                                    message = commit.message
-                                )
-                            )
-                        )
-                    }
-                }
+                )
                 appendLine()
             }
+            commitsGroupedByType.forEach { (type, commits) ->
+                append(
+                    markdownFormatter.title("${type.emoji} ${type.title}")
+                )
+                commits.forEach { commit ->
+                    append(
+                        markdownFormatter.listItem(
+                            linkResolvers.resolve(
+                                markdownFormatter = markdownFormatter,
+                                message = commit.message
+                            )
+                        )
+                    )
+                }
+            }
+            appendLine()
         }
     }
 

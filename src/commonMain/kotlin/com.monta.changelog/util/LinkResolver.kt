@@ -27,9 +27,7 @@ sealed interface LinkResolver {
             return message
         }
 
-        private fun getUrl(ownerName: String, serviceName: String, pullRequestNumber: String): String {
-            return "https://github.com/$ownerName/$serviceName/pull/$pullRequestNumber"
-        }
+        private fun getUrl(ownerName: String, serviceName: String, pullRequestNumber: String): String = "https://github.com/$ownerName/$serviceName/pull/$pullRequestNumber"
     }
 
     class Jira(
@@ -60,14 +58,12 @@ sealed interface LinkResolver {
             return newCommitMessage
         }
 
-        private fun getJiraTags(commitMessage: String): Map<String, String> {
-            return jiraRegex.findAll(commitMessage)
-                .mapNotNull { matchResult ->
-                    matchResult.groupValues.firstOrNull()
-                }
-                .associateWith { jiraTicketName ->
-                    "https://$jiraAppName.atlassian.net/browse/$jiraTicketName"
-                }
-        }
+        private fun getJiraTags(commitMessage: String): Map<String, String> = jiraRegex.findAll(commitMessage)
+            .mapNotNull { matchResult ->
+                matchResult.groupValues.firstOrNull()
+            }
+            .associateWith { jiraTicketName ->
+                "https://$jiraAppName.atlassian.net/browse/$jiraTicketName"
+            }
     }
 }
