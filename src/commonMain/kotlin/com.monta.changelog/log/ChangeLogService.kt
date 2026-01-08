@@ -124,10 +124,14 @@ class ChangeLogService(
     }
 
     private fun extractJiraTickets(commits: List<com.monta.changelog.model.Commit>): List<String> {
-        val jiraRegex = Regex("[A-Z]{2,}-\\d+")
+        val jiraIdRegex = Regex("[A-Z]{2,}-\\d+")
+        val jiraUrlRegex = Regex("https://[^/]+\\.atlassian\\.net/browse/([A-Z]{2,}-\\d+)")
+
         return commits
             .flatMap { commit ->
-                jiraRegex.findAll(commit.message).map { it.value }.toList()
+                val ticketsFromIds = jiraIdRegex.findAll(commit.message).map { it.value }
+                val ticketsFromUrls = jiraUrlRegex.findAll(commit.message).map { it.groupValues[1] }
+                (ticketsFromIds + ticketsFromUrls).toList()
             }
             .distinct()
             .sorted()
