@@ -131,6 +131,8 @@ jobs:
           CHANGELOG_OUTPUT: "slack"
           CHANGELOG_SLACK_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
           CHANGELOG_SLACK_CHANNEL_NAME: "C02PDBL6GAU"
+          CHANGELOG_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CHANGELOG_TRIGGERED_BY: ${{ github.actor }}
       - name: Upload x64 binary to release
         uses: svenstaro/upload-release-action@v2
         with:
