@@ -122,14 +122,25 @@ class ChangeLogService(
             val prsFromMessage = prRegex.findAll(commit.message).map { it.groupValues[1] }.toList()
             allPrs.addAll(prsFromMessage)
 
+            if (prsFromMessage.isNotEmpty()) {
+                DebugLogger.debug("Found PR(s) in message for ${commit.sha.take(7)}: ${prsFromMessage.joinToString()}")
+            }
+
             // Also query GitHub API to find associated PRs (for merge commits)
             val prsFromApi = gitHubService.getPullRequestsForCommit(
                 repoOwner = repoInfo.repoOwner,
                 repoName = repoInfo.repoName,
                 commitSha = commit.sha
             ).map { it.toString() }
+
+            if (prsFromApi.isNotEmpty()) {
+                DebugLogger.debug("Found PR(s) from API for ${commit.sha.take(7)}: ${prsFromApi.joinToString()}")
+            }
+
             allPrs.addAll(prsFromApi)
         }
+
+        DebugLogger.debug("Total PRs extracted: ${allPrs.distinct().sorted()}")
 
         // Combine and deduplicate all PRs from both sources
         return allPrs

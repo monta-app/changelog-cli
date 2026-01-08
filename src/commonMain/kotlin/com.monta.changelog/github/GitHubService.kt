@@ -252,8 +252,11 @@ class GitHubService(
         commitSha: String,
     ): List<Int> {
         if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping API query for commit ${commitSha.take(7)}")
             return emptyList()
         }
+
+        DebugLogger.debug("Querying GitHub API for PRs associated with commit ${commitSha.take(7)}")
 
         return try {
             val response = client.githubRequest<String?>(
@@ -263,7 +266,9 @@ class GitHubService(
             )
 
             if (response.status.isSuccess()) {
-                response.body<List<PullRequestResponse>>().mapNotNull { it.number }
+                val prs = response.body<List<PullRequestResponse>>().mapNotNull { it.number }
+                DebugLogger.debug("GitHub API returned ${prs.size} PR(s) for commit ${commitSha.take(7)}: ${prs.joinToString()}")
+                prs
             } else {
                 DebugLogger.debug("Failed to get PRs for commit $commitSha: ${response.status}")
                 emptyList()
