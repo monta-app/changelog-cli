@@ -117,8 +117,9 @@ class ChangeLogService(
         val prRegex = Regex("#(\\d+)")
         return commits
             .flatMap { commit ->
-                val fullText = "${commit.message}\n${commit.body}"
-                prRegex.findAll(fullText).map { it.groupValues[1] }.toList()
+                // Only extract PRs from the commit message (subject), not body
+                // PRs in the body are often just references or examples
+                prRegex.findAll(commit.message).map { it.groupValues[1] }.toList()
             }
             .distinct()
             .sortedBy { it.toIntOrNull() ?: 0 }
