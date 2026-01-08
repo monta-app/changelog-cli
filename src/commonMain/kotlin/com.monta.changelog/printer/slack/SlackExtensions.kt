@@ -79,13 +79,13 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
-    // Add changelog compare link if both current and previous tags are available
+    // Add changeset compare link if both current and previous tags are available
     if (changeLog.repositoryUrl != null && changeLog.previousTagName != null) {
         val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
         fields.add(
             SlackField(
                 type = "mrkdwn",
-                text = "*Changelog:*\n<$compareUrl|${changeLog.previousTagName}...${changeLog.tagName}>"
+                text = "*Changeset:*\n<$compareUrl|${changeLog.previousTagName}...${changeLog.tagName}>"
             )
         )
     }

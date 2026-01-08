@@ -40,6 +40,15 @@ class GitService(
         commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
     )
 
+    fun getCommitsBetweenTags(fromTag: String, toTag: String): CommitInfo {
+        DebugLogger.info("generating changelog between tags $fromTag and $toTag")
+        return CommitInfo(
+            tagName = toTag.getTagValue(),
+            previousTagName = fromTag.getTagValue(),
+            commits = gitCommandUtil.getLogs(toTag, fromTag).mapToCommits()
+        )
+    }
+
     fun getCommits(): CommitInfo {
         val tags = tagSorter.sort(
             tags = gitCommandUtil.getTags()
