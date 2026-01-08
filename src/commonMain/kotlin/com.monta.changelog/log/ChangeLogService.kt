@@ -117,7 +117,8 @@ class ChangeLogService(
         val prRegex = Regex("#(\\d+)")
         return commits
             .flatMap { commit ->
-                prRegex.findAll(commit.message).map { it.groupValues[1] }.toList()
+                val fullText = "${commit.message}\n${commit.body}"
+                prRegex.findAll(fullText).map { it.groupValues[1] }.toList()
             }
             .distinct()
             .sortedBy { it.toIntOrNull() ?: 0 }
@@ -129,8 +130,9 @@ class ChangeLogService(
 
         return commits
             .flatMap { commit ->
-                val ticketsFromIds = jiraIdRegex.findAll(commit.message).map { it.value }
-                val ticketsFromUrls = jiraUrlRegex.findAll(commit.message).map { it.groupValues[1] }
+                val fullText = "${commit.message}\n${commit.body}"
+                val ticketsFromIds = jiraIdRegex.findAll(fullText).map { it.value }
+                val ticketsFromUrls = jiraUrlRegex.findAll(fullText).map { it.groupValues[1] }
                 (ticketsFromIds + ticketsFromUrls).toList()
             }
             .distinct()

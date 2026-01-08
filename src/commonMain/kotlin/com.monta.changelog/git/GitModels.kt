@@ -22,6 +22,7 @@ internal data class LogItem(
     val committer: Author,
     val commit: String,
     val subject: String,
+    val body: String = "",
 )
 
 @Serializable
