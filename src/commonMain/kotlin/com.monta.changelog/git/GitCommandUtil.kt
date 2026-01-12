@@ -21,6 +21,7 @@ internal class GitCommandUtil {
         {
            "commit":"%H",
            "subject":"%s",
+           "parents":"%P",
            "author":{
               "name":"%aN",
               "email":"%aE",
