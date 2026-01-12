@@ -6,26 +6,46 @@ sealed interface LinkResolver {
     class Github(
         private val repoOwner: String,
         private val repoName: String,
+        private val validPullRequests: Set<String>? = null,
     ) : LinkResolver {
 
         private val regex = Regex("#\\d+")
 
         override fun resolve(markdownFormatter: MarkdownFormatter, message: String): String {
-            regex.find(message)?.value?.let { pullRequestValue ->
-                return message.replace(
-                    oldValue = pullRequestValue,
+            val pullRequests = getPullRequests(message)
+
+            var newMessage = message
+
+            pullRequests.forEach { (key, value) ->
+                newMessage = newMessage.replace(
+                    oldValue = key,
                     newValue = markdownFormatter.hyperlink(
-                        text = pullRequestValue,
-                        link = getUrl(
-                            ownerName = repoOwner,
-                            serviceName = repoName,
-                            pullRequestNumber = pullRequestValue.replace("#", "")
-                        )
+                        text = key,
+                        link = value
                     )
                 )
             }
-            return message
+
+            return newMessage
         }
+
+        private fun getPullRequests(commitMessage: String): Map<String, String> = regex.findAll(commitMessage)
+            .mapNotNull { matchResult ->
+                matchResult.value
+            }
+            .filter { prRef ->
+                // If validPullRequests is provided, only include PRs in that set
+                // Otherwise, include all PRs (for backward compatibility)
+                val prNumber = prRef.replace("#", "")
+                validPullRequests == null || prNumber in validPullRequests
+            }
+            .associateWith { prRef ->
+                getUrl(
+                    ownerName = repoOwner,
+                    serviceName = repoName,
+                    pullRequestNumber = prRef.replace("#", "")
+                )
+            }
 
         private fun getUrl(ownerName: String, serviceName: String, pullRequestNumber: String): String = "https://github.com/$ownerName/$serviceName/pull/$pullRequestNumber"
     }
