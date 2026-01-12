@@ -142,6 +142,16 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
+    // Add deployment stage if available
+    if (changeLog.stage != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Stage:*\n`${changeLog.stage}`"
+            )
+        )
+    }
+
     // Add Docker image information if available
     if (changeLog.dockerImage != null) {
         fields.add(
