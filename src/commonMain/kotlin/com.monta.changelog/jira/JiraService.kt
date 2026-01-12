@@ -47,15 +47,30 @@ class JiraService(
             return emptyList()
         }
 
-        DebugLogger.debug("Validating ${ticketKeys.size} JIRA ticket(s)")
+        val totalCount = ticketKeys.size
+        DebugLogger.info("Validating $totalCount JIRA ticket(s)...")
 
-        val validTickets = ticketKeys.filter { ticketKey ->
-            ticketExists(ticketKey)
+        val validTickets = mutableListOf<String>()
+        var processedCount = 0
+
+        ticketKeys.forEach { ticketKey ->
+            if (ticketExists(ticketKey)) {
+                validTickets.add(ticketKey)
+            }
+
+            processedCount++
+
+            // Log progress every 10 tickets or at the end
+            if (processedCount % 10 == 0 || processedCount == totalCount) {
+                DebugLogger.info("Validated $processedCount/$totalCount JIRA tickets...")
+            }
         }
 
-        val invalidCount = ticketKeys.size - validTickets.size
+        val invalidCount = totalCount - validTickets.size
         if (invalidCount > 0) {
             DebugLogger.info("Filtered out $invalidCount invalid JIRA ticket(s)")
+        } else {
+            DebugLogger.info("All JIRA tickets are valid")
         }
 
         return validTickets
