@@ -26,25 +26,37 @@ That's it! The script will:
 - Run changelog-cli against the test repository
 - Post results to Slack
 
+## Testing Different Repositories
+
+Pass the repository path as the first argument:
+
+```bash
+# Test wallet-service repository
+./test-local.sh ../wallet-service
+
+# Test with specific tag range on wallet-service
+./test-local.sh ../wallet-service --from-tag=2026-01-08-11-30 --to-tag=2026-01-08-14-28
+
+# Test another repo with console output
+./test-local.sh ../my-other-repo --output=console
+```
+
 ## Passing Additional Parameters
 
 The script accepts any additional parameters and forwards them to changelog-cli:
 
 ```bash
-# Override output mode
+# Override output mode (uses default repo)
 ./test-local.sh --output=console
 
 # Specify a specific tag range
-./test-local.sh --from-tag=2026-01-08-11-30 --to-tag=2026-01-08-14-28
+./test-local.sh --from-tag=v2.4.0 --to-tag=v2.5.0
 
 # Override service name
 ./test-local.sh --service-name='Wallet Service'
 
-# Combine multiple overrides
-./test-local.sh --output=console --service-name='My Service'
-
-# Test on a different repository
-TEST_REPO_PATH=../wallet-service ./test-local.sh --version-mode=DateVer
+# Combine repository path with overrides
+./test-local.sh ../wallet-service --output=console --service-name='Custom Name'
 ```
 
 ## Auto-Detection
