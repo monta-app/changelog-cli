@@ -14,6 +14,8 @@ class ChangeLogService(
     debug: Boolean,
     private val serviceName: String,
     private val jiraAppName: String?,
+    private val jiraEmail: String?,
+    private val jiraToken: String?,
     tagSorter: TagSorter,
     private val githubRelease: Boolean,
     githubToken: String?,
@@ -25,6 +27,11 @@ class ChangeLogService(
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
     private val gitHubService = GitHubService(githubToken)
+    private val jiraService = if (jiraAppName != null && jiraEmail != null && jiraToken != null) {
+        com.monta.changelog.jira.JiraService(jiraAppName, jiraEmail, jiraToken)
+    } else {
+        null
+    }
     private val repoInfo = gitService.getRepoInfo()
     private val repositoryUrl = gitService.getRepositoryUrl()
     private val linkResolvers = listOf(
@@ -46,6 +53,9 @@ class ChangeLogService(
 
         DebugLogger.info("serviceName   $serviceName")
         DebugLogger.info("jiraAppName   $jiraAppName")
+        if (jiraService != null) {
+            DebugLogger.info("jiraValidation enabled")
+        }
         DebugLogger.info("githubRelease $githubRelease")
         DebugLogger.info("repoOwner     ${repoInfo.repoOwner}")
         DebugLogger.info("repoName      ${repoInfo.repoName}")
@@ -102,6 +112,14 @@ class ChangeLogService(
             null
         }
 
+        // Extract and validate JIRA tickets
+        val extractedTickets = extractJiraTickets(commitInfo.commits, prInfos)
+        val validatedTickets = if (jiraService != null && extractedTickets.isNotEmpty()) {
+            jiraService.filterValidTickets(extractedTickets)
+        } else {
+            extractedTickets
+        }
+
         val changeLog = ChangeLog(
             serviceName = serviceName,
             jiraAppName = jiraAppName,
@@ -112,7 +130,7 @@ class ChangeLogService(
             repositoryUrl = repositoryUrl,
             groupedCommitMap = commitInfo.toGroupedCommitMap(),
             pullRequests = prInfos.map { it.number.toString() }.distinct().sortedBy { it.toIntOrNull() ?: 0 },
-            jiraTickets = extractJiraTickets(commitInfo.commits, prInfos),
+            jiraTickets = validatedTickets,
             jobUrl = jobUrl,
             triggeredBy = triggeredBy,
             triggeredByName = triggeredByName
