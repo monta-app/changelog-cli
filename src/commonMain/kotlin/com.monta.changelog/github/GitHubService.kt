@@ -349,4 +349,84 @@ class GitHubService(
         @SerialName("email")
         val email: String?,
     )
+
+    /**
+     * Checks if a pull request exists in the repository.
+     * Returns true if the PR exists and is accessible, false otherwise.
+     */
+    suspend fun pullRequestExists(
+        repoOwner: String,
+        repoName: String,
+        prNumber: Int,
+    ): Boolean {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping PR validation for #$prNumber")
+            return true // Assume PR exists if we can't validate
+        }
+
+        return try {
+            val response = client.githubRequest<String?>(
+                path = "$repoOwner/$repoName/pulls/$prNumber",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            val exists = response.status.isSuccess()
+            if (!exists) {
+                DebugLogger.debug("Pull request #$prNumber does not exist or is not accessible (status: ${response.status})")
+            }
+            exists
+        } catch (e: Exception) {
+            DebugLogger.debug("Failed to validate pull request #$prNumber: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Filters a list of PR numbers, returning only those that exist in the repository.
+     * Includes progress logging for transparency when validating many PRs.
+     */
+    suspend fun filterValidPullRequests(
+        repoOwner: String,
+        repoName: String,
+        prNumbers: List<String>,
+    ): List<String> {
+        if (prNumbers.isEmpty()) {
+            return emptyList()
+        }
+
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping PR validation")
+            return prNumbers
+        }
+
+        val totalCount = prNumbers.size
+        DebugLogger.info("Validating $totalCount pull request(s)...")
+
+        val validPrs = mutableListOf<String>()
+        var processedCount = 0
+
+        prNumbers.forEach { prNumberStr ->
+            val prNumber = prNumberStr.toIntOrNull()
+            if (prNumber != null && pullRequestExists(repoOwner, repoName, prNumber)) {
+                validPrs.add(prNumberStr)
+            }
+
+            processedCount++
+
+            // Log progress every 10 PRs or at the end
+            if (processedCount % 10 == 0 || processedCount == totalCount) {
+                DebugLogger.info("Validated $processedCount/$totalCount pull requests...")
+            }
+        }
+
+        val invalidCount = totalCount - validPrs.size
+        if (invalidCount > 0) {
+            DebugLogger.info("Filtered out $invalidCount invalid pull request(s)")
+        } else {
+            DebugLogger.info("All pull requests are valid")
+        }
+
+        return validPrs
+    }
 }
