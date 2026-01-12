@@ -127,6 +127,8 @@ jobs:
           CHANGELOG_GITHUB_RELEASE: true
           CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHANGELOG_JIRA_APP_NAME: "montaapp"
+          CHANGELOG_JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          CHANGELOG_JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
           CHANGELOG_VERSION_MODE: "SemVer"
           CHANGELOG_OUTPUT: "slack"
           CHANGELOG_SLACK_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
