@@ -147,7 +147,7 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         fields.add(
             SlackField(
                 type = "mrkdwn",
-                text = "*Stage:*\n`${changeLog.stage}`"
+                text = "*Stage/Environment:*\n`${changeLog.stage}`"
             )
         )
     }
