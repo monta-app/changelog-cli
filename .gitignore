@@ -24,5 +24,8 @@ gradle-app.setting
 # MacOs?
 .DS_Store
 
+# Environment variables (contains secrets)
+.env
+
 # # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
 # gradle/wrapper/gradle-wrapper.properties
