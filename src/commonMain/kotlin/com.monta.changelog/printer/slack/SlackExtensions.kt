@@ -90,28 +90,26 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
-    // Add pull requests if available
+    // Add pull requests if available (split if too long)
     if (changeLog.pullRequests.isNotEmpty() && changeLog.repositoryUrl != null) {
-        val prLinks = changeLog.pullRequests.joinToString("\n") { prNumber ->
-            "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
-        }
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Pull Requests:*\n$prLinks"
+        fields.addAll(
+            splitIntoFields(
+                header = "Pull Requests",
+                items = changeLog.pullRequests.map { prNumber ->
+                    "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
+                }
             )
         )
     }
 
-    // Add JIRA tickets if available
+    // Add JIRA tickets if available (split if too long)
     if (changeLog.jiraTickets.isNotEmpty() && changeLog.jiraAppName != null) {
-        val jiraLinks = changeLog.jiraTickets.joinToString("\n") { ticket ->
-            "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
-        }
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*JIRA Tickets:*\n$jiraLinks"
+        fields.addAll(
+            splitIntoFields(
+                header = "JIRA Tickets",
+                items = changeLog.jiraTickets.map { ticket ->
+                    "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
+                }
             )
         )
     }
@@ -142,14 +140,16 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
-    // Add all fields as a single section block
+    // Add fields as section blocks, splitting if we exceed 10 fields per block (Slack's limit)
     if (fields.isNotEmpty()) {
-        blocks.add(
-            SlackBlock(
-                type = "section",
-                fields = fields
+        fields.chunked(10).forEach { fieldChunk ->
+            blocks.add(
+                SlackBlock(
+                    type = "section",
+                    fields = fieldChunk
+                )
             )
-        )
+        }
     }
 
     return blocks
@@ -157,31 +157,51 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
 
 /**
  * Adds commit blocks grouped by type to the current list of blocks.
+ * Splits blocks that exceed Slack's 2000 character limit.
  */
 internal fun MutableList<SlackBlock>.addCommitBlocks(
     commitsGroupedByType: Map<ConventionalCommitType, List<Commit>>,
     markdownFormatter: MarkdownFormatter.Slack,
     linkResolvers: List<LinkResolver>,
 ) {
+    // Slack's limit is 3000 chars but we use 1900 to be safe with title overhead
+    val maxCharsPerBlock = 1900
+
     commitsGroupedByType.map { (type, commits) ->
-        text {
-            buildString {
-                // Create our title
-                append(
-                    markdownFormatter.title("${type.emoji} ${type.title}")
+        val titleText = markdownFormatter.title("${type.emoji} ${type.title}")
+        val titleLength = titleText.length
+
+        // Build commit items
+        val commitItems = commits.map { commit ->
+            MarkdownFormatter.Slack.listItem(
+                linkResolvers.resolve(
+                    markdownFormatter = markdownFormatter,
+                    message = commit.message
                 )
-                // Add the markdown list after
-                commits.forEach { commit ->
-                    append(
-                        MarkdownFormatter.Slack.listItem(
-                            linkResolvers.resolve(
-                                markdownFormatter = markdownFormatter,
-                                message = commit.message
-                            )
-                        )
-                    )
-                }
+            )
+        }
+
+        // Split commits into chunks that fit within the character limit
+        val chunks = mutableListOf<String>()
+        var currentChunk = StringBuilder(titleText)
+
+        commitItems.forEach { item ->
+            if (currentChunk.length + item.length > maxCharsPerBlock) {
+                // Current chunk is full, start a new one
+                chunks.add(currentChunk.toString())
+                currentChunk = StringBuilder(titleText)
             }
+            currentChunk.append(item)
+        }
+
+        // Add the last chunk if it has content beyond the title
+        if (currentChunk.length > titleLength) {
+            chunks.add(currentChunk.toString())
+        }
+
+        // Add each chunk as a separate block
+        chunks.forEach { chunk ->
+            text { chunk }
         }
     }
 }
@@ -240,4 +260,57 @@ internal fun MutableList<SlackBlock>.block(block: () -> SlackBlock) {
     add(
         block()
     )
+}
+
+/**
+ * Splits a list of items into multiple SlackField instances if the combined text
+ * exceeds Slack's 2000 character limit per field.
+ */
+internal fun splitIntoFields(
+    header: String,
+    items: List<String>,
+): List<SlackField> {
+    // Slack's limit is 2000 chars but we use 1800 to be safe with header overhead
+    val maxCharsPerField = 1800
+    val fields = mutableListOf<SlackField>()
+
+    val headerWithIndex = { index: Int ->
+        if (index == 0) "*$header:*" else "*$header (cont'd):*"
+    }
+
+    var currentItems = mutableListOf<String>()
+    var currentLength = headerWithIndex(0).length + 1 // +1 for newline
+    var fieldIndex = 0
+
+    items.forEach { item ->
+        val itemWithNewline = item + "\n"
+
+        if (currentLength + itemWithNewline.length > maxCharsPerField && currentItems.isNotEmpty()) {
+            // Current field is full, create a new field
+            fields.add(
+                SlackField(
+                    type = "mrkdwn",
+                    text = "${headerWithIndex(fieldIndex)}\n${currentItems.joinToString("\n")}"
+                )
+            )
+            fieldIndex++
+            currentItems = mutableListOf()
+            currentLength = headerWithIndex(fieldIndex).length + 1
+        }
+
+        currentItems.add(item)
+        currentLength += itemWithNewline.length
+    }
+
+    // Add the last field if it has content
+    if (currentItems.isNotEmpty()) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "${headerWithIndex(fieldIndex)}\n${currentItems.joinToString("\n")}"
+            )
+        )
+    }
+
+    return fields
 }
