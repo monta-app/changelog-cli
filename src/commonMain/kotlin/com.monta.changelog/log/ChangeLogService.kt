@@ -38,9 +38,11 @@ class ChangeLogService(
     }
     private val repoInfo = gitService.getRepoInfo()
     private val repositoryUrl = gitService.getRepositoryUrl()
-    private val linkResolvers = listOf(
+
+    private fun linkResolvers(validatedTickets: List<String>? = null) = listOf(
         LinkResolver.Jira(
-            jiraAppName = jiraAppName
+            jiraAppName = jiraAppName,
+            validTickets = validatedTickets?.toSet()
         ),
         LinkResolver.Github(
             repoOwner = repoInfo.repoOwner,
@@ -158,12 +160,12 @@ class ChangeLogService(
 
         if (githubRelease) {
             changeLog.githubReleaseUrl = gitHubService.createOrUpdateRelease(
-                linkResolvers = linkResolvers,
+                linkResolvers = linkResolvers(validatedTickets),
                 changeLog = changeLog
             )
         }
 
-        changeLogPrinter.print(linkResolvers, changeLog)
+        changeLogPrinter.print(linkResolvers(validatedTickets), changeLog)
     }
 
     private suspend fun extractPullRequestsWithBodies(commits: List<com.monta.changelog.model.Commit>): List<com.monta.changelog.github.GitHubService.PullRequestInfo> {
