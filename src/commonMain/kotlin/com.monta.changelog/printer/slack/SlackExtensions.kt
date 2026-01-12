@@ -92,9 +92,10 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
 
     // Add pull requests if available (split if too long)
     if (changeLog.pullRequests.isNotEmpty() && changeLog.repositoryUrl != null) {
+        val prCount = changeLog.pullRequests.size
         fields.addAll(
             splitIntoFields(
-                header = "Pull Requests",
+                header = "Pull Requests ($prCount)",
                 items = changeLog.pullRequests.map { prNumber ->
                     "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
                 }
@@ -104,9 +105,10 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
 
     // Add JIRA tickets if available (split if too long)
     if (changeLog.jiraTickets.isNotEmpty() && changeLog.jiraAppName != null) {
+        val ticketCount = changeLog.jiraTickets.size
         fields.addAll(
             splitIntoFields(
-                header = "JIRA Tickets",
+                header = "JIRA Tickets ($ticketCount)",
                 items = changeLog.jiraTickets.map { ticket ->
                     "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
                 }
