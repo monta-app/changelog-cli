@@ -19,7 +19,7 @@ fi
 # Default to ocpp-emulator if TEST_REPO_PATH not set
 TEST_REPO_PATH=${TEST_REPO_PATH:-../ocpp-emulator}
 
-echo "Testing changelog-cli with JIRA validation..."
+echo "Testing changelog-cli locally..."
 echo "Repository: $TEST_REPO_PATH"
 echo "Triggered by: $GITHUB_USER"
 echo ""
