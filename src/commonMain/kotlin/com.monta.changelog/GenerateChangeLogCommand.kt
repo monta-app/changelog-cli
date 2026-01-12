@@ -58,6 +58,16 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_JIRA_APP_NAME"
     )
 
+    private val jiraEmail: String? by option(
+        help = "Email address for Jira API authentication (optional, required with jira-token for validation)",
+        envvar = "CHANGELOG_JIRA_EMAIL"
+    )
+
+    private val jiraToken: String? by option(
+        help = "Jira API token for validating tickets exist (optional)",
+        envvar = "CHANGELOG_JIRA_TOKEN"
+    )
+
     private val versionMode: String? by option(
         help = "Which version format is used in the tags (options: SemVer,DateVer) defaults to DateVer",
         envvar = "CHANGELOG_VERSION_MODE"
@@ -108,6 +118,8 @@ class GenerateChangeLogCommand : CliktCommand() {
                 debug = debug,
                 serviceName = serviceName,
                 jiraAppName = jiraAppName.valueOrNull(),
+                jiraEmail = jiraEmail.valueOrNull(),
+                jiraToken = jiraToken.valueOrNull(),
                 tagSorter = versionMode.sorter,
                 githubRelease = githubRelease,
                 githubToken = githubToken.valueOrNull(),

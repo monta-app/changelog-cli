@@ -21,6 +21,8 @@ actions)
 CHANGELOG_GITHUB_RELEASE # (true,false) if set to true this will create a github release based on the latest tag [defaults to false]
 CHANGELOG_GITHUB_TOKEN # (ght_xxx) the github PAT used for creating the release (requires write permission on the repository level)
 CHANGELOG_JIRA_APP_NAME # (myapp) the jira app name used for generating issue urls [optional]
+CHANGELOG_JIRA_EMAIL # (user@example.com) email for JIRA API authentication - required with JIRA_TOKEN to validate tickets [optional]
+CHANGELOG_JIRA_TOKEN # JIRA API token for validating that tickets exist - filters out invalid tickets when provided with JIRA_EMAIL [optional]
 CHANGELOG_VERSION_MODE # (SemVer,DateVer) what type of tagging format is being used defaults to DateVer
 CHANGELOG_OUTPUT # (console,slack) where should the CLI output [defaults to console]
 CHANGELOG_SLACK_TOKEN # If the output is set to slack then a slack app token should be entered here [only required if output is set to slack]
