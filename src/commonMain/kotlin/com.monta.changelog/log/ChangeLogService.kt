@@ -112,6 +112,18 @@ class ChangeLogService(
             null
         }
 
+        // Extract and validate pull requests
+        val extractedPrs = prInfos.map { it.number.toString() }.distinct().sortedBy { it.toIntOrNull() ?: 0 }
+        val validatedPrs = if (extractedPrs.isNotEmpty()) {
+            gitHubService.filterValidPullRequests(
+                repoOwner = repoInfo.repoOwner,
+                repoName = repoInfo.repoName,
+                prNumbers = extractedPrs
+            )
+        } else {
+            extractedPrs
+        }
+
         // Extract and validate JIRA tickets
         val extractedTickets = extractJiraTickets(commitInfo.commits, prInfos)
         val validatedTickets = if (jiraService != null && extractedTickets.isNotEmpty()) {
@@ -129,7 +141,7 @@ class ChangeLogService(
             repoName = repoInfo.repoName,
             repositoryUrl = repositoryUrl,
             groupedCommitMap = commitInfo.toGroupedCommitMap(),
-            pullRequests = prInfos.map { it.number.toString() }.distinct().sortedBy { it.toIntOrNull() ?: 0 },
+            pullRequests = validatedPrs,
             jiraTickets = validatedTickets,
             jobUrl = jobUrl,
             triggeredBy = triggeredBy,
