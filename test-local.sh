@@ -6,17 +6,17 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "Usage: $0 [repository_path] [additional options for changelog-cli]"
     echo ""
     echo "Arguments:"
-    echo "  repository_path   Path to the repository to test (default: ../ocpp-emulator)"
+    echo "  repository_path   Path to the repository to test (default: current directory)"
     echo ""
     echo "This script auto-detects repository settings and passes them to changelog-cli."
     echo "You can override any auto-detected values or add extra options."
     echo ""
     echo "Examples:"
-    echo "  $0                                         # Use default repo (../ocpp-emulator)"
+    echo "  $0                                         # Test current repo (changelog-cli)"
     echo "  $0 ../wallet-service                       # Test wallet-service repo"
-    echo "  $0 ../ocpp-emulator --output=console       # Override output mode"
+    echo "  $0 ../ocpp-emulator --output=console       # Test ocpp-emulator, console output"
     echo "  $0 ../wallet-service --from-tag=2026-01-08-11-30 --to-tag=2026-01-08-14-28"
-    echo "  $0 --service-name='My Service'             # Use default repo, override service name"
+    echo "  $0 --service-name='My Service'             # Test current repo, override service name"
     echo ""
     exit 0
 fi
@@ -41,8 +41,8 @@ if [ $# -gt 0 ] && [[ "$1" != --* ]]; then
     TEST_REPO_PATH="$1"
     shift  # Remove first argument so remaining args are passed to changelog-cli
 else
-    # Default to ocpp-emulator if not provided
-    TEST_REPO_PATH=${TEST_REPO_PATH:-../ocpp-emulator}
+    # Default to current directory if not provided
+    TEST_REPO_PATH="."
 fi
 
 # Change to test repository directory

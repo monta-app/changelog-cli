@@ -16,14 +16,18 @@ This guide explains how to test changelog-cli locally with real credentials.
 
 3. **Run the test script:**
    ```bash
+   # Test the current repository (changelog-cli)
    ./test-local.sh
+
+   # Or test another repository
+   ./test-local.sh ../ocpp-emulator
    ```
 
 That's it! The script will:
 - Load credentials from `.env`
 - Auto-detect version mode (SemVer or DateVer) from git tags
 - Auto-detect service name from repository directory
-- Run changelog-cli against the test repository
+- Run changelog-cli against the specified repository
 - Post results to Slack
 
 ## Testing Different Repositories
