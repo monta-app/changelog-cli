@@ -153,29 +153,19 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
     }
 
     if (changeLog.imageTag != null) {
-        val shortTag = if (changeLog.imageTag.length > 12) {
-            changeLog.imageTag.take(12)
-        } else {
-            changeLog.imageTag
-        }
         fields.add(
             SlackField(
                 type = "mrkdwn",
-                text = "*Image Tag:*\n`$shortTag`"
+                text = "*Image Tag:*\n`${changeLog.imageTag}`"
             )
         )
     }
 
     if (changeLog.previousImageTag != null) {
-        val shortTag = if (changeLog.previousImageTag.length > 12) {
-            changeLog.previousImageTag.take(12)
-        } else {
-            changeLog.previousImageTag
-        }
         fields.add(
             SlackField(
                 type = "mrkdwn",
-                text = "*Previous Image Tag (Rollback):*\n`$shortTag`"
+                text = "*Previous Image Tag (Rollback):*\n`${changeLog.previousImageTag}`"
             )
         )
     }
