@@ -142,6 +142,44 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
+    // Add Docker image information if available
+    if (changeLog.dockerImage != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Docker Image:*\n`${changeLog.dockerImage}`"
+            )
+        )
+    }
+
+    if (changeLog.imageTag != null) {
+        val shortTag = if (changeLog.imageTag.length > 12) {
+            changeLog.imageTag.take(12)
+        } else {
+            changeLog.imageTag
+        }
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Image Tag:*\n`$shortTag`"
+            )
+        )
+    }
+
+    if (changeLog.previousImageTag != null) {
+        val shortTag = if (changeLog.previousImageTag.length > 12) {
+            changeLog.previousImageTag.take(12)
+        } else {
+            changeLog.previousImageTag
+        }
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Previous Image Tag (Rollback):*\n`$shortTag`"
+            )
+        )
+    }
+
     // Add fields as section blocks, splitting if we exceed 10 fields per block (Slack's limit)
     if (fields.isNotEmpty()) {
         fields.chunked(10).forEach { fieldChunk ->

@@ -93,6 +93,21 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_TRIGGERED_BY"
     )
 
+    private val dockerImage: String? by option(
+        help = "Docker image repository URL (e.g., 077199819609.dkr.ecr.eu-west-1.amazonaws.com/geo-production) (optional)",
+        envvar = "CHANGELOG_DOCKER_IMAGE"
+    )
+
+    private val imageTag: String? by option(
+        help = "Current Docker image tag being deployed (e.g., commit SHA) (optional)",
+        envvar = "CHANGELOG_IMAGE_TAG"
+    )
+
+    private val previousImageTag: String? by option(
+        help = "Previous Docker image tag for rollback reference (optional)",
+        envvar = "CHANGELOG_PREVIOUS_IMAGE_TAG"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -126,7 +141,10 @@ class GenerateChangeLogCommand : CliktCommand() {
                 tagPattern = tagPattern.valueOrNull(),
                 pathExcludePattern = pathExcludePattern.valueOrNull(),
                 jobUrl = jobUrl.valueOrNull(),
-                triggeredBy = triggeredBy.valueOrNull()
+                triggeredBy = triggeredBy.valueOrNull(),
+                dockerImage = dockerImage.valueOrNull(),
+                imageTag = imageTag.valueOrNull(),
+                previousImageTag = previousImageTag.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions

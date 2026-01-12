@@ -23,6 +23,9 @@ class ChangeLogService(
     pathExcludePattern: String?,
     private val jobUrl: String?,
     private val triggeredBy: String?,
+    private val dockerImage: String?,
+    private val imageTag: String?,
+    private val previousImageTag: String?,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -145,7 +148,10 @@ class ChangeLogService(
             jiraTickets = validatedTickets,
             jobUrl = jobUrl,
             triggeredBy = triggeredBy,
-            triggeredByName = triggeredByName
+            triggeredByName = triggeredByName,
+            dockerImage = dockerImage,
+            imageTag = imageTag,
+            previousImageTag = previousImageTag
         )
 
         if (githubRelease) {
