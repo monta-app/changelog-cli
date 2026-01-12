@@ -23,7 +23,13 @@ internal data class LogItem(
     val commit: String,
     val subject: String,
     val body: String = "",
-)
+    val parents: String = "",
+) {
+    /**
+     * Returns true if this is a merge commit (has 2 or more parents).
+     */
+    fun isMergeCommit(): Boolean = parents.trim().contains(" ")
+}
 
 @Serializable
 internal data class Author(

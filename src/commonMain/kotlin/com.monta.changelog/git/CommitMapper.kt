@@ -8,11 +8,19 @@ internal class CommitMapper {
 
     fun fromGitLogItem(
         logItem: LogItem,
-    ): Commit? = fromString(
-        logItem.commit,
-        logItem.subject,
-        logItem.body
-    )
+    ): Commit? {
+        // Skip merge commits as they don't follow conventional commit syntax
+        if (logItem.isMergeCommit()) {
+            DebugLogger.debug("skipping merge commit: ${logItem.commit}")
+            return null
+        }
+
+        return fromString(
+            logItem.commit,
+            logItem.subject,
+            logItem.body
+        )
+    }
 
     private fun fromString(
         id: String,
