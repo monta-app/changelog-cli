@@ -18,6 +18,10 @@ data class ChangeLog(
     val jobUrl: String? = null,
     val triggeredBy: String? = null,
     val triggeredByName: String? = null,
+    val dockerImage: String? = null,
+    val imageTag: String? = null,
+    val previousImageTag: String? = null,
+    val stage: String? = null,
 ) {
     val title: String
         get() = "$serviceName release $tagName"

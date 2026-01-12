@@ -142,6 +142,44 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
+    // Add deployment stage if available
+    if (changeLog.stage != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Stage/Environment:*\n`${changeLog.stage}`"
+            )
+        )
+    }
+
+    // Add Docker image information if available
+    if (changeLog.dockerImage != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Docker Image:*\n`${changeLog.dockerImage}`"
+            )
+        )
+    }
+
+    if (changeLog.imageTag != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Image Tag:*\n`${changeLog.imageTag}`"
+            )
+        )
+    }
+
+    if (changeLog.previousImageTag != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Previous Image Tag (Rollback):*\n`${changeLog.previousImageTag}`"
+            )
+        )
+    }
+
     // Add fields as section blocks, splitting if we exceed 10 fields per block (Slack's limit)
     if (fields.isNotEmpty()) {
         fields.chunked(10).forEach { fieldChunk ->
