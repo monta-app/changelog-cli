@@ -30,6 +30,9 @@ CHANGELOG_SLACK_CHANNEL_NAME # Slack channel ID (e.g., C02PDBL6GAU) or channel n
 CHANGELOG_SLACK_CHANNELS # Comma-separated list of Slack channel IDs (e.g., C02PDBL6GAU,C03ABCDEFGH) or channel names. Channel IDs are recommended.
 CHANGELOG_JOB_URL # URL to the CI/CD job that triggered this changelog generation (shown in Slack metadata) [optional]
 CHANGELOG_TRIGGERED_BY # GitHub username of the person who triggered the job (shown in Slack metadata) [optional]
+CHANGELOG_DOCKER_IMAGE # Docker image repository URL (e.g., 077199819609.dkr.ecr.eu-west-1.amazonaws.com/geo-production) (shown in Slack metadata) [optional]
+CHANGELOG_IMAGE_TAG # Current Docker image tag being deployed (e.g., commit SHA) (shown in Slack metadata) [optional]
+CHANGELOG_PREVIOUS_IMAGE_TAG # Previous Docker image tag for rollback reference (shown in Slack metadata) [optional]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
@@ -144,6 +147,9 @@ git push --follow-tags
           output: "slack" # Don't change this if you want to log to slack
           slack-token: ${{ secrets.SLACK_APP_TOKEN }} # Slack APP token
           slack-channel: "#releases" # Channel to print changelog to
+          docker-image: "123456789.dkr.ecr.us-east-1.amazonaws.com/my-service" # Docker image repository (optional)
+          image-tag: ${{ github.sha }} # Current image tag being deployed (optional)
+          previous-image-tag: ${{ steps.get-previous-tag.outputs.tag }} # Previous tag for rollback (optional)
 ```
 
 ### Example Release
