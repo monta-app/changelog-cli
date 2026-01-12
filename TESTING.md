@@ -21,9 +21,45 @@ This guide explains how to test changelog-cli locally with real credentials.
 
 That's it! The script will:
 - Load credentials from `.env`
-- Build the latest binary (if needed)
+- Auto-detect version mode (SemVer or DateVer) from git tags
+- Auto-detect service name from repository directory
 - Run changelog-cli against the test repository
 - Post results to Slack
+
+## Passing Additional Parameters
+
+The script accepts any additional parameters and forwards them to changelog-cli:
+
+```bash
+# Override output mode
+./test-local.sh --output=console
+
+# Specify a specific tag range
+./test-local.sh --from-tag=2026-01-08-11-30 --to-tag=2026-01-08-14-28
+
+# Override service name
+./test-local.sh --service-name='Wallet Service'
+
+# Combine multiple overrides
+./test-local.sh --output=console --service-name='My Service'
+
+# Test on a different repository
+TEST_REPO_PATH=../wallet-service ./test-local.sh --version-mode=DateVer
+```
+
+## Auto-Detection
+
+The script automatically detects:
+
+- **Version Mode**: Analyzes git tags to determine SemVer or DateVer
+  - Tags like `v1.2.3` → SemVer
+  - Tags like `2026-01-08-11-30` → DateVer
+
+- **Service Name**: Derived from repository directory name
+  - `ocpp-emulator` → `Ocpp Emulator`
+  - `wallet-service` → `Wallet Service`
+
+- **GitHub User**: Uses `gh api user` to get current authenticated user
 
 ## Manual Testing
 
