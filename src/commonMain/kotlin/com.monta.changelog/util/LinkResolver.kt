@@ -32,6 +32,7 @@ sealed interface LinkResolver {
 
     class Jira(
         private val jiraAppName: String?,
+        private val validTickets: Set<String>? = null,
     ) : LinkResolver {
 
         private val jiraRegex = Regex("[A-Z]{2,}-\\d+")
@@ -61,6 +62,11 @@ sealed interface LinkResolver {
         private fun getJiraTags(commitMessage: String): Map<String, String> = jiraRegex.findAll(commitMessage)
             .mapNotNull { matchResult ->
                 matchResult.groupValues.firstOrNull()
+            }
+            .filter { ticketName ->
+                // If validTickets is provided, only include tickets in that set
+                // Otherwise, include all tickets (for backward compatibility)
+                validTickets == null || ticketName in validTickets
             }
             .associateWith { jiraTicketName ->
                 "https://$jiraAppName.atlassian.net/browse/$jiraTicketName"

@@ -20,6 +20,45 @@ This is a Kotlin/Native CLI tool that generates changelogs from Git commits usin
 - `./gradlew linkDebugExecutableCommon` - Build debug executable
 - `./changelog-cli --help` - Run the built CLI to see all options
 
+### Testing Locally
+
+**IMPORTANT**: Always use `./test-local.sh` for local testing instead of running `./changelog-cli` directly.
+
+The `test-local.sh` script:
+- Automatically loads credentials from `.env` file (Slack token, JIRA credentials, GitHub token)
+- Auto-detects repository settings (service name, version mode from tags)
+- Provides consistent test environment across different repositories
+- Saves time by not requiring manual parameter entry
+
+**Usage Examples**:
+```bash
+# Test current repository (changelog-cli)
+./test-local.sh
+
+# Test another repository (most common usage)
+./test-local.sh ../service-geo
+./test-local.sh ../ocpp-emulator
+
+# Test with console output instead of Slack
+./test-local.sh ../service-geo --output console
+
+# Test specific tag range
+./test-local.sh ../service-geo --from-tag=2026-01-12-21-54 --to-tag=2026-01-12-22-23
+
+# Override service name
+./test-local.sh ../wallet-service --service-name="My Custom Name"
+```
+
+**Environment Setup**:
+1. Copy `.env.example` to `.env` in the project root
+2. Fill in required credentials:
+   - `SLACK_TOKEN` - Slack bot token for posting changelogs
+   - `SLACK_CHANNEL` - Slack channel ID for test posts
+   - `JIRA_EMAIL` - JIRA account email for ticket validation
+   - `JIRA_API_TOKEN` - JIRA API token for authentication
+   - `JIRA_APP_NAME` - JIRA workspace name (e.g., "montaapp")
+   - `GH_READ` - GitHub token (usually already in environment)
+
 ## Architecture
 
 ### Core Components
