@@ -2,10 +2,10 @@ package com.monta.changelog.jira
 
 import com.monta.changelog.util.DebugLogger
 import com.monta.changelog.util.client
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.util.*
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.http.HttpStatusCode
+import io.ktor.util.encodeBase64
 import kotlinx.serialization.Serializable
 
 class JiraService(
