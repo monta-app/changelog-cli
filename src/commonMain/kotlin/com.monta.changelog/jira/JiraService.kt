@@ -4,6 +4,7 @@ import com.monta.changelog.util.DebugLogger
 import com.monta.changelog.util.client
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.util.encodeBase64
 import kotlinx.serialization.Serializable
@@ -30,11 +31,19 @@ class JiraService(
 
         val exists = response.status == HttpStatusCode.OK
         if (!exists) {
-            DebugLogger.debug("JIRA ticket $ticketKey does not exist or is not accessible (status: ${response.status})")
+            DebugLogger.warn("⚠️  JIRA ticket $ticketKey validation failed: HTTP ${response.status.value}")
+            try {
+                val errorBody = response.bodyAsText()
+                if (errorBody.isNotEmpty()) {
+                    DebugLogger.warn("   → Response: ${errorBody.take(200)}")
+                }
+            } catch (e: Exception) {
+                DebugLogger.debug("Could not read error response body: ${e.message}")
+            }
         }
         exists
     } catch (e: Exception) {
-        DebugLogger.debug("Failed to validate JIRA ticket $ticketKey: ${e.message}")
+        DebugLogger.warn("⚠️  Exception validating JIRA ticket $ticketKey: ${e.message}")
         false
     }
 
