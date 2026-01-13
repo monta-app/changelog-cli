@@ -32,18 +32,24 @@ class GitService(
         }
     }
 
-    fun getCommits(startSha: String, endSha: String): CommitInfo = CommitInfo(
-        tagName = Clock.System.now().toString(),
-        previousTagName = null,
-        commits = gitCommandUtil.getLogs(startSha, endSha).mapToCommits()
-    )
+    fun getCommits(startSha: String, endSha: String): CommitInfo {
+        val logs = gitCommandUtil.getLogs(startSha, endSha)
+        return CommitInfo(
+            tagName = Clock.System.now().toString(),
+            previousTagName = null,
+            commits = logs.mapToCommits(),
+            allCommitShas = logs.map { it.commit }
+        )
+    }
 
     fun getCommitsBetweenTags(fromTag: String, toTag: String): CommitInfo {
         DebugLogger.info("generating changelog between tags $fromTag and $toTag")
+        val logs = gitCommandUtil.getLogs(toTag, fromTag)
         return CommitInfo(
             tagName = toTag.getTagValue(),
             previousTagName = fromTag.getTagValue(),
-            commits = gitCommandUtil.getLogs(toTag, fromTag).mapToCommits()
+            commits = logs.mapToCommits(),
+            allCommitShas = logs.map { it.commit }
         )
     }
 
@@ -71,20 +77,24 @@ class GitService(
         when (tags.size) {
             0 -> {
                 DebugLogger.info("no tags found; returning from latest commit to last tag")
+                val logs = gitCommandUtil.getLogs()
                 return CommitInfo(
                     tagName = Clock.System.now().toString(),
                     previousTagName = null,
-                    commits = gitCommandUtil.getLogs().mapToCommits()
+                    commits = logs.mapToCommits(),
+                    allCommitShas = logs.map { it.commit }
                 )
             }
 
             1 -> {
                 val latestTag = tags[0].fullTag
                 DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
+                val logs = gitCommandUtil.getLogs(gitCommandUtil.getHeadSha(), latestTag)
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
                     previousTagName = null,
-                    commits = gitCommandUtil.getLogs(gitCommandUtil.getHeadSha(), latestTag).mapToCommits()
+                    commits = logs.mapToCommits(),
+                    allCommitShas = logs.map { it.commit }
                 )
             }
 
@@ -92,10 +102,12 @@ class GitService(
                 val latestTag = tags[0].fullTag
                 val previousTag = tags[1].fullTag
                 DebugLogger.info("returning commits between tag $latestTag and $previousTag")
+                val logs = gitCommandUtil.getLogs(latestTag, previousTag)
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
                     previousTagName = previousTag.getTagValue(),
-                    commits = gitCommandUtil.getLogs(latestTag, previousTag).mapToCommits()
+                    commits = logs.mapToCommits(),
+                    allCommitShas = logs.map { it.commit }
                 )
             }
         }

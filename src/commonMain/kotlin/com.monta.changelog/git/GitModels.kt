@@ -14,6 +14,7 @@ data class CommitInfo(
     val tagName: String,
     val previousTagName: String?,
     val commits: List<Commit>,
+    val allCommitShas: List<String> = emptyList(), // All commit SHAs including filtered ones (merge commits, etc.)
 )
 
 @Serializable
