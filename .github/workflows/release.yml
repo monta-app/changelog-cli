@@ -15,6 +15,11 @@ on:
     branches:
       - main
 
+# Prevent concurrent release workflows - second run will wait for first to complete
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
