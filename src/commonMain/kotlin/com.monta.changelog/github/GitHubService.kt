@@ -285,11 +285,20 @@ class GitHubService(
                 DebugLogger.debug("GitHub API returned ${prs.size} PR(s) for commit ${commitSha.take(7)}: ${prs.map { it.number }.joinToString()}")
                 prs
             } else {
-                DebugLogger.debug("Failed to get PRs for commit $commitSha: ${response.status}")
+                DebugLogger.warn("⚠️  GitHub API failed for commit ${commitSha.take(7)}: HTTP ${response.status.value}")
+                try {
+                    val errorBody = response.bodyAsText()
+                    if (errorBody.isNotEmpty()) {
+                        DebugLogger.warn("   → Response: ${errorBody.take(200)}")
+                    }
+                } catch (e: Exception) {
+                    DebugLogger.debug("Could not read error response body: ${e.message}")
+                }
                 emptyList()
             }
         } catch (e: Exception) {
-            DebugLogger.debug("Exception getting PRs for commit $commitSha: ${e.message}")
+            DebugLogger.warn("⚠️  Exception querying GitHub API for commit ${commitSha.take(7)}: ${e.message}")
+            DebugLogger.warn("   → This commit's PRs will not be detected")
             emptyList()
         }
     }
@@ -331,11 +340,19 @@ class GitHubService(
                 DebugLogger.debug("GitHub API returned name for $cleanUsername: ${user.name}")
                 user.name
             } else {
-                DebugLogger.debug("Failed to get user info for $cleanUsername: ${response.status}")
+                DebugLogger.warn("⚠️  Failed to get user info for $cleanUsername: HTTP ${response.status.value}")
+                try {
+                    val errorBody = response.bodyAsText()
+                    if (errorBody.isNotEmpty()) {
+                        DebugLogger.warn("   → Response: ${errorBody.take(200)}")
+                    }
+                } catch (e: Exception) {
+                    DebugLogger.debug("Could not read error response body: ${e.message}")
+                }
                 null
             }
         } catch (e: Exception) {
-            DebugLogger.debug("Exception getting user info for $cleanUsername: ${e.message}")
+            DebugLogger.warn("⚠️  Exception getting user info for $cleanUsername: ${e.message}")
             null
         }
     }
@@ -373,11 +390,19 @@ class GitHubService(
 
             val exists = response.status.isSuccess()
             if (!exists) {
-                DebugLogger.debug("Pull request #$prNumber does not exist or is not accessible (status: ${response.status})")
+                DebugLogger.warn("⚠️  Pull request #$prNumber validation failed: HTTP ${response.status.value}")
+                try {
+                    val errorBody = response.bodyAsText()
+                    if (errorBody.isNotEmpty()) {
+                        DebugLogger.warn("   → Response: ${errorBody.take(200)}")
+                    }
+                } catch (e: Exception) {
+                    DebugLogger.debug("Could not read error response body: ${e.message}")
+                }
             }
             exists
         } catch (e: Exception) {
-            DebugLogger.debug("Failed to validate pull request #$prNumber: ${e.message}")
+            DebugLogger.warn("⚠️  Exception validating pull request #$prNumber: ${e.message}")
             false
         }
     }
