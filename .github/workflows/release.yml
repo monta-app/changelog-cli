@@ -28,7 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.create_tag.outputs.new_version }}
+      deployment_start_time: ${{ steps.deployment_start.outputs.timestamp }}
     steps:
+      - name: Capture deployment start time
+        id: deployment_start
+        run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Fetch all tags
@@ -124,13 +128,16 @@ jobs:
         run: |
           chmod +x ./binaries/changelog-cli-x64
           chmod +x ./binaries/changelog-cli-arm64
+      - name: Capture deployment end time
+        id: deployment_end
+        run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Run changelog (using x64 binary)
         id: changelog
         run: ./binaries/changelog-cli-x64
         env:
           CHANGELOG_SERVICE_NAME: "Changelog Generator"
           CHANGELOG_GITHUB_RELEASE: true
-          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGELOG_GITHUB_TOKEN: ${{ secrets.MONTA_BOT_TOKEN }}
           CHANGELOG_JIRA_APP_NAME: "montaapp"
           CHANGELOG_JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           CHANGELOG_JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
@@ -140,6 +147,12 @@ jobs:
           CHANGELOG_SLACK_CHANNEL_NAME: "C02PDBL6GAU"
           CHANGELOG_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CHANGELOG_TRIGGERED_BY: ${{ github.actor }}
+          CHANGELOG_COMMENT_ON_PRS: true
+          CHANGELOG_COMMENT_ON_JIRA: true
+          CHANGELOG_STAGE: "production"
+          CHANGELOG_DEPLOYMENT_START_TIME: ${{ needs.create-tag-and-build.outputs.deployment_start_time }}
+          CHANGELOG_DEPLOYMENT_END_TIME: ${{ steps.deployment_end.outputs.timestamp }}
+          CHANGELOG_DEPLOYMENT_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.create-tag-and-build.outputs.new_version }}
       - name: Upload x64 binary to release
         uses: svenstaro/upload-release-action@v2
         with:
