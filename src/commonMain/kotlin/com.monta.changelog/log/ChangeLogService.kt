@@ -112,8 +112,8 @@ class ChangeLogService(
         changeLogPrinter: ChangeLogPrinter,
         commitInfo: CommitInfo,
     ) {
-        // Extract PRs and their bodies
-        val prInfos = extractPullRequestsWithBodies(commitInfo.commits)
+        // Extract PRs and their bodies from ALL commits (including merge commits)
+        val prInfos = extractPullRequestsFromCommitShas(commitInfo.commits, commitInfo.allCommitShas)
 
         // Fetch the user's real name from GitHub if triggeredBy is provided
         val triggeredByName = if (triggeredBy != null) {
@@ -124,6 +124,17 @@ class ChangeLogService(
 
         // Extract and validate pull requests
         val extractedPrs = prInfos.map { it.number.toString() }.distinct().sortedBy { it.toIntOrNull() ?: 0 }
+
+        // Warn if no PRs were detected but we have commits
+        if (extractedPrs.isEmpty() && commitInfo.commits.isNotEmpty()) {
+            DebugLogger.warn("⚠️  No pull requests detected in changelog")
+            DebugLogger.warn("   → Found ${commitInfo.commits.size} commit(s) but no associated PRs")
+            DebugLogger.warn("   → This may indicate:")
+            DebugLogger.warn("     • Commits were pushed directly without PRs (not recommended)")
+            DebugLogger.warn("     • Missing GitHub token prevents PR lookup via API")
+            DebugLogger.warn("     • PR references missing from commit messages (e.g., #123)")
+        }
+
         val validatedPrs = if (extractedPrs.isNotEmpty()) {
             gitHubService.filterValidPullRequests(
                 repoOwner = repoInfo.repoOwner,
@@ -139,6 +150,12 @@ class ChangeLogService(
         val validatedTickets = if (jiraService != null && extractedTickets.isNotEmpty()) {
             jiraService.filterValidTickets(extractedTickets)
         } else {
+            if (jiraService == null && extractedTickets.isNotEmpty()) {
+                DebugLogger.warn("⚠️  Skipping JIRA ticket validation - credentials not provided")
+                DebugLogger.warn("   → Set CHANGELOG_JIRA_EMAIL and CHANGELOG_JIRA_TOKEN to enable JIRA validation")
+                DebugLogger.warn("   → Without validation, invalid JIRA ticket references may appear in changelogs")
+                DebugLogger.warn("   → Found ${extractedTickets.size} JIRA ticket(s) that will not be validated: ${extractedTickets.joinToString()}")
+            }
             extractedTickets
         }
 
@@ -181,29 +198,33 @@ class ChangeLogService(
         )
     }
 
-    private suspend fun extractPullRequestsWithBodies(commits: List<com.monta.changelog.model.Commit>): List<com.monta.changelog.github.GitHubService.PullRequestInfo> {
+    private suspend fun extractPullRequestsFromCommitShas(
+        commits: List<com.monta.changelog.model.Commit>,
+        commitShas: List<String>,
+    ): List<com.monta.changelog.github.GitHubService.PullRequestInfo> {
         val prRegex = Regex("#(\\d+)")
         val allPrInfos = mutableListOf<com.monta.changelog.github.GitHubService.PullRequestInfo>()
 
-        for (commit in commits) {
-            // Extract PRs from commit message
-            val prsFromMessage = prRegex.findAll(commit.message).map { it.groupValues[1].toInt() }.toList()
-
-            if (prsFromMessage.isNotEmpty()) {
-                DebugLogger.debug("Found PR(s) in message for ${commit.sha.take(7)}: ${prsFromMessage.joinToString()}")
-                // Add PRs from message with empty body
-                allPrInfos.addAll(prsFromMessage.map { com.monta.changelog.github.GitHubService.PullRequestInfo(it, "") })
+        for (commitSha in commitShas) {
+            // Extract PRs from commit message using regex (works without GitHub token)
+            val commit = commits.find { it.sha == commitSha }
+            if (commit != null) {
+                val prsFromMessage = prRegex.findAll(commit.message).map { it.groupValues[1].toInt() }.toList()
+                if (prsFromMessage.isNotEmpty()) {
+                    DebugLogger.debug("Found PR(s) in message for ${commitSha.take(7)}: ${prsFromMessage.joinToString()}")
+                    allPrInfos.addAll(prsFromMessage.map { com.monta.changelog.github.GitHubService.PullRequestInfo(it, "") })
+                }
             }
 
-            // Also query GitHub API to find associated PRs (for merge commits)
+            // Query GitHub API to find associated PRs (especially important for merge commits)
             val prsFromApi = gitHubService.getPullRequestsForCommit(
                 repoOwner = repoInfo.repoOwner,
                 repoName = repoInfo.repoName,
-                commitSha = commit.sha
+                commitSha = commitSha
             )
 
             if (prsFromApi.isNotEmpty()) {
-                DebugLogger.debug("Found PR(s) from API for ${commit.sha.take(7)}: ${prsFromApi.map { it.number }.joinToString()}")
+                DebugLogger.debug("Found PR(s) from API for ${commitSha.take(7)}: ${prsFromApi.map { it.number }.joinToString()}")
             }
 
             allPrInfos.addAll(prsFromApi)
@@ -214,7 +235,7 @@ class ChangeLogService(
             infos.firstOrNull { it.body.isNotEmpty() } ?: infos.first()
         }
 
-        DebugLogger.debug("Total PRs extracted: ${uniquePrs.map { it.number }.sorted()}")
+        DebugLogger.debug("Total PRs extracted from ${commitShas.size} commits (including merge commits): ${uniquePrs.map { it.number }.sorted()}")
 
         return uniquePrs
     }
