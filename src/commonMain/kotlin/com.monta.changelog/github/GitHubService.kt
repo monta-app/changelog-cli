@@ -292,7 +292,7 @@ class GitHubService(
                         DebugLogger.warn("   → Response: ${errorBody.take(200)}")
                     }
                 } catch (e: Exception) {
-                    // Ignore body read errors
+                    DebugLogger.debug("Could not read error response body: ${e.message}")
                 }
                 emptyList()
             }
@@ -347,7 +347,7 @@ class GitHubService(
                         DebugLogger.warn("   → Response: ${errorBody.take(200)}")
                     }
                 } catch (e: Exception) {
-                    // Ignore body read errors
+                    DebugLogger.debug("Could not read error response body: ${e.message}")
                 }
                 null
             }
@@ -397,7 +397,7 @@ class GitHubService(
                         DebugLogger.warn("   → Response: ${errorBody.take(200)}")
                     }
                 } catch (e: Exception) {
-                    // Ignore body read errors
+                    DebugLogger.debug("Could not read error response body: ${e.message}")
                 }
             }
             exists
