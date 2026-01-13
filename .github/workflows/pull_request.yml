@@ -108,17 +108,30 @@ jobs:
             const fs = require('fs');
             const xml = fs.readFileSync('report.xml', 'utf8');
 
-            // Extract coverage metrics from XML
-            const instructionMatch = xml.match(/<counter type="INSTRUCTION" missed="(\d+)" covered="(\d+)"\/>/);
-            const branchMatch = xml.match(/<counter type="BRANCH" missed="(\d+)" covered="(\d+)"\/>/);
-            const lineMatch = xml.match(/<counter type="LINE" missed="(\d+)" covered="(\d+)"\/>/);
-            const methodMatch = xml.match(/<counter type="METHOD" missed="(\d+)" covered="(\d+)"\/>/);
-            const classMatch = xml.match(/<counter type="CLASS" missed="(\d+)" covered="(\d+)"\/>/);
+            // Extract coverage metrics from XML - get the last occurrence (overall totals)
+            const getAllMatches = (regex) => [...xml.matchAll(regex)];
+
+            const instructionMatches = getAllMatches(/<counter type="INSTRUCTION" missed="(\d+)" covered="(\d+)"\/>/g);
+            const branchMatches = getAllMatches(/<counter type="BRANCH" missed="(\d+)" covered="(\d+)"\/>/g);
+            const lineMatches = getAllMatches(/<counter type="LINE" missed="(\d+)" covered="(\d+)"\/>/g);
+            const methodMatches = getAllMatches(/<counter type="METHOD" missed="(\d+)" covered="(\d+)"\/>/g);
+            const classMatches = getAllMatches(/<counter type="CLASS" missed="(\d+)" covered="(\d+)"\/>/g);
+
+            // Get the last match (overall total)
+            const instructionMatch = instructionMatches[instructionMatches.length - 1];
+            const branchMatch = branchMatches[branchMatches.length - 1];
+            const lineMatch = lineMatches[lineMatches.length - 1];
+            const methodMatch = methodMatches[methodMatches.length - 1];
+            const classMatch = classMatches[classMatches.length - 1];
 
             const calcPercent = (covered, missed) => {
               const total = parseInt(covered) + parseInt(missed);
               return total > 0 ? ((parseInt(covered) / total) * 100).toFixed(2) : '0.00';
             };
+
+            if (!lineMatch || !instructionMatch || !branchMatch || !methodMatch || !classMatch) {
+              throw new Error('Failed to parse coverage report. Some metrics were not found.');
+            }
 
             const linePercent = calcPercent(lineMatch[2], lineMatch[1]);
             const instructionPercent = calcPercent(instructionMatch[2], instructionMatch[1]);
