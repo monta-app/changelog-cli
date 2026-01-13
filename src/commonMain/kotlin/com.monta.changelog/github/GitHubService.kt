@@ -14,7 +14,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import platform.posix.exit
 
 class GitHubService(
     private val githubToken: String?,
@@ -89,9 +88,7 @@ class GitHubService(
         } catch (e: Exception) {
             DebugLogger.error("failed to create release: ${e.message}")
         }
-        DebugLogger.error("returning with code 1")
-        exit(1)
-        return null
+        throw RuntimeException("Failed to create GitHub release")
     }
 
     private suspend fun updateRelease(
@@ -135,9 +132,7 @@ class GitHubService(
         } catch (e: Exception) {
             DebugLogger.error("failed to update release: ${e.message}")
         }
-        DebugLogger.error("returning with code 1")
-        exit(1)
-        return null
+        throw RuntimeException("Failed to update GitHub release")
     }
 
     private suspend fun getReleaseId(changeLog: ChangeLog): Int? {
@@ -153,9 +148,7 @@ class GitHubService(
         }
 
         DebugLogger.error("could not find release ${response.bodyAsText()}")
-        DebugLogger.error("returning with code 1")
-        exit(1)
-        return null
+        throw RuntimeException("Could not find GitHub release for tag ${changeLog.tagName}")
     }
 
     private suspend inline fun <reified T> HttpClient.githubRequest(

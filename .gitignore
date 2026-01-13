@@ -1,6 +1,7 @@
 .gradle
 /build/
 /plugin/build
+/.kotlin/
 
 # Local changelog-cli binary
 changelog-cli
