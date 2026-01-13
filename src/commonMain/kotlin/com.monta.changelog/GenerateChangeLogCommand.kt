@@ -124,7 +124,7 @@ class GenerateChangeLogCommand : CliktCommand() {
     )
 
     private val deploymentUrl: String? by option(
-        help = "URL to the deployment (e.g., workflow run URL, deployment dashboard) (optional)",
+        help = "URL to the deployment system (e.g., ArgoCD, Cloudflare, etc.) (optional)",
         envvar = "CHANGELOG_DEPLOYMENT_URL"
     )
 
