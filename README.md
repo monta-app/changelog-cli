@@ -186,7 +186,7 @@ git push --follow-tags
           version-mode: "DateVer" # version of the tag format you're using
           output: "slack" # Don't change this if you want to log to slack
           slack-token: ${{ secrets.SLACK_APP_TOKEN }} # Slack APP token
-          slack-channel: "#releases" # Channel to print changelog to
+          slack-channel: "#info-releases" # Channel to print changelog to
           stage: "production" # Deployment stage (optional)
           docker-image: "123456789.dkr.ecr.us-east-1.amazonaws.com/my-service" # Docker image repository (optional)
           image-tag: ${{ github.sha }} # Current image tag being deployed (optional)
