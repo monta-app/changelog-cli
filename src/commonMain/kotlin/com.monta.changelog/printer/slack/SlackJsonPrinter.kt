@@ -20,7 +20,7 @@ class SlackJsonPrinter : ChangeLogPrinter {
     override suspend fun print(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog,
-    ) {
+    ): ChangeLogPrinter.PrintResult? {
         val blockChunks = buildSlackBlocks(
             linkResolvers = linkResolvers,
             changeLog = changeLog
@@ -53,5 +53,7 @@ class SlackJsonPrinter : ChangeLogPrinter {
             )
             println(json.encodeToString(metadataRequest))
         }
+
+        return null
     }
 }

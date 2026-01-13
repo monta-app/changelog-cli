@@ -477,4 +477,71 @@ class GitHubService(
 
         return validPrs
     }
+
+    /**
+     * Creates a comment on a pull request with deployment information.
+     */
+    suspend fun commentOnPullRequest(
+        repoOwner: String,
+        repoName: String,
+        prNumber: String,
+        commentBody: String,
+    ): Boolean {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping PR comment for #$prNumber")
+            return false
+        }
+
+        DebugLogger.debug("Creating comment on PR #$prNumber")
+
+        return try {
+            val response = client.githubRequest(
+                path = "$repoOwner/$repoName/issues/$prNumber/comments",
+                httpMethod = HttpMethod.Post,
+                body = CommentRequest(body = commentBody)
+            )
+
+            when {
+                response.status.isSuccess() -> {
+                    DebugLogger.info("✓ Successfully commented on PR #$prNumber")
+                    true
+                }
+                else -> {
+                    logPrCommentError(response, prNumber)
+                    false
+                }
+            }
+        } catch (e: Exception) {
+            DebugLogger.warn("⚠️  Exception commenting on PR #$prNumber: ${e.message}")
+            false
+        }
+    }
+
+    private suspend fun logPrCommentError(response: HttpResponse, prNumber: String) {
+        DebugLogger.warn("⚠️  Failed to comment on PR #$prNumber: HTTP ${response.status.value}")
+        try {
+            val errorBody = response.bodyAsText()
+            if (errorBody.isNotEmpty()) {
+                DebugLogger.warn("   → Response: ${errorBody.take(200)}")
+            }
+            if (response.status.value == 403 && errorBody.contains("Resource not accessible by integration")) {
+                logPrCommentPermissionError()
+            }
+        } catch (e: Exception) {
+            DebugLogger.debug("Could not read error response body: ${e.message}")
+        }
+    }
+
+    private fun logPrCommentPermissionError() {
+        DebugLogger.warn("   → Missing permission: pull-requests: write or issues: write")
+        DebugLogger.warn("   → Add to your workflow:")
+        DebugLogger.warn("   → permissions:")
+        DebugLogger.warn("   →   pull-requests: write")
+    }
+
+    @Serializable
+    data class CommentRequest(
+        @SerialName("body")
+        val body: String,
+    )
 }

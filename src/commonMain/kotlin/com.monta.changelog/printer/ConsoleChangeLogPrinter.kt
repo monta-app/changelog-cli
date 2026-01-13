@@ -6,7 +6,7 @@ import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.resolve
 
 class ConsoleChangeLogPrinter : ChangeLogPrinter {
-    override suspend fun print(linkResolvers: List<LinkResolver>, changeLog: ChangeLog) {
+    override suspend fun print(linkResolvers: List<LinkResolver>, changeLog: ChangeLog): ChangeLogPrinter.PrintResult? {
         println(
             buildString {
                 changeLog.groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
@@ -40,5 +40,6 @@ class ConsoleChangeLogPrinter : ChangeLogPrinter {
                 }
             }
         )
+        return null
     }
 }

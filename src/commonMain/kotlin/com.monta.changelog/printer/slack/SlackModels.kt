@@ -45,3 +45,13 @@ internal data class SlackMessageResponse(
     @SerialName("ts")
     val ts: String,
 )
+
+@Serializable
+internal data class SlackPermalinkResponse(
+    @SerialName("ok")
+    val ok: Boolean,
+    @SerialName("error")
+    val error: String?,
+    @SerialName("permalink")
+    val permalink: String?,
+)
