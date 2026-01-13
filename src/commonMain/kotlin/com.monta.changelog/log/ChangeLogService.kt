@@ -18,7 +18,7 @@ class ChangeLogService(
     private val jiraToken: String?,
     tagSorter: TagSorter,
     private val githubRelease: Boolean,
-    githubToken: String?,
+    private val githubToken: String?,
     tagPattern: String?,
     pathExcludePattern: String?,
     private val jobUrl: String?,
@@ -127,12 +127,25 @@ class ChangeLogService(
 
         // Warn if no PRs were detected but we have commits
         if (extractedPrs.isEmpty() && commitInfo.commits.isNotEmpty()) {
+            val totalCommits = commitInfo.allCommitShas.size
+            val nonMergeCommits = commitInfo.commits.size
+            val mergeCommits = totalCommits - nonMergeCommits
+
             DebugLogger.warn("⚠️  No pull requests detected in changelog")
-            DebugLogger.warn("   → Found ${commitInfo.commits.size} commit(s) but no associated PRs")
-            DebugLogger.warn("   → This may indicate:")
-            DebugLogger.warn("     • Commits were pushed directly without PRs (not recommended)")
-            DebugLogger.warn("     • Missing GitHub token prevents PR lookup via API")
-            DebugLogger.warn("     • PR references missing from commit messages (e.g., #123)")
+            DebugLogger.warn("   → Found $totalCommits total commit(s): $nonMergeCommits non-merge + $mergeCommits merge commit(s)")
+            DebugLogger.warn("   → No associated PRs detected from any of these commits")
+
+            if (githubToken.isNullOrBlank()) {
+                DebugLogger.warn("   → Root cause: Missing GitHub token")
+                DebugLogger.warn("     • Set CHANGELOG_GITHUB_TOKEN or --github-token to enable PR lookup via API")
+                DebugLogger.warn("     • Without a token, we cannot fetch PR information from GitHub's API")
+                DebugLogger.warn("     • We can only detect PRs if commit messages contain references (e.g., #123)")
+            } else {
+                DebugLogger.warn("   → Root cause: PRs not found (token is present)")
+                DebugLogger.warn("     • Commits may have been pushed directly without PRs (not recommended)")
+                DebugLogger.warn("     • PR references may be missing from commit messages (e.g., #123)")
+                DebugLogger.warn("     • Or the GitHub API lookup failed to find associated PRs")
+            }
         }
 
         val validatedPrs = if (extractedPrs.isNotEmpty()) {
