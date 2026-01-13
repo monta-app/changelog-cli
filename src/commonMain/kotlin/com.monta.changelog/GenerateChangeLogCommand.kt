@@ -113,6 +113,21 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_STAGE"
     )
 
+    private val deploymentStartTime: String? by option(
+        help = "Timestamp when the deployment started (ISO 8601 format) (optional)",
+        envvar = "CHANGELOG_DEPLOYMENT_START_TIME"
+    )
+
+    private val deploymentEndTime: String? by option(
+        help = "Timestamp when the deployment finished (ISO 8601 format) (optional)",
+        envvar = "CHANGELOG_DEPLOYMENT_END_TIME"
+    )
+
+    private val deploymentUrl: String? by option(
+        help = "URL to the deployment (e.g., workflow run URL, deployment dashboard) (optional)",
+        envvar = "CHANGELOG_DEPLOYMENT_URL"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -150,7 +165,10 @@ class GenerateChangeLogCommand : CliktCommand() {
                 dockerImage = dockerImage.valueOrNull(),
                 imageTag = imageTag.valueOrNull(),
                 previousImageTag = previousImageTag.valueOrNull(),
-                stage = stage.valueOrNull()
+                stage = stage.valueOrNull(),
+                deploymentStartTime = deploymentStartTime.valueOrNull(),
+                deploymentEndTime = deploymentEndTime.valueOrNull(),
+                deploymentUrl = deploymentUrl.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions

@@ -22,6 +22,9 @@ data class ChangeLog(
     val imageTag: String? = null,
     val previousImageTag: String? = null,
     val stage: String? = null,
+    val deploymentStartTime: String? = null,
+    val deploymentEndTime: String? = null,
+    val deploymentUrl: String? = null,
 ) {
     val title: String
         get() = "$serviceName release $tagName"
