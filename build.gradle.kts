@@ -3,9 +3,8 @@ import java.time.Instant
 plugins {
     kotlin("multiplatform") version "2.3.0"
     kotlin("plugin.serialization") version "2.3.0"
-    id("com.google.devtools.ksp") version "2.3.4"
-    id("io.kotest") version "6.0.7"
     id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
 }
 
 group = "com.monta.gradle.changelog"
@@ -73,6 +72,13 @@ kotlin {
 
     val hostOs = System.getProperty("os.name")
 
+    // JVM target for testing and coverage (doesn't produce executable, just runs tests)
+    jvm {
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
+
     // Cross Compilation
 
     val hostTarget = when {
@@ -115,9 +121,8 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
                 // Atomic
                 implementation("org.jetbrains.kotlinx:atomicfu:0.29.0")
-                // Http Client
+                // Http Client (core only - engines are platform-specific)
                 implementation("io.ktor:ktor-client-core:3.3.3")
-                implementation("io.ktor:ktor-client-curl:3.3.3")
                 implementation("io.ktor:ktor-client-content-negotiation:3.3.3")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.3")
                 // Semver parser
@@ -128,6 +133,42 @@ kotlin {
             dependencies {
                 implementation("io.kotest:kotest-framework-engine:6.0.7")
                 implementation("io.kotest:kotest-assertions-core:6.0.7")
+            }
+        }
+
+        // JVM-specific test dependencies
+        val jvmTest by getting {
+            dependencies {
+                implementation("io.kotest:kotest-runner-junit5:6.0.7")
+            }
+        }
+
+        // JVM-specific dependencies
+        val jvmMain by getting {
+            dependencies {
+                // Use OkHttp engine for JVM
+                implementation("io.ktor:ktor-client-okhttp:3.3.3")
+            }
+        }
+
+        // Native-specific dependencies
+        val nativeMain by creating {
+            dependsOn(commonMain)
+            dependencies {
+                // Use Curl engine for Native
+                implementation("io.ktor:ktor-client-curl:3.3.3")
+            }
+        }
+
+        // Configure native targets to use nativeMain
+        val hostMain by getting {
+            dependsOn(nativeMain)
+        }
+
+        // Configure linuxArm64 if it exists
+        if (hostOs == "Linux") {
+            val linuxArm64Main by getting {
+                dependsOn(nativeMain)
             }
         }
     }
@@ -142,11 +183,6 @@ kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarge
 // Make Kotlin compilation depend on version generation
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
     dependsOn(generateVersionInfo)
-}
-
-// KSP configuration for Kotest
-dependencies {
-    add("kspCommonMainMetadata", "io.kotest:kotest-framework-engine:6.0.7")
 }
 
 // Configure ktlint to exclude generated files and depend on version generation

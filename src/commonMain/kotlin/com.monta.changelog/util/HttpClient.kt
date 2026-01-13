@@ -1,11 +1,8 @@
 package com.monta.changelog.util
 
 import io.ktor.client.*
-import io.ktor.client.engine.curl.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 
@@ -16,14 +13,11 @@ val json = Json {
     ignoreUnknownKeys = true
 }
 
-val client by lazy {
-    HttpClient(Curl) {
-        expectSuccess = false
-        install(ContentNegotiation) {
-            json(json)
-        }
-    }
-}
+/**
+ * Platform-specific HTTP client instance.
+ * Implementations use Curl for Native and OkHttp for JVM.
+ */
+expect val client: HttpClient
 
 suspend inline fun <reified T> HttpResponse.getBodySafe(): T? {
     val responseBodyText: String = bodyAsText()
