@@ -11,6 +11,9 @@ import com.monta.changelog.util.GroupedCommitMap
 import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.resolve
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class ChangeLogService(
     debug: Boolean,
@@ -33,6 +36,7 @@ class ChangeLogService(
     private val deploymentEndTime: String?,
     private val deploymentUrl: String?,
     private val commentOnPrs: Boolean,
+    private val commentOnJira: Boolean,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -232,6 +236,18 @@ class ChangeLogService(
                 )
             )
         }
+
+        // Comment on JIRA tickets for production deployments
+        if (shouldCommentOnJira(changeLog, printResult)) {
+            commentOnJiraTickets(
+                changeLog = changeLog,
+                printResult = printResult!!,
+                linkResolvers = linkResolvers(
+                    validatedTickets = validatedTickets,
+                    validatedPrs = validatedPrs
+                )
+            )
+        }
     }
 
     private suspend fun extractPullRequestsFromCommitShas(
@@ -414,6 +430,36 @@ class ChangeLogService(
     }
 
     /**
+     * Determines if we should comment on JIRA tickets for this deployment.
+     * Requirements:
+     * - commentOnJira flag is enabled
+     * - JIRA service is available (credentials provided)
+     * - Stage is "production" (case insensitive)
+     * - Deployment start and end times are available
+     * - Print result includes a Slack message URL
+     *
+     * Logs warnings when flag is enabled but conditions aren't met.
+     */
+    private fun shouldCommentOnJira(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
+    ): Boolean {
+        if (!commentOnJira) {
+            return false
+        }
+
+        // Check if JIRA service is available
+        if (jiraService == null) {
+            DebugLogger.warn("⚠️  JIRA commenting is enabled but JIRA credentials not provided")
+            DebugLogger.warn("   → Set CHANGELOG_JIRA_EMAIL, CHANGELOG_JIRA_TOKEN, and CHANGELOG_JIRA_APP_NAME")
+            return false
+        }
+
+        // Reuse the same validation as PR commenting
+        return validateCommentConditions(changeLog, printResult)
+    }
+
+    /**
      * Comments on all PRs included in this release with deployment information and changelog.
      */
     private suspend fun commentOnPullRequests(
@@ -479,12 +525,15 @@ class ChangeLogService(
             }
         }
 
-        // Add footer with deployment timing and links
+        // Add footer with deployment timing and links - compact and minimal
         appendLine("---")
         appendLine()
-        appendLine("*Deployed ${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}*")
 
-        // Build links list
+        val startTime = formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
+        val endTime = formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
+        append("*Deployed $startTime → $endTime*")
+
+        // Build links section - inline with deployment time
         val links = mutableListOf<String>()
 
         // Add changeset link if previous tag is available
@@ -502,7 +551,130 @@ class ChangeLogService(
         }
 
         if (links.isNotEmpty()) {
-            appendLine("*Links:* ${links.joinToString(" • ")}")
+            append(" • ${links.joinToString(" • ")}")
+        }
+    }
+
+    /**
+     * Builds the JIRA comment body with deployment information and changelog.
+     * Uses plain text format that JIRA will convert to ADF.
+     */
+    private fun buildJiraComment(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
+        linkResolvers: List<LinkResolver>,
+    ): String = buildString {
+        appendLine("## 🚀 Production Deployment")
+        appendLine("This ticket was included in production release ${changeLog.tagName}")
+        appendLine()
+        appendLine("---")
+
+        // Add the changelog content
+        changeLog.groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
+            if (scope != null) {
+                appendLine()
+                appendLine("${scope.replaceFirstChar { it.uppercaseChar() }}")
+            }
+            commitsGroupedByType.forEach { (type, commits) ->
+                appendLine()
+                appendLine("${type.emoji} ${type.title}")
+                commits.forEach { commit ->
+                    val resolvedMessage = linkResolvers.resolve(
+                        markdownFormatter = MarkdownFormatter.GitHub,
+                        message = commit.message
+                    )
+                    appendLine("  • $resolvedMessage")
+                }
+            }
+        }
+
+        // Add footer with deployment timing and links - compact and minimal
+        appendLine()
+        appendLine("---")
+        appendLine()
+
+        val startTime = formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
+        val endTime = formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
+        append("Deployed $startTime → $endTime")
+
+        // Build links section - inline with deployment time
+        val links = mutableListOf<String>()
+
+        // Add changeset link if previous tag is available
+        if (changeLog.previousTagName != null) {
+            val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
+            links.add("[Changeset]($compareUrl)")
+        }
+
+        if (changeLog.deploymentUrl != null) {
+            links.add("[Deployment](${changeLog.deploymentUrl})")
+        }
+
+        if (printResult.slackMessageUrl != null) {
+            links.add("[Slack](${printResult.slackMessageUrl})")
+        }
+
+        if (links.isNotEmpty()) {
+            append(" • ${links.joinToString(" • ")}")
+        }
+    }
+
+    /**
+     * Comments on all JIRA tickets included in this release with deployment information and changelog.
+     */
+    private suspend fun commentOnJiraTickets(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
+        linkResolvers: List<LinkResolver>,
+    ) {
+        if (changeLog.jiraTickets.isEmpty()) {
+            DebugLogger.debug("No JIRA tickets to comment on")
+            return
+        }
+
+        DebugLogger.info("Commenting on ${changeLog.jiraTickets.size} JIRA ticket(s) with production deployment info")
+
+        val commentBody = buildJiraComment(
+            changeLog = changeLog,
+            printResult = printResult,
+            linkResolvers = linkResolvers
+        )
+
+        changeLog.jiraTickets.forEach { ticketKey ->
+            jiraService!!.commentOnTicket(
+                ticketKey = ticketKey,
+                commentBody = commentBody
+            )
+        }
+    }
+
+    /**
+     * Formats an ISO 8601 timestamp string into a human-readable format.
+     * Example: "2026-01-13T22:00:00Z" → "Jan 13, 2026 at 22:00 UTC"
+     */
+    private fun formatTimestamp(isoTimestamp: String?): String? {
+        if (isoTimestamp == null) return null
+
+        return try {
+            val instant = Instant.parse(isoTimestamp)
+            val dateTime = instant.toLocalDateTime(TimeZone.UTC)
+
+            val monthNames = listOf(
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            )
+
+            val month = monthNames[dateTime.monthNumber - 1]
+            val day = dateTime.dayOfMonth
+            val year = dateTime.year
+            val hour = dateTime.hour.toString().padStart(2, '0')
+            val minute = dateTime.minute.toString().padStart(2, '0')
+
+            "$month $day, $year at $hour:$minute UTC"
+        } catch (e: Exception) {
+            // If parsing fails, return the original timestamp
+            DebugLogger.debug("Failed to parse timestamp: $isoTimestamp - ${e.message}")
+            isoTimestamp
         }
     }
 }

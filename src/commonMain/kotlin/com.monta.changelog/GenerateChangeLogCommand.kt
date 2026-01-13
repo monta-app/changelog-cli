@@ -134,6 +134,12 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_COMMENT_ON_PRS"
     ).flag(default = false)
 
+    private val commentOnJira: Boolean by option(
+        "--comment-on-jira",
+        help = "Comment on JIRA tickets with production deployment information (requires stage=production and deployment times)",
+        envvar = "CHANGELOG_COMMENT_ON_JIRA"
+    ).flag(default = false)
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -175,7 +181,8 @@ class GenerateChangeLogCommand : CliktCommand() {
                 deploymentStartTime = deploymentStartTime.valueOrNull(),
                 deploymentEndTime = deploymentEndTime.valueOrNull(),
                 deploymentUrl = deploymentUrl.valueOrNull(),
-                commentOnPrs = commentOnPrs
+                commentOnPrs = commentOnPrs,
+                commentOnJira = commentOnJira
             )
 
             val commitShaOptions = commitShaOptions

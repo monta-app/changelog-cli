@@ -11,6 +11,7 @@ val json = Json {
     explicitNulls = false
     isLenient = true
     ignoreUnknownKeys = true
+    encodeDefaults = true
 }
 
 /**
