@@ -18,13 +18,16 @@ class SlackChangeLogPrinter(
     override suspend fun print(
         linkResolvers: List<LinkResolver>,
         changeLog: ChangeLog,
-    ) {
+    ): ChangeLogPrinter.PrintResult? {
         val blockChunks = buildSlackBlocks(
             linkResolvers = linkResolvers,
             changeLog = changeLog
         )
 
         val metadataBlocks = buildMetadataBlocks(changeLog)
+
+        var firstMessageChannel: String? = null
+        var firstMessageTs: String? = null
 
         for (channel in slackChannels) {
             var threadTs: String? = null
@@ -39,6 +42,12 @@ class SlackChangeLogPrinter(
                         blocks = blocks
                     )
                 )
+
+                // Store first message's channel and ts for permalink
+                if (firstMessageChannel == null && threadTs != null) {
+                    firstMessageChannel = channel
+                    firstMessageTs = threadTs
+                }
             }
 
             // Send metadata message in the thread if we have metadata and a thread
@@ -52,6 +61,19 @@ class SlackChangeLogPrinter(
                     )
                 )
             }
+        }
+
+        // Get permalink for the first message
+        val permalink = if (firstMessageChannel != null && firstMessageTs != null) {
+            getPermalink(firstMessageChannel, firstMessageTs)
+        } else {
+            null
+        }
+
+        return if (permalink != null) {
+            ChangeLogPrinter.PrintResult(slackMessageUrl = permalink)
+        } else {
+            null
         }
     }
 
@@ -67,5 +89,27 @@ class SlackChangeLogPrinter(
             DebugLogger.error("Could not post message to slack channel '${slackMessageRequest.channel}'")
         }
         return result
+    }
+
+    private suspend fun getPermalink(channel: String, messageTs: String): String? {
+        val response = client.get("https://slack.com/api/chat.getPermalink") {
+            header("Authorization", "Bearer $slackToken")
+            url {
+                parameters.append("channel", channel)
+                parameters.append("message_ts", messageTs)
+            }
+        }
+
+        val result = response.getBodySafe<SlackPermalinkResponse>()
+        if (result?.ok == true && result.permalink != null) {
+            DebugLogger.debug("Got Slack permalink: ${result.permalink}")
+            return result.permalink
+        } else {
+            DebugLogger.warn("⚠️  Could not get Slack permalink for message")
+            if (result?.error != null) {
+                DebugLogger.warn("   → Slack API error: ${result.error}")
+            }
+        }
+        return null
     }
 }

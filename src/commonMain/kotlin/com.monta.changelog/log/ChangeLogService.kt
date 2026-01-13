@@ -9,6 +9,8 @@ import com.monta.changelog.printer.ChangeLogPrinter
 import com.monta.changelog.util.DebugLogger
 import com.monta.changelog.util.GroupedCommitMap
 import com.monta.changelog.util.LinkResolver
+import com.monta.changelog.util.MarkdownFormatter
+import com.monta.changelog.util.resolve
 
 class ChangeLogService(
     debug: Boolean,
@@ -30,6 +32,7 @@ class ChangeLogService(
     private val deploymentStartTime: String?,
     private val deploymentEndTime: String?,
     private val deploymentUrl: String?,
+    private val commentOnPrs: Boolean,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -208,13 +211,27 @@ class ChangeLogService(
             )
         }
 
-        changeLogPrinter.print(
+        val printResult = changeLogPrinter.print(
             linkResolvers(
                 validatedTickets = validatedTickets,
                 validatedPrs = validatedPrs
             ),
             changeLog
         )
+
+        DebugLogger.info("Print result: slackUrl=${printResult?.slackMessageUrl}, commentOnPrs=$commentOnPrs, stage=${changeLog.stage}")
+
+        // Comment on PRs for production deployments
+        if (shouldCommentOnPRs(changeLog, printResult)) {
+            commentOnPullRequests(
+                changeLog = changeLog,
+                printResult = printResult!!,
+                linkResolvers = linkResolvers(
+                    validatedTickets = validatedTickets,
+                    validatedPrs = validatedPrs
+                )
+            )
+        }
     }
 
     private suspend fun extractPullRequestsFromCommitShas(
@@ -323,4 +340,169 @@ class ChangeLogService(
             joinString.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
         }
         ?.replace(" Api", " API", true)
+
+    /**
+     * Determines if we should comment on PRs for this deployment.
+     * Requirements:
+     * - commentOnPrs flag is enabled
+     * - Stage is "production" (case insensitive)
+     * - Deployment start and end times are available
+     * - Print result includes a Slack message URL
+     *
+     * Logs warnings when flag is enabled but conditions aren't met.
+     */
+    private fun shouldCommentOnPRs(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
+    ): Boolean {
+        if (!commentOnPrs) {
+            return false
+        }
+
+        // Flag is enabled, validate all conditions and log warnings for missing requirements
+        return validateCommentConditions(changeLog, printResult)
+    }
+
+    private fun validateCommentConditions(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
+    ): Boolean {
+        val isProduction = changeLog.stage?.equals("production", ignoreCase = true) == true
+        val hasStartTime = changeLog.deploymentStartTime != null
+        val hasEndTime = changeLog.deploymentEndTime != null
+        val hasSlackUrl = printResult?.slackMessageUrl != null
+
+        return when {
+            !isProduction -> {
+                logProductionStageWarning(changeLog.stage)
+                false
+            }
+            !hasStartTime -> {
+                logMissingStartTimeWarning()
+                false
+            }
+            !hasEndTime -> {
+                logMissingEndTimeWarning()
+                false
+            }
+            !hasSlackUrl -> {
+                logMissingSlackUrlWarning()
+                false
+            }
+            else -> true
+        }
+    }
+
+    private fun logProductionStageWarning(stage: String?) {
+        DebugLogger.warn("⚠️  PR commenting is enabled but stage is not 'production' (current: '${stage ?: "not set"}')")
+        DebugLogger.warn("   → Set stage to 'production' or disable --comment-on-prs")
+    }
+
+    private fun logMissingStartTimeWarning() {
+        DebugLogger.warn("⚠️  PR commenting is enabled but deployment-start-time is not provided")
+        DebugLogger.warn("   → Provide --deployment-start-time or disable --comment-on-prs")
+    }
+
+    private fun logMissingEndTimeWarning() {
+        DebugLogger.warn("⚠️  PR commenting is enabled but deployment-end-time is not provided")
+        DebugLogger.warn("   → Provide --deployment-end-time or disable --comment-on-prs")
+    }
+
+    private fun logMissingSlackUrlWarning() {
+        DebugLogger.warn("⚠️  PR commenting is enabled but Slack message URL is not available")
+        DebugLogger.warn("   → This likely means Slack output is not configured or failed")
+    }
+
+    /**
+     * Comments on all PRs included in this release with deployment information and changelog.
+     */
+    private suspend fun commentOnPullRequests(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
+        linkResolvers: List<LinkResolver>,
+    ) {
+        if (changeLog.pullRequests.isEmpty()) {
+            DebugLogger.debug("No pull requests to comment on")
+            return
+        }
+
+        DebugLogger.info("Commenting on ${changeLog.pullRequests.size} pull request(s) with production deployment info")
+
+        val commentBody = buildPRComment(
+            changeLog = changeLog,
+            printResult = printResult,
+            linkResolvers = linkResolvers
+        )
+
+        changeLog.pullRequests.forEach { prNumber ->
+            gitHubService.commentOnPullRequest(
+                repoOwner = repoInfo.repoOwner,
+                repoName = repoInfo.repoName,
+                prNumber = prNumber,
+                commentBody = commentBody
+            )
+        }
+    }
+
+    /**
+     * Builds the PR comment body with deployment information and changelog.
+     */
+    private fun buildPRComment(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
+        linkResolvers: List<LinkResolver>,
+    ): String = buildString {
+        appendLine("## 🚀 Production Deployment")
+        appendLine()
+        appendLine("This PR was included in production release **${changeLog.tagName}**")
+        appendLine()
+        appendLine("---")
+        appendLine()
+
+        // Add the changelog content
+        changeLog.groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
+            if (scope != null) {
+                appendLine("**${scope.replaceFirstChar { it.uppercaseChar() }}**")
+                appendLine()
+            }
+            commitsGroupedByType.forEach { (type, commits) ->
+                appendLine("${type.emoji} **${type.title}**")
+                appendLine()
+                commits.forEach { commit ->
+                    val resolvedMessage = linkResolvers.resolve(
+                        markdownFormatter = MarkdownFormatter.GitHub,
+                        message = commit.message
+                    )
+                    appendLine("- $resolvedMessage")
+                }
+                appendLine()
+            }
+        }
+
+        // Add footer with deployment timing and links
+        appendLine("---")
+        appendLine()
+        appendLine("*Deployed ${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}*")
+
+        // Build links list
+        val links = mutableListOf<String>()
+
+        // Add changeset link if previous tag is available
+        if (changeLog.previousTagName != null) {
+            val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
+            links.add("[Changeset]($compareUrl)")
+        }
+
+        if (changeLog.deploymentUrl != null) {
+            links.add("[Deployment](${changeLog.deploymentUrl})")
+        }
+
+        if (printResult.slackMessageUrl != null) {
+            links.add("[Slack](${printResult.slackMessageUrl})")
+        }
+
+        if (links.isNotEmpty()) {
+            appendLine("*Links:* ${links.joinToString(" • ")}")
+        }
+    }
 }
