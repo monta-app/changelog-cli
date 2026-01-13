@@ -87,7 +87,7 @@ class GitHubService(
                 DebugLogger.error("→   contents: write")
             }
         } catch (e: Exception) {
-            DebugLogger.error("failed to create release")
+            DebugLogger.error("failed to create release: ${e.message}")
         }
         DebugLogger.error("returning with code 1")
         exit(1)
@@ -133,7 +133,7 @@ class GitHubService(
                 DebugLogger.error("→   contents: write")
             }
         } catch (e: Exception) {
-            DebugLogger.error("failed to update release")
+            DebugLogger.error("failed to update release: ${e.message}")
         }
         DebugLogger.error("returning with code 1")
         exit(1)
