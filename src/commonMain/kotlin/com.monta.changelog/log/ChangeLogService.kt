@@ -27,6 +27,9 @@ class ChangeLogService(
     private val imageTag: String?,
     private val previousImageTag: String?,
     private val stage: String?,
+    private val deploymentStartTime: String?,
+    private val deploymentEndTime: String?,
+    private val deploymentUrl: String?,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -189,7 +192,10 @@ class ChangeLogService(
             dockerImage = dockerImage,
             imageTag = imageTag,
             previousImageTag = previousImageTag,
-            stage = stage
+            stage = stage,
+            deploymentStartTime = deploymentStartTime,
+            deploymentEndTime = deploymentEndTime,
+            deploymentUrl = deploymentUrl
         )
 
         if (githubRelease) {

@@ -180,6 +180,34 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
+    // Add deployment timing information if available
+    if (changeLog.deploymentStartTime != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Deployment Started:*\n`${changeLog.deploymentStartTime}`"
+            )
+        )
+    }
+
+    if (changeLog.deploymentEndTime != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Deployment Finished:*\n`${changeLog.deploymentEndTime}`"
+            )
+        )
+    }
+
+    if (changeLog.deploymentUrl != null) {
+        fields.add(
+            SlackField(
+                type = "mrkdwn",
+                text = "*Deployment URL:*\n<${changeLog.deploymentUrl}|View Deployment>"
+            )
+        )
+    }
+
     // Add fields as section blocks, splitting if we exceed 10 fields per block (Slack's limit)
     if (fields.isNotEmpty()) {
         fields.chunked(10).forEach { fieldChunk ->
