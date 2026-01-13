@@ -77,7 +77,18 @@ class GitHubService(
             }
         }
 
-        DebugLogger.error("failed to create release ${response.bodyAsText()}")
+        try {
+            val errorBody = response.bodyAsText()
+            DebugLogger.error("failed to create release $errorBody")
+            if (response.status.value == 403 && errorBody.contains("Resource not accessible by integration")) {
+                DebugLogger.error("→ Missing permission: contents: write")
+                DebugLogger.error("→ Add to your workflow:")
+                DebugLogger.error("→ permissions:")
+                DebugLogger.error("→   contents: write")
+            }
+        } catch (e: Exception) {
+            DebugLogger.error("failed to create release")
+        }
         DebugLogger.error("returning with code 1")
         exit(1)
         return null
@@ -112,7 +123,18 @@ class GitHubService(
             }
         }
 
-        DebugLogger.error("failed to update release ${response.bodyAsText()}")
+        try {
+            val errorBody = response.bodyAsText()
+            DebugLogger.error("failed to update release $errorBody")
+            if (response.status.value == 403 && errorBody.contains("Resource not accessible by integration")) {
+                DebugLogger.error("→ Missing permission: contents: write")
+                DebugLogger.error("→ Add to your workflow:")
+                DebugLogger.error("→ permissions:")
+                DebugLogger.error("→   contents: write")
+            }
+        } catch (e: Exception) {
+            DebugLogger.error("failed to update release")
+        }
         DebugLogger.error("returning with code 1")
         exit(1)
         return null
@@ -290,6 +312,12 @@ class GitHubService(
                     val errorBody = response.bodyAsText()
                     if (errorBody.isNotEmpty()) {
                         DebugLogger.warn("   → Response: ${errorBody.take(200)}")
+                    }
+                    if (response.status.value == 403 && errorBody.contains("Resource not accessible by integration")) {
+                        DebugLogger.warn("   → Missing permission: pull-requests: read")
+                        DebugLogger.warn("   → Add to your workflow:")
+                        DebugLogger.warn("   → permissions:")
+                        DebugLogger.warn("   →   pull-requests: read")
                     }
                 } catch (e: Exception) {
                     DebugLogger.debug("Could not read error response body: ${e.message}")
