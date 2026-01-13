@@ -111,24 +111,39 @@ class JiraService(
             setBody(request)
         }
 
-        val success = response.status == HttpStatusCode.Created
-        if (success) {
-            DebugLogger.info("✓ Successfully commented on JIRA ticket $ticketKey")
-        } else {
-            DebugLogger.warn("⚠️  Failed to comment on JIRA ticket $ticketKey: HTTP ${response.status.value}")
-            try {
-                val errorBody = response.bodyAsText()
-                if (errorBody.isNotEmpty()) {
-                    DebugLogger.warn("   → Response: ${errorBody.take(200)}")
-                }
-            } catch (e: Exception) {
-                DebugLogger.debug("Could not read error response body: ${e.message}")
-            }
-        }
-        success
+        handleCommentResponse(response, ticketKey)
     } catch (e: Exception) {
         DebugLogger.warn("⚠️  Exception commenting on JIRA ticket $ticketKey: ${e.message}")
         false
+    }
+
+    /**
+     * Handles the response from JIRA comment API and logs appropriate messages.
+     */
+    private suspend fun handleCommentResponse(response: io.ktor.client.statement.HttpResponse, ticketKey: String): Boolean {
+        val success = response.status == HttpStatusCode.Created
+        if (success) {
+            DebugLogger.info("✓ Successfully commented on JIRA ticket $ticketKey")
+            return true
+        }
+
+        DebugLogger.warn("⚠️  Failed to comment on JIRA ticket $ticketKey: HTTP ${response.status.value}")
+        logErrorResponseBody(response)
+        return false
+    }
+
+    /**
+     * Attempts to log the error response body from JIRA API.
+     */
+    private suspend fun logErrorResponseBody(response: io.ktor.client.statement.HttpResponse) {
+        try {
+            val errorBody = response.bodyAsText()
+            if (errorBody.isNotEmpty()) {
+                DebugLogger.warn("   → Response: ${errorBody.take(200)}")
+            }
+        } catch (e: Exception) {
+            DebugLogger.debug("Could not read error response body: ${e.message}")
+        }
     }
 
     /**
