@@ -90,6 +90,45 @@ Download the appropriate binary for your architecture from the [releases page](h
 
 ---
 
+### Development & Testing
+
+#### Running Tests
+
+Run the test suite using:
+```bash
+./gradlew allTests
+```
+
+All tests use [Kotest](https://kotest.io/) and cover critical functionality like:
+- Link resolver validation (PR and JIRA ticket filtering)
+- Merge commit detection
+- Commit parsing and mapping
+- Tag sorting
+
+#### Code Coverage
+
+This project uses [Kover](https://github.com/Kotlin/kotlinx-kover) for code coverage tracking.
+
+**Generate coverage reports:**
+```bash
+./gradlew coverage
+```
+
+This will:
+1. Run all tests
+2. Generate HTML coverage report: `build/reports/kover/html/index.html`
+3. Generate XML coverage report: `build/reports/kover/report.xml`
+
+**Note:** Kover currently has limited support for Kotlin/Native targets. Coverage reports may show "No sources" until JVM test targets are added or Kover improves Native support. The infrastructure is in place for when this limitation is resolved.
+
+**Available coverage tasks:**
+- `./gradlew koverHtmlReport` - Generate HTML coverage report
+- `./gradlew koverXmlReport` - Generate XML coverage report
+- `./gradlew koverLog` - Print coverage to console
+- `./gradlew koverVerify` - Verify coverage meets minimum threshold (50%)
+
+---
+
 ### How to Use This Tool (for other projects)
 
 Create a tag with the following format `YYYY-DD-MM-HH-MM` and tag the commit you want to release up to.

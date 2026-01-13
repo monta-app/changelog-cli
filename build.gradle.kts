@@ -211,6 +211,51 @@ tasks.named("build") {
     finalizedBy("copyBinary")
 }
 
+// Kover configuration for code coverage
+// Note: Kover has limited support for Kotlin/Native targets currently.
+// Coverage reports will be generated but may show "No sources" until
+// JVM test targets are added or Kover improves Native support.
+kover {
+    reports {
+        filters {
+            excludes {
+                // Exclude generated code
+                classes("com.monta.changelog.Version*")
+                packages("*.generated.*")
+            }
+        }
+
+        total {
+            html {
+                onCheck = false // Don't run on check due to Native limitations
+            }
+
+            xml {
+                onCheck = false // Don't run on check due to Native limitations
+            }
+
+            verify {
+                onCheck = false // Disabled until Kover Native support improves
+                rule {
+                    minBound(50) // Target: minimum 50% coverage
+                }
+            }
+        }
+    }
+}
+
+// Add tasks to easily generate coverage reports manually
+tasks.register("coverage") {
+    group = "verification"
+    description = "Generate coverage reports (HTML and XML)"
+    dependsOn("allTests", "koverHtmlReport", "koverXmlReport")
+    doLast {
+        println("Coverage reports generated:")
+        println("  HTML: file://${layout.buildDirectory.get()}/reports/kover/html/index.html")
+        println("  XML:  ${layout.buildDirectory.get()}/reports/kover/report.xml")
+    }
+}
+
 val hostOs = System.getProperty("os.name")
 val isLinux = hostOs == "Linux"
 
