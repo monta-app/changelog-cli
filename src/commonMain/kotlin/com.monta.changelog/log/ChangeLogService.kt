@@ -139,6 +139,12 @@ class ChangeLogService(
         val validatedTickets = if (jiraService != null && extractedTickets.isNotEmpty()) {
             jiraService.filterValidTickets(extractedTickets)
         } else {
+            if (jiraService == null && extractedTickets.isNotEmpty()) {
+                DebugLogger.warn("⚠️  Skipping JIRA ticket validation - credentials not provided")
+                DebugLogger.warn("   → Set CHANGELOG_JIRA_EMAIL and CHANGELOG_JIRA_TOKEN to enable JIRA validation")
+                DebugLogger.warn("   → Without validation, invalid JIRA ticket references may appear in changelogs")
+                DebugLogger.warn("   → Found ${extractedTickets.size} JIRA ticket(s) that will not be validated: ${extractedTickets.joinToString()}")
+            }
             extractedTickets
         }
 

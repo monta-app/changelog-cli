@@ -396,7 +396,9 @@ class GitHubService(
         }
 
         if (githubToken == null) {
-            DebugLogger.debug("No GitHub token provided, skipping PR validation")
+            DebugLogger.warn("⚠️  Skipping pull request validation - no GitHub token provided")
+            DebugLogger.warn("   → Set CHANGELOG_GITHUB_TOKEN or --github-token to enable PR validation")
+            DebugLogger.warn("   → Without validation, invalid PR references may appear in changelogs")
             return prNumbers
         }
 
