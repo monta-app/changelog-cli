@@ -113,7 +113,7 @@ class ChangeLogService(
         commitInfo: CommitInfo,
     ) {
         // Extract PRs and their bodies from ALL commits (including merge commits)
-        val prInfos = extractPullRequestsFromCommitShas(commitInfo.allCommitShas)
+        val prInfos = extractPullRequestsFromCommitShas(commitInfo.commits, commitInfo.allCommitShas)
 
         // Fetch the user's real name from GitHub if triggeredBy is provided
         val triggeredByName = if (triggeredBy != null) {
@@ -198,10 +198,24 @@ class ChangeLogService(
         )
     }
 
-    private suspend fun extractPullRequestsFromCommitShas(commitShas: List<String>): List<com.monta.changelog.github.GitHubService.PullRequestInfo> {
+    private suspend fun extractPullRequestsFromCommitShas(
+        commits: List<com.monta.changelog.model.Commit>,
+        commitShas: List<String>,
+    ): List<com.monta.changelog.github.GitHubService.PullRequestInfo> {
+        val prRegex = Regex("#(\\d+)")
         val allPrInfos = mutableListOf<com.monta.changelog.github.GitHubService.PullRequestInfo>()
 
         for (commitSha in commitShas) {
+            // Extract PRs from commit message using regex (works without GitHub token)
+            val commit = commits.find { it.sha == commitSha }
+            if (commit != null) {
+                val prsFromMessage = prRegex.findAll(commit.message).map { it.groupValues[1].toInt() }.toList()
+                if (prsFromMessage.isNotEmpty()) {
+                    DebugLogger.debug("Found PR(s) in message for ${commitSha.take(7)}: ${prsFromMessage.joinToString()}")
+                    allPrInfos.addAll(prsFromMessage.map { com.monta.changelog.github.GitHubService.PullRequestInfo(it, "") })
+                }
+            }
+
             // Query GitHub API to find associated PRs (especially important for merge commits)
             val prsFromApi = gitHubService.getPullRequestsForCommit(
                 repoOwner = repoInfo.repoOwner,
