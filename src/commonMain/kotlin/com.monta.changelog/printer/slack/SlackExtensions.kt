@@ -77,10 +77,10 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     // Build main information fields
     val fields = buildMetadataFields(changeLog)
 
-    // Add PR and JIRA attachments
-    addPullRequestAttachments(changeLog, attachments)
-    addJiraTicketAttachments(changeLog, attachments)
+    // Add attachments (container info first, then JIRA, then PRs)
     addTechnicalDetailsAttachment(changeLog, attachments)
+    addJiraTicketAttachments(changeLog, attachments)
+    addPullRequestAttachments(changeLog, attachments)
 
     // Add fields as section blocks
     addFieldBlocks(fields, blocks)
@@ -208,10 +208,10 @@ private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: Mut
         containerItems.add("Image: `${changeLog.dockerImage}`")
     }
     if (changeLog.imageTag != null) {
-        containerItems.add("Tag: `${changeLog.imageTag}`")
+        containerItems.add("Deployed: `${changeLog.imageTag}`")
     }
     if (changeLog.previousImageTag != null) {
-        containerItems.add("Previous Tag: `${changeLog.previousImageTag}`")
+        containerItems.add("Previous: `${changeLog.previousImageTag}`")
     }
 
     if (containerItems.isEmpty()) return
