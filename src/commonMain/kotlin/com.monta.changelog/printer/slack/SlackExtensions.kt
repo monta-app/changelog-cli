@@ -9,6 +9,14 @@ import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.resolve
 
 /**
+ * Container for Slack message components.
+ */
+internal data class SlackMessageComponents(
+    val blocks: List<SlackBlock>,
+    val attachments: List<SlackAttachment> = emptyList(),
+)
+
+/**
  * Builds Slack block chunks from a changelog.
  * Returns a list of block lists, where each list is a separate message chunk
  * (limited to 25 blocks per chunk due to Slack's API limits).
@@ -63,12 +71,13 @@ internal fun buildSlackBlocks(
 }
 
 /**
- * Builds metadata blocks for the threaded message.
+ * Builds metadata blocks and attachments for the threaded message.
  * Contains additional information about the changelog like repository link.
- * Designed to match the clean layout of PR/JIRA comments.
+ * PRs and JIRA tickets are returned as attachments with colored bars.
  */
-internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
+internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     val blocks = mutableListOf<SlackBlock>()
+    val attachments = mutableListOf<SlackAttachment>()
 
     // Add deployment summary section if we have timing information
     if (changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null) {
@@ -138,28 +147,32 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
-    // Add pull requests if available (split if too long)
+    // Add pull requests as attachment(s) with GitHub brand color bar (split if too long)
     if (changeLog.pullRequests.isNotEmpty() && changeLog.repositoryUrl != null) {
         val prCount = changeLog.pullRequests.size
-        fields.addAll(
-            splitIntoFields(
+        val prLinks = changeLog.pullRequests.map { prNumber ->
+            "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
+        }
+        attachments.addAll(
+            splitIntoAttachments(
                 header = "Pull Requests ($prCount)",
-                items = changeLog.pullRequests.map { prNumber ->
-                    "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
-                }
+                items = prLinks,
+                color = "#1F2328" // GitHub brand color
             )
         )
     }
 
-    // Add JIRA tickets if available (split if too long)
+    // Add JIRA tickets as attachment(s) with Jira brand color bar (split if too long)
     if (changeLog.jiraTickets.isNotEmpty() && changeLog.jiraAppName != null) {
         val ticketCount = changeLog.jiraTickets.size
-        fields.addAll(
-            splitIntoFields(
+        val ticketLinks = changeLog.jiraTickets.map { ticket ->
+            "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
+        }
+        attachments.addAll(
+            splitIntoAttachments(
                 header = "JIRA Tickets ($ticketCount)",
-                items = changeLog.jiraTickets.map { ticket ->
-                    "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
-                }
+                items = ticketLinks,
+                color = "#2068DB" // Jira brand color
             )
         )
     }
@@ -225,7 +238,10 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         }
     }
 
-    return blocks
+    return SlackMessageComponents(
+        blocks = blocks,
+        attachments = attachments
+    )
 }
 
 /**
@@ -333,6 +349,60 @@ internal fun MutableList<SlackBlock>.block(block: () -> SlackBlock) {
     add(
         block()
     )
+}
+
+/**
+ * Splits a list of items into multiple SlackAttachment instances if the combined text
+ * exceeds Slack's attachment text limit.
+ */
+internal fun splitIntoAttachments(
+    header: String,
+    items: List<String>,
+    color: String,
+): List<SlackAttachment> {
+    // Slack's attachment text limit is 3000 chars but we use 2500 to be safe with header overhead
+    val maxCharsPerAttachment = 2500
+    val attachments = mutableListOf<SlackAttachment>()
+
+    val headerWithIndex = { index: Int ->
+        if (index == 0) "*$header:*" else "*$header (cont'd):*"
+    }
+
+    var currentItems = mutableListOf<String>()
+    var currentLength = headerWithIndex(0).length + 1 // +1 for newline
+    var attachmentIndex = 0
+
+    items.forEach { item ->
+        val itemWithNewline = item + "\n"
+
+        if (currentLength + itemWithNewline.length > maxCharsPerAttachment && currentItems.isNotEmpty()) {
+            // Current attachment is full, create a new attachment
+            attachments.add(
+                SlackAttachment(
+                    color = color,
+                    text = "${headerWithIndex(attachmentIndex)}\n${currentItems.joinToString("\n")}"
+                )
+            )
+            attachmentIndex++
+            currentItems = mutableListOf()
+            currentLength = headerWithIndex(attachmentIndex).length + 1
+        }
+
+        currentItems.add(item)
+        currentLength += itemWithNewline.length
+    }
+
+    // Add the last attachment if it has content
+    if (currentItems.isNotEmpty()) {
+        attachments.add(
+            SlackAttachment(
+                color = color,
+                text = "${headerWithIndex(attachmentIndex)}\n${currentItems.joinToString("\n")}"
+            )
+        )
+    }
+
+    return attachments
 }
 
 /**
