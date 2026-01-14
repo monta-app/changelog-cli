@@ -95,11 +95,9 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
  * Determines if this is a service deployment (has container/Docker info)
  * vs a library/CLI release (no container info).
  */
-private fun isServiceDeployment(changeLog: ChangeLog): Boolean {
-    return changeLog.dockerImage != null ||
-        changeLog.imageTag != null ||
-        changeLog.previousImageTag != null
-}
+private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null ||
+    changeLog.imageTag != null ||
+    changeLog.previousImageTag != null
 
 /**
  * Adds release/deployment summary section to blocks.
