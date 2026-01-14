@@ -91,23 +91,32 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
 }
 
 /**
- * Adds deployment summary section to blocks if timing information is available.
+ * Adds release/deployment summary section to blocks.
+ * Shows deployment info if available, otherwise shows release info.
  */
 private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<SlackBlock>) {
-    if (changeLog.deploymentStartTime == null || changeLog.deploymentEndTime == null) return
+    val hasDeploymentTimes = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
 
-    val timeRange = DateTimeUtil.formatTimeRange(
-        changeLog.deploymentStartTime,
-        changeLog.deploymentEndTime
-    ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+    val summaryText = if (hasDeploymentTimes) {
+        // Deployment with timing information
+        val timeRange = DateTimeUtil.formatTimeRange(
+            changeLog.deploymentStartTime,
+            changeLog.deploymentEndTime
+        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
 
-    val stageText = if (changeLog.stage != null) {
-        " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
+        val stageText = if (changeLog.stage != null) {
+            " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
+        } else {
+            ""
+        }
+
+        "Deployed$stageText $timeRange"
     } else {
-        ""
+        // Release without deployment timing
+        "Released *${changeLog.tagName}*"
     }
 
-    val links = buildDeploymentLinks(changeLog)
+    val links = buildSummaryLinks(changeLog)
     val linksText = if (links.isNotEmpty()) " • ${links.joinToString(" • ")}" else ""
     val triggeredByText = buildTriggeredByText(changeLog)
 
@@ -116,7 +125,7 @@ private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<Slack
             type = "section",
             text = SlackText(
                 type = "mrkdwn",
-                text = "_Deployed$stageText ${timeRange}_$linksText$triggeredByText"
+                text = "_${summaryText}_$linksText$triggeredByText"
             )
         )
     )
@@ -124,10 +133,13 @@ private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<Slack
 }
 
 /**
- * Builds deployment links (Changeset, Deployment, Job).
+ * Builds summary links (Repository, Changeset, Deployment, Job).
  */
-private fun buildDeploymentLinks(changeLog: ChangeLog): List<String> {
+private fun buildSummaryLinks(changeLog: ChangeLog): List<String> {
     val links = mutableListOf<String>()
+    if (changeLog.repositoryUrl != null) {
+        links.add("<${changeLog.repositoryUrl}|Repository>")
+    }
     if (changeLog.repositoryUrl != null && changeLog.previousTagName != null) {
         val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
         links.add("<$compareUrl|Changeset>")
