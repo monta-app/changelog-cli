@@ -77,9 +77,10 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     // Build main information fields
     val fields = buildMetadataFields(changeLog)
 
-    // Add PR and JIRA attachments
-    addPullRequestAttachments(changeLog, attachments)
+    // Add attachments (container info first, then JIRA, then PRs)
+    addTechnicalDetailsAttachment(changeLog, attachments)
     addJiraTicketAttachments(changeLog, attachments)
+    addPullRequestAttachments(changeLog, attachments)
 
     // Add fields as section blocks
     addFieldBlocks(fields, blocks)
@@ -169,91 +170,39 @@ private fun buildTriggeredByText(changeLog: ChangeLog): String {
 }
 
 /**
- * Builds metadata fields (repository, triggered by, stage, technical details).
+ * Builds metadata fields.
+ * Repository and Triggered By are now always shown in the summary line.
+ * Stage is shown in deployment summary when deployment timing is available.
  */
 private fun buildMetadataFields(changeLog: ChangeLog): MutableList<SlackField> {
-    val fields = mutableListOf<SlackField>()
-    val hasDeploymentSummary = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
-
-    // Add repository field if available (only if no deployment summary)
-    if (changeLog.repositoryUrl != null && !hasDeploymentSummary) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Repository:*\n<${changeLog.repositoryUrl}|${changeLog.serviceName}>"
-            )
-        )
-    }
-
-    // Add triggered by and stage fields only if no deployment summary
-    if (!hasDeploymentSummary) {
-        addTriggeredByField(changeLog, fields)
-        addStageField(changeLog, fields)
-    }
-
-    // Add technical details
-    addTechnicalDetailsField(changeLog, fields)
-
-    return fields
+    // No fields needed - everything is in summary or attachments
+    return mutableListOf()
 }
 
 /**
- * Adds triggered by field if available.
+ * Adds container information attachment with containerd grey color if any Docker info is available.
  */
-private fun addTriggeredByField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
-    if (changeLog.triggeredBy == null) return
-
-    val username = changeLog.triggeredBy.removePrefix("@")
-    val displayText = if (changeLog.triggeredByName != null) {
-        "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
-    } else {
-        "<https://github.com/$username|@$username>"
-    }
-    fields.add(
-        SlackField(
-            type = "mrkdwn",
-            text = "*Triggered By:*\n$displayText"
-        )
-    )
-}
-
-/**
- * Adds stage field if available.
- */
-private fun addStageField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
-    if (changeLog.stage == null) return
-
-    fields.add(
-        SlackField(
-            type = "mrkdwn",
-            text = "*Stage/Environment:*\n`${changeLog.stage}`"
-        )
-    )
-}
-
-/**
- * Adds technical details field if any Docker info is available.
- */
-private fun addTechnicalDetailsField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
-    val technicalFields = mutableListOf<String>()
+private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    val containerItems = mutableListOf<String>()
     if (changeLog.dockerImage != null) {
-        technicalFields.add("*Image:* `${changeLog.dockerImage}`")
+        containerItems.add("Image: `${changeLog.dockerImage}`")
     }
     if (changeLog.imageTag != null) {
-        technicalFields.add("*Tag:* `${changeLog.imageTag}`")
+        containerItems.add("Deployed: `${changeLog.imageTag}`")
     }
     if (changeLog.previousImageTag != null) {
-        technicalFields.add("*Previous Tag:* `${changeLog.previousImageTag}`")
+        containerItems.add("Previous: `${changeLog.previousImageTag}`")
     }
 
-    if (technicalFields.isNotEmpty()) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Technical Details:*\n${technicalFields.joinToString("\n")}"
-            )
+    if (containerItems.isEmpty()) return
+
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "Container information",
+            items = containerItems,
+            color = "#575757" // Containerd grey
         )
-    }
+    )
 }
 
 /**
