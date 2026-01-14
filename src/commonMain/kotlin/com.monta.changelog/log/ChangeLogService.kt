@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.monta.changelog.log
 
 import com.monta.changelog.git.CommitInfo
@@ -664,8 +666,8 @@ class ChangeLogService(
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
             )
 
-            val month = monthNames[dateTime.monthNumber - 1]
-            val day = dateTime.dayOfMonth
+            val month = monthNames[dateTime.month.ordinal]
+            val day = dateTime.day
             val year = dateTime.year
             val hour = dateTime.hour.toString().padStart(2, '0')
             val minute = dateTime.minute.toString().padStart(2, '0')
