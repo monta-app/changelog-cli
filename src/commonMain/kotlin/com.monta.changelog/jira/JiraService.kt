@@ -191,51 +191,109 @@ class JiraService(
     }
 
     /**
-     * Parses a line of text and converts markdown-style links [text](url) to ADF text with link marks.
+     * Parses a line of text and converts markdown-style formatting to ADF text with marks.
+     * Supports: links [text](url) and bold **text**
      */
     private fun parseLineWithLinks(line: String): List<AdfText> {
+        // Process the line to find both links and bold text
+        val elements = mutableListOf<TextElement>()
+
+        // Find all links
         val linkRegex = Regex("""\[([^\]]+)]\(([^)]+)\)""")
+        linkRegex.findAll(line).forEach { match ->
+            elements.add(
+                TextElement(
+                    start = match.range.first,
+                    end = match.range.last + 1,
+                    text = match.groupValues[1],
+                    type = ElementType.LINK,
+                    url = match.groupValues[2]
+                )
+            )
+        }
+
+        // Find all bold text
+        val boldRegex = Regex("""\*\*([^*]+)\*\*""")
+        boldRegex.findAll(line).forEach { match ->
+            elements.add(
+                TextElement(
+                    start = match.range.first,
+                    end = match.range.last + 1,
+                    text = match.groupValues[1],
+                    type = ElementType.BOLD
+                )
+            )
+        }
+
+        // Sort elements by position
+        elements.sortBy { it.start }
+
+        // Build result
         val result = mutableListOf<AdfText>()
         var lastIndex = 0
 
-        linkRegex.findAll(line).forEach { match ->
-            // Add text before the link
-            if (match.range.first > lastIndex) {
-                val beforeText = line.substring(lastIndex, match.range.first)
-                result.add(AdfText(type = "text", text = beforeText))
+        elements.forEach { element ->
+            // Add plain text before this element
+            if (element.start > lastIndex) {
+                val plainText = line.substring(lastIndex, element.start)
+                result.add(AdfText(type = "text", text = plainText))
             }
 
-            // Add the link
-            val linkText = match.groupValues[1]
-            val linkUrl = match.groupValues[2]
-            result.add(
-                AdfText(
-                    type = "text",
-                    text = linkText,
-                    marks = listOf(
-                        AdfMark(
-                            type = "link",
-                            attrs = AdfMarkAttrs(href = linkUrl)
+            // Add the formatted element
+            when (element.type) {
+                ElementType.LINK -> {
+                    result.add(
+                        AdfText(
+                            type = "text",
+                            text = element.text,
+                            marks = listOf(
+                                AdfMark(
+                                    type = "link",
+                                    attrs = AdfMarkAttrs(href = element.url)
+                                )
+                            )
                         )
                     )
-                )
-            )
+                }
+                ElementType.BOLD -> {
+                    result.add(
+                        AdfText(
+                            type = "text",
+                            text = element.text,
+                            marks = listOf(AdfMark(type = "strong"))
+                        )
+                    )
+                }
+            }
 
-            lastIndex = match.range.last + 1
+            lastIndex = element.end
         }
 
-        // Add remaining text after the last link
+        // Add remaining text
         if (lastIndex < line.length) {
             result.add(AdfText(type = "text", text = line.substring(lastIndex)))
         }
 
-        // If no links were found, return the whole line as text
+        // If no formatting found, return whole line as text
         if (result.isEmpty()) {
             result.add(AdfText(type = "text", text = line))
         }
 
         return result
     }
+
+    private enum class ElementType {
+        LINK,
+        BOLD,
+    }
+
+    private data class TextElement(
+        val start: Int,
+        val end: Int,
+        val text: String,
+        val type: ElementType,
+        val url: String? = null,
+    )
 }
 
 @Serializable
