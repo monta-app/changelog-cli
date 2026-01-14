@@ -80,6 +80,7 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     // Add PR and JIRA attachments
     addPullRequestAttachments(changeLog, attachments)
     addJiraTicketAttachments(changeLog, attachments)
+    addTechnicalDetailsAttachment(changeLog, attachments)
 
     // Add fields as section blocks
     addFieldBlocks(fields, blocks)
@@ -169,7 +170,7 @@ private fun buildTriggeredByText(changeLog: ChangeLog): String {
 }
 
 /**
- * Builds metadata fields (repository, triggered by, stage, technical details).
+ * Builds metadata fields (repository, triggered by, stage).
  */
 private fun buildMetadataFields(changeLog: ChangeLog): MutableList<SlackField> {
     val fields = mutableListOf<SlackField>()
@@ -190,9 +191,6 @@ private fun buildMetadataFields(changeLog: ChangeLog): MutableList<SlackField> {
         addTriggeredByField(changeLog, fields)
         addStageField(changeLog, fields)
     }
-
-    // Add technical details
-    addTechnicalDetailsField(changeLog, fields)
 
     return fields
 }
@@ -232,28 +230,29 @@ private fun addStageField(changeLog: ChangeLog, fields: MutableList<SlackField>)
 }
 
 /**
- * Adds technical details field if any Docker info is available.
+ * Adds technical details attachment with Docker brand color if any Docker info is available.
  */
-private fun addTechnicalDetailsField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
-    val technicalFields = mutableListOf<String>()
+private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    val technicalItems = mutableListOf<String>()
     if (changeLog.dockerImage != null) {
-        technicalFields.add("*Image:* `${changeLog.dockerImage}`")
+        technicalItems.add("Image: `${changeLog.dockerImage}`")
     }
     if (changeLog.imageTag != null) {
-        technicalFields.add("*Tag:* `${changeLog.imageTag}`")
+        technicalItems.add("Tag: `${changeLog.imageTag}`")
     }
     if (changeLog.previousImageTag != null) {
-        technicalFields.add("*Previous Tag:* `${changeLog.previousImageTag}`")
+        technicalItems.add("Previous Tag: `${changeLog.previousImageTag}`")
     }
 
-    if (technicalFields.isNotEmpty()) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Technical Details:*\n${technicalFields.joinToString("\n")}"
-            )
+    if (technicalItems.isEmpty()) return
+
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "Technical Details",
+            items = technicalItems,
+            color = "#2563ED" // Docker brand color
         )
-    }
+    )
 }
 
 /**
