@@ -6,14 +6,12 @@ import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.github.GitHubService
 import com.monta.changelog.model.ChangeLog
 import com.monta.changelog.printer.ChangeLogPrinter
+import com.monta.changelog.util.DateTimeUtil
 import com.monta.changelog.util.DebugLogger
 import com.monta.changelog.util.GroupedCommitMap
 import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.resolve
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 class ChangeLogService(
     debug: Boolean,
@@ -529,8 +527,8 @@ class ChangeLogService(
         appendLine("---")
         appendLine()
 
-        val startTime = formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
-        val endTime = formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
+        val startTime = DateTimeUtil.formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
+        val endTime = DateTimeUtil.formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
         append("*Deployed $startTime → $endTime*")
 
         // Build links section - inline with deployment time
@@ -593,8 +591,8 @@ class ChangeLogService(
         appendLine("---")
         appendLine()
 
-        val startTime = formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
-        val endTime = formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
+        val startTime = DateTimeUtil.formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
+        val endTime = DateTimeUtil.formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
         append("Deployed $startTime → $endTime")
 
         // Build links section - inline with deployment time
@@ -645,36 +643,6 @@ class ChangeLogService(
                 ticketKey = ticketKey,
                 commentBody = commentBody
             )
-        }
-    }
-
-    /**
-     * Formats an ISO 8601 timestamp string into a human-readable format.
-     * Example: "2026-01-13T22:00:00Z" → "Jan 13, 2026 at 22:00 UTC"
-     */
-    private fun formatTimestamp(isoTimestamp: String?): String? {
-        if (isoTimestamp == null) return null
-
-        return try {
-            val instant = Instant.parse(isoTimestamp)
-            val dateTime = instant.toLocalDateTime(TimeZone.UTC)
-
-            val monthNames = listOf(
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-            )
-
-            val month = monthNames[dateTime.monthNumber - 1]
-            val day = dateTime.dayOfMonth
-            val year = dateTime.year
-            val hour = dateTime.hour.toString().padStart(2, '0')
-            val minute = dateTime.minute.toString().padStart(2, '0')
-
-            "$month $day, $year at $hour:$minute UTC"
-        } catch (e: Exception) {
-            // If parsing fails, return the original timestamp
-            DebugLogger.debug("Failed to parse timestamp: $isoTimestamp - ${e.message}")
-            isoTimestamp
         }
     }
 }
