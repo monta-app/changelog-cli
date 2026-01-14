@@ -48,6 +48,14 @@ internal data class SlackAttachment(
     val mrkdwnIn: List<String> = listOf("text"),
 )
 
+/**
+ * Container for Slack message components.
+ */
+internal data class SlackMessageComponents(
+    val blocks: List<SlackBlock>,
+    val attachments: List<SlackAttachment> = emptyList(),
+)
+
 @Serializable
 internal data class SlackMessageResponse(
     @SerialName("ok")

@@ -9,14 +9,6 @@ import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.resolve
 
 /**
- * Container for Slack message components.
- */
-internal data class SlackMessageComponents(
-    val blocks: List<SlackBlock>,
-    val attachments: List<SlackAttachment> = emptyList(),
-)
-
-/**
  * Builds Slack block chunks from a changelog.
  * Returns a list of block lists, where each list is a separate message chunk
  * (limited to 25 blocks per chunk due to Slack's API limits).
@@ -79,66 +71,100 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     val blocks = mutableListOf<SlackBlock>()
     val attachments = mutableListOf<SlackAttachment>()
 
-    // Add deployment summary section if we have timing information
-    if (changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null) {
-        val timeRange = DateTimeUtil.formatTimeRange(
-            changeLog.deploymentStartTime,
-            changeLog.deploymentEndTime
-        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
-
-        // Build stage text with bold formatting
-        val stageText = if (changeLog.stage != null) {
-            " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
-        } else {
-            ""
-        }
-
-        // Build links
-        val links = mutableListOf<String>()
-        if (changeLog.repositoryUrl != null && changeLog.previousTagName != null) {
-            val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
-            links.add("<$compareUrl|Changeset>")
-        }
-        if (changeLog.deploymentUrl != null) {
-            links.add("<${changeLog.deploymentUrl}|Deployment>")
-        }
-        if (changeLog.jobUrl != null) {
-            links.add("<${changeLog.jobUrl}|Job>")
-        }
-
-        val linksText = if (links.isNotEmpty()) " • ${links.joinToString(" • ")}" else ""
-
-        // Build triggered by text
-        val triggeredByText = if (changeLog.triggeredBy != null) {
-            val username = changeLog.triggeredBy.removePrefix("@")
-            val displayText = if (changeLog.triggeredByName != null) {
-                "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
-            } else {
-                "<https://github.com/$username|@$username>"
-            }
-            " • $displayText"
-        } else {
-            ""
-        }
-
-        blocks.add(
-            SlackBlock(
-                type = "section",
-                text = SlackText(
-                    type = "mrkdwn",
-                    text = "_Deployed$stageText ${timeRange}_$linksText$triggeredByText"
-                )
-            )
-        )
-
-        blocks.add(SlackBlock(type = "divider"))
-    }
+    // Add deployment summary if available
+    addDeploymentSummary(changeLog, blocks)
 
     // Build main information fields
+    val fields = buildMetadataFields(changeLog)
+
+    // Add PR and JIRA attachments
+    addPullRequestAttachments(changeLog, attachments)
+    addJiraTicketAttachments(changeLog, attachments)
+
+    // Add fields as section blocks
+    addFieldBlocks(fields, blocks)
+
+    return SlackMessageComponents(
+        blocks = blocks,
+        attachments = attachments
+    )
+}
+
+/**
+ * Adds deployment summary section to blocks if timing information is available.
+ */
+private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<SlackBlock>) {
+    if (changeLog.deploymentStartTime == null || changeLog.deploymentEndTime == null) return
+
+    val timeRange = DateTimeUtil.formatTimeRange(
+        changeLog.deploymentStartTime,
+        changeLog.deploymentEndTime
+    ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+
+    val stageText = if (changeLog.stage != null) {
+        " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
+    } else {
+        ""
+    }
+
+    val links = buildDeploymentLinks(changeLog)
+    val linksText = if (links.isNotEmpty()) " • ${links.joinToString(" • ")}" else ""
+    val triggeredByText = buildTriggeredByText(changeLog)
+
+    blocks.add(
+        SlackBlock(
+            type = "section",
+            text = SlackText(
+                type = "mrkdwn",
+                text = "_Deployed$stageText ${timeRange}_$linksText$triggeredByText"
+            )
+        )
+    )
+    blocks.add(SlackBlock(type = "divider"))
+}
+
+/**
+ * Builds deployment links (Changeset, Deployment, Job).
+ */
+private fun buildDeploymentLinks(changeLog: ChangeLog): List<String> {
+    val links = mutableListOf<String>()
+    if (changeLog.repositoryUrl != null && changeLog.previousTagName != null) {
+        val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
+        links.add("<$compareUrl|Changeset>")
+    }
+    if (changeLog.deploymentUrl != null) {
+        links.add("<${changeLog.deploymentUrl}|Deployment>")
+    }
+    if (changeLog.jobUrl != null) {
+        links.add("<${changeLog.jobUrl}|Job>")
+    }
+    return links
+}
+
+/**
+ * Builds triggered by text for deployment summary.
+ */
+private fun buildTriggeredByText(changeLog: ChangeLog): String {
+    if (changeLog.triggeredBy == null) return ""
+
+    val username = changeLog.triggeredBy.removePrefix("@")
+    val displayText = if (changeLog.triggeredByName != null) {
+        "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
+    } else {
+        "<https://github.com/$username|@$username>"
+    }
+    return " • $displayText"
+}
+
+/**
+ * Builds metadata fields (repository, triggered by, stage, technical details).
+ */
+private fun buildMetadataFields(changeLog: ChangeLog): MutableList<SlackField> {
     val fields = mutableListOf<SlackField>()
+    val hasDeploymentSummary = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
 
     // Add repository field if available (only if no deployment summary)
-    if (changeLog.repositoryUrl != null && changeLog.deploymentStartTime == null) {
+    if (changeLog.repositoryUrl != null && !hasDeploymentSummary) {
         fields.add(
             SlackField(
                 type = "mrkdwn",
@@ -147,65 +173,56 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
         )
     }
 
-    // Add pull requests as attachment(s) with GitHub brand color bar (split if too long)
-    if (changeLog.pullRequests.isNotEmpty() && changeLog.repositoryUrl != null) {
-        val prCount = changeLog.pullRequests.size
-        val prLinks = changeLog.pullRequests.map { prNumber ->
-            "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
-        }
-        attachments.addAll(
-            splitIntoAttachments(
-                header = "Pull Requests ($prCount)",
-                items = prLinks,
-                color = "#1F2328" // GitHub brand color
-            )
+    // Add triggered by and stage fields only if no deployment summary
+    if (!hasDeploymentSummary) {
+        addTriggeredByField(changeLog, fields)
+        addStageField(changeLog, fields)
+    }
+
+    // Add technical details
+    addTechnicalDetailsField(changeLog, fields)
+
+    return fields
+}
+
+/**
+ * Adds triggered by field if available.
+ */
+private fun addTriggeredByField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
+    if (changeLog.triggeredBy == null) return
+
+    val username = changeLog.triggeredBy.removePrefix("@")
+    val displayText = if (changeLog.triggeredByName != null) {
+        "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
+    } else {
+        "<https://github.com/$username|@$username>"
+    }
+    fields.add(
+        SlackField(
+            type = "mrkdwn",
+            text = "*Triggered By:*\n$displayText"
         )
-    }
+    )
+}
 
-    // Add JIRA tickets as attachment(s) with Jira brand color bar (split if too long)
-    if (changeLog.jiraTickets.isNotEmpty() && changeLog.jiraAppName != null) {
-        val ticketCount = changeLog.jiraTickets.size
-        val ticketLinks = changeLog.jiraTickets.map { ticket ->
-            "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
-        }
-        attachments.addAll(
-            splitIntoAttachments(
-                header = "JIRA Tickets ($ticketCount)",
-                items = ticketLinks,
-                color = "#2068DB" // Jira brand color
-            )
+/**
+ * Adds stage field if available.
+ */
+private fun addStageField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
+    if (changeLog.stage == null) return
+
+    fields.add(
+        SlackField(
+            type = "mrkdwn",
+            text = "*Stage/Environment:*\n`${changeLog.stage}`"
         )
-    }
+    )
+}
 
-    // Triggered By and Stage are now in the deployment summary line above
-    // Only add them here if deployment summary is not shown
-    if (changeLog.deploymentStartTime == null || changeLog.deploymentEndTime == null) {
-        if (changeLog.triggeredBy != null) {
-            val username = changeLog.triggeredBy.removePrefix("@")
-            val displayText = if (changeLog.triggeredByName != null) {
-                "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
-            } else {
-                "<https://github.com/$username|@$username>"
-            }
-            fields.add(
-                SlackField(
-                    type = "mrkdwn",
-                    text = "*Triggered By:*\n$displayText"
-                )
-            )
-        }
-
-        if (changeLog.stage != null) {
-            fields.add(
-                SlackField(
-                    type = "mrkdwn",
-                    text = "*Stage/Environment:*\n`${changeLog.stage}`"
-                )
-            )
-        }
-    }
-
-    // Add technical details section if any Docker info is available
+/**
+ * Adds technical details field if any Docker info is available.
+ */
+private fun addTechnicalDetailsField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
     val technicalFields = mutableListOf<String>()
     if (changeLog.dockerImage != null) {
         technicalFields.add("*Image:* `${changeLog.dockerImage}`")
@@ -225,23 +242,60 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
             )
         )
     }
+}
 
-    // Add fields as section blocks, splitting if we exceed 10 fields per block (Slack's limit)
-    if (fields.isNotEmpty()) {
-        fields.chunked(10).forEach { fieldChunk ->
-            blocks.add(
-                SlackBlock(
-                    type = "section",
-                    fields = fieldChunk
-                )
-            )
-        }
+/**
+ * Adds pull request attachments with GitHub brand color.
+ */
+private fun addPullRequestAttachments(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    if (changeLog.pullRequests.isEmpty() || changeLog.repositoryUrl == null) return
+
+    val prCount = changeLog.pullRequests.size
+    val prLinks = changeLog.pullRequests.map { prNumber ->
+        "<${changeLog.repositoryUrl}/pull/$prNumber|#$prNumber>"
     }
-
-    return SlackMessageComponents(
-        blocks = blocks,
-        attachments = attachments
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "Pull Requests ($prCount)",
+            items = prLinks,
+            color = "#1F2328" // GitHub brand color
+        )
     )
+}
+
+/**
+ * Adds JIRA ticket attachments with Jira brand color.
+ */
+private fun addJiraTicketAttachments(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    if (changeLog.jiraTickets.isEmpty() || changeLog.jiraAppName == null) return
+
+    val ticketCount = changeLog.jiraTickets.size
+    val ticketLinks = changeLog.jiraTickets.map { ticket ->
+        "<https://${changeLog.jiraAppName}.atlassian.net/browse/$ticket|$ticket>"
+    }
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "JIRA Tickets ($ticketCount)",
+            items = ticketLinks,
+            color = "#2068DB" // Jira brand color
+        )
+    )
+}
+
+/**
+ * Adds field blocks to blocks list, splitting if we exceed 10 fields per block.
+ */
+private fun addFieldBlocks(fields: List<SlackField>, blocks: MutableList<SlackBlock>) {
+    if (fields.isEmpty()) return
+
+    fields.chunked(10).forEach { fieldChunk ->
+        blocks.add(
+            SlackBlock(
+                type = "section",
+                fields = fieldChunk
+            )
+        )
+    }
 }
 
 /**
