@@ -170,49 +170,19 @@ private fun buildTriggeredByText(changeLog: ChangeLog): String {
 }
 
 /**
- * Builds metadata fields (repository, triggered by, stage).
+ * Builds metadata fields (stage only, if no deployment summary with timing).
+ * Repository and Triggered By are now always shown in the summary line.
  */
 private fun buildMetadataFields(changeLog: ChangeLog): MutableList<SlackField> {
     val fields = mutableListOf<SlackField>()
-    val hasDeploymentSummary = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
+    val hasDeploymentTiming = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
 
-    // Add repository field if available (only if no deployment summary)
-    if (changeLog.repositoryUrl != null && !hasDeploymentSummary) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Repository:*\n<${changeLog.repositoryUrl}|${changeLog.serviceName}>"
-            )
-        )
-    }
-
-    // Add triggered by and stage fields only if no deployment summary
-    if (!hasDeploymentSummary) {
-        addTriggeredByField(changeLog, fields)
+    // Add stage field only if no deployment timing (since stage is included in deployment summary)
+    if (!hasDeploymentTiming) {
         addStageField(changeLog, fields)
     }
 
     return fields
-}
-
-/**
- * Adds triggered by field if available.
- */
-private fun addTriggeredByField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
-    if (changeLog.triggeredBy == null) return
-
-    val username = changeLog.triggeredBy.removePrefix("@")
-    val displayText = if (changeLog.triggeredByName != null) {
-        "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
-    } else {
-        "<https://github.com/$username|@$username>"
-    }
-    fields.add(
-        SlackField(
-            type = "mrkdwn",
-            text = "*Triggered By:*\n$displayText"
-        )
-    )
 }
 
 /**
@@ -230,26 +200,26 @@ private fun addStageField(changeLog: ChangeLog, fields: MutableList<SlackField>)
 }
 
 /**
- * Adds technical details attachment with Docker brand color if any Docker info is available.
+ * Adds container information attachment with Docker brand color if any Docker info is available.
  */
 private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
-    val technicalItems = mutableListOf<String>()
+    val containerItems = mutableListOf<String>()
     if (changeLog.dockerImage != null) {
-        technicalItems.add("Image: `${changeLog.dockerImage}`")
+        containerItems.add("Image: `${changeLog.dockerImage}`")
     }
     if (changeLog.imageTag != null) {
-        technicalItems.add("Tag: `${changeLog.imageTag}`")
+        containerItems.add("Tag: `${changeLog.imageTag}`")
     }
     if (changeLog.previousImageTag != null) {
-        technicalItems.add("Previous Tag: `${changeLog.previousImageTag}`")
+        containerItems.add("Previous Tag: `${changeLog.previousImageTag}`")
     }
 
-    if (technicalItems.isEmpty()) return
+    if (containerItems.isEmpty()) return
 
     attachments.addAll(
         splitIntoAttachments(
-            header = "Technical Details",
-            items = technicalItems,
+            header = "Container information",
+            items = containerItems,
             color = "#2563ED" // Docker brand color
         )
     )
