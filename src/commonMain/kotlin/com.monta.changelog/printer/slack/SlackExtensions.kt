@@ -92,14 +92,23 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
 }
 
 /**
+ * Determines if this is a service deployment (has container/Docker info)
+ * vs a library/CLI release (no container info).
+ */
+private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null ||
+    changeLog.imageTag != null ||
+    changeLog.previousImageTag != null
+
+/**
  * Adds release/deployment summary section to blocks.
  * Shows deployment info if available, otherwise shows release info.
+ * Distinguishes between service deployments (with Docker info) and library/CLI releases.
  */
 private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<SlackBlock>) {
     val hasDeploymentTimes = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
+    val isServiceDeployment = isServiceDeployment(changeLog)
 
     val summaryText = if (hasDeploymentTimes) {
-        // Deployment with timing information
         val timeRange = DateTimeUtil.formatTimeRange(
             changeLog.deploymentStartTime,
             changeLog.deploymentEndTime
@@ -111,7 +120,13 @@ private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<Slack
             ""
         }
 
-        "Deployed$stageText $timeRange"
+        if (isServiceDeployment) {
+            // Service with container - use "Deployed"
+            "Deployed$stageText $timeRange"
+        } else {
+            // Library/CLI - use "Released"
+            "Released *${changeLog.tagName}*$stageText $timeRange"
+        }
     } else {
         // Release without deployment timing
         "Released *${changeLog.tagName}*"

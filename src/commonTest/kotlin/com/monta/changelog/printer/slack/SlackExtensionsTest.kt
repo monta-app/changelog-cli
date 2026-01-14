@@ -307,4 +307,75 @@ class SlackExtensionsTest :
             result shouldHaveSize 1
             result[0].color shouldBe "#575757"
         }
+
+        "should show Deployed for service with Docker info and deployment times" {
+            val changeLog = ChangeLog(
+                serviceName = "Test Service",
+                jiraAppName = null,
+                tagName = "v1.0.0",
+                previousTagName = null,
+                repoOwner = "test-org",
+                repoName = "test-repo",
+                repositoryUrl = "https://github.com/test-org/test-repo",
+                groupedCommitMap = emptyMap(),
+                dockerImage = "test-image",
+                imageTag = "abc123",
+                deploymentStartTime = "2026-01-14T10:00:00Z",
+                deploymentEndTime = "2026-01-14T10:05:00Z",
+                stage = "production"
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("Deployed") == true }
+            summaryBlock shouldNotBe null
+            summaryBlock?.text?.text shouldContain "Deployed to *Production*"
+            summaryBlock?.text?.text shouldNotContain "Released"
+        }
+
+        "should show Released for library/CLI without Docker info but with deployment times" {
+            val changeLog = ChangeLog(
+                serviceName = "Test CLI",
+                jiraAppName = null,
+                tagName = "v1.9.58",
+                previousTagName = null,
+                repoOwner = "test-org",
+                repoName = "test-cli",
+                repositoryUrl = "https://github.com/test-org/test-cli",
+                groupedCommitMap = emptyMap(),
+                // No Docker fields
+                deploymentStartTime = "2026-01-14T10:00:00Z",
+                deploymentEndTime = "2026-01-14T10:05:00Z",
+                stage = "production"
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("Released") == true }
+            summaryBlock shouldNotBe null
+            summaryBlock?.text?.text shouldContain "Released *v1.9.58*"
+            summaryBlock?.text?.text shouldContain "to *Production*"
+            summaryBlock?.text?.text shouldNotContain "Deployed"
+        }
+
+        "should show Released for release without deployment times" {
+            val changeLog = ChangeLog(
+                serviceName = "Test Project",
+                jiraAppName = null,
+                tagName = "v2.0.0",
+                previousTagName = null,
+                repoOwner = "test-org",
+                repoName = "test-project",
+                repositoryUrl = "https://github.com/test-org/test-project",
+                groupedCommitMap = emptyMap()
+                // No deployment times, no Docker info
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("Released") == true }
+            summaryBlock shouldNotBe null
+            summaryBlock?.text?.text shouldContain "Released *v2.0.0*"
+            summaryBlock?.text?.text shouldNotContain "Deployed"
+        }
     })
