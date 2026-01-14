@@ -545,6 +545,11 @@ class ChangeLogService(
         // Build links section - inline with deployment time
         val links = mutableListOf<String>()
 
+        // Add repository link
+        if (changeLog.repositoryUrl != null) {
+            links.add("[Repository](${changeLog.repositoryUrl})")
+        }
+
         // Add changeset link if previous tag is available
         if (changeLog.previousTagName != null) {
             val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
@@ -634,6 +639,11 @@ class ChangeLogService(
 
         // Build links section - inline with deployment time
         val links = mutableListOf<String>()
+
+        // Add repository link
+        if (changeLog.repositoryUrl != null) {
+            links.add("[Repository](${changeLog.repositoryUrl})")
+        }
 
         // Add changeset link if previous tag is available
         if (changeLog.previousTagName != null) {
