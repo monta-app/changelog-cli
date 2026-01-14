@@ -175,8 +175,8 @@ class SlackExtensionsTest :
             // Should have container attachment
             result.attachments shouldHaveSize 1
 
-            // Should use Docker blue color
-            result.attachments[0].color shouldBe "#2563ED"
+            // Should use containerd grey color
+            result.attachments[0].color shouldBe "#575757"
 
             // Should use new labels "Deployed" and "Previous"
             result.attachments[0].text shouldContain "Deployed:"
@@ -251,8 +251,8 @@ class SlackExtensionsTest :
 
             result.attachments shouldHaveSize 3
 
-            // First: Container info (Docker blue)
-            result.attachments[0].color shouldBe "#2563ED"
+            // First: Container info (containerd grey)
+            result.attachments[0].color shouldBe "#575757"
             result.attachments[0].text shouldStartWith "*Container information:*"
 
             // Second: JIRA (JIRA blue)
@@ -296,15 +296,15 @@ class SlackExtensionsTest :
             }
         }
 
-        "should preserve Docker brand color #2563ED" {
+        "should preserve containerd grey color #575757" {
             val items = listOf("Image: test-image", "Deployed: abc123")
             val result = splitIntoAttachments(
                 header = "Container information",
                 items = items,
-                color = "#2563ED"
+                color = "#575757"
             )
 
             result shouldHaveSize 1
-            result[0].color shouldBe "#2563ED"
+            result[0].color shouldBe "#575757"
         }
     })

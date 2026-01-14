@@ -180,7 +180,7 @@ private fun buildMetadataFields(changeLog: ChangeLog): MutableList<SlackField> {
 }
 
 /**
- * Adds container information attachment with Docker brand color if any Docker info is available.
+ * Adds container information attachment with containerd grey color if any Docker info is available.
  */
 private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
     val containerItems = mutableListOf<String>()
@@ -200,7 +200,7 @@ private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: Mut
         splitIntoAttachments(
             header = "Container information",
             items = containerItems,
-            color = "#2563ED" // Docker brand color
+            color = "#575757" // Containerd grey
         )
     )
 }
