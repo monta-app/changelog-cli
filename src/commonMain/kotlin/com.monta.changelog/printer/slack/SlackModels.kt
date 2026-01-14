@@ -13,6 +13,8 @@ internal data class SlackMessageRequest(
     val text: String,
     @SerialName("blocks")
     val blocks: List<SlackBlock>,
+    @SerialName("attachments")
+    val attachments: List<SlackAttachment>? = null,
 )
 
 @Serializable
@@ -34,6 +36,24 @@ internal class SlackText(
 internal class SlackField(
     val type: String,
     val text: String,
+)
+
+@Serializable
+internal data class SlackAttachment(
+    @SerialName("color")
+    val color: String,
+    @SerialName("text")
+    val text: String,
+    @SerialName("mrkdwn_in")
+    val mrkdwnIn: List<String> = listOf("text"),
+)
+
+/**
+ * Container for Slack message components.
+ */
+internal data class SlackMessageComponents(
+    val blocks: List<SlackBlock>,
+    val attachments: List<SlackAttachment> = emptyList(),
 )
 
 @Serializable

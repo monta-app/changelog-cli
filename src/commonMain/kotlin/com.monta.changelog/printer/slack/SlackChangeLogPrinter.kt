@@ -24,7 +24,7 @@ class SlackChangeLogPrinter(
             changeLog = changeLog
         )
 
-        val metadataBlocks = buildMetadataBlocks(changeLog)
+        val metadataComponents = buildMetadataBlocks(changeLog)
 
         var firstMessageChannel: String? = null
         var firstMessageTs: String? = null
@@ -51,13 +51,14 @@ class SlackChangeLogPrinter(
             }
 
             // Send metadata message in the thread if we have metadata and a thread
-            if (metadataBlocks.isNotEmpty() && threadTs != null) {
+            if ((metadataComponents.blocks.isNotEmpty() || metadataComponents.attachments.isNotEmpty()) && threadTs != null) {
                 makeRequest(
                     SlackMessageRequest(
                         channel = channel,
                         threadTs = threadTs,
                         text = "Metadata",
-                        blocks = metadataBlocks
+                        blocks = metadataComponents.blocks,
+                        attachments = metadataComponents.attachments.ifEmpty { null }
                     )
                 )
             }
