@@ -3,6 +3,7 @@ package com.monta.changelog.printer.slack
 import com.monta.changelog.model.ChangeLog
 import com.monta.changelog.model.Commit
 import com.monta.changelog.model.ConventionalCommitType
+import com.monta.changelog.util.DateTimeUtil
 import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
 import com.monta.changelog.util.resolve
@@ -64,28 +65,53 @@ internal fun buildSlackBlocks(
 /**
  * Builds metadata blocks for the threaded message.
  * Contains additional information about the changelog like repository link.
+ * Designed to match the clean layout of PR/JIRA comments.
  */
 internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
     val blocks = mutableListOf<SlackBlock>()
+
+    // Add deployment summary section if we have timing information
+    if (changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null) {
+        val startTime = DateTimeUtil.formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
+        val endTime = DateTimeUtil.formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
+
+        // Build links
+        val links = mutableListOf<String>()
+        if (changeLog.repositoryUrl != null && changeLog.previousTagName != null) {
+            val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
+            links.add("<$compareUrl|Changeset>")
+        }
+        if (changeLog.deploymentUrl != null) {
+            links.add("<${changeLog.deploymentUrl}|Deployment>")
+        }
+        if (changeLog.jobUrl != null) {
+            links.add("<${changeLog.jobUrl}|Job>")
+        }
+
+        val linksText = if (links.isNotEmpty()) " • ${links.joinToString(" • ")}" else ""
+
+        blocks.add(
+            SlackBlock(
+                type = "section",
+                text = SlackText(
+                    type = "mrkdwn",
+                    text = "_Deployed $startTime → ${endTime}_$linksText"
+                )
+            )
+        )
+
+        blocks.add(SlackBlock(type = "divider"))
+    }
+
+    // Build main information fields
     val fields = mutableListOf<SlackField>()
 
-    // Add repository field if available
-    if (changeLog.repositoryUrl != null) {
+    // Add repository field if available (only if no deployment summary)
+    if (changeLog.repositoryUrl != null && changeLog.deploymentStartTime == null) {
         fields.add(
             SlackField(
                 type = "mrkdwn",
                 text = "*Repository:*\n<${changeLog.repositoryUrl}|${changeLog.serviceName}>"
-            )
-        )
-    }
-
-    // Add changeset compare link if both current and previous tags are available
-    if (changeLog.repositoryUrl != null && changeLog.previousTagName != null) {
-        val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Changeset:*\n<$compareUrl|${changeLog.previousTagName}...${changeLog.tagName}>"
             )
         )
     }
@@ -116,16 +142,6 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
-    // Add job URL if available
-    if (changeLog.jobUrl != null) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Job:*\n<${changeLog.jobUrl}|View Job>"
-            )
-        )
-    }
-
     // Add triggered by if available
     if (changeLog.triggeredBy != null) {
         val username = changeLog.triggeredBy.removePrefix("@")
@@ -152,58 +168,23 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
-    // Add Docker image information if available
+    // Add technical details section if any Docker info is available
+    val technicalFields = mutableListOf<String>()
     if (changeLog.dockerImage != null) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Docker Image:*\n`${changeLog.dockerImage}`"
-            )
-        )
+        technicalFields.add("*Image:* `${changeLog.dockerImage}`")
     }
-
     if (changeLog.imageTag != null) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Image Tag:*\n`${changeLog.imageTag}`"
-            )
-        )
+        technicalFields.add("*Tag:* `${changeLog.imageTag}`")
     }
-
     if (changeLog.previousImageTag != null) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Previous Image Tag (Rollback):*\n`${changeLog.previousImageTag}`"
-            )
-        )
+        technicalFields.add("*Previous Tag:* `${changeLog.previousImageTag}`")
     }
 
-    // Add deployment timing information if available
-    if (changeLog.deploymentStartTime != null) {
+    if (technicalFields.isNotEmpty()) {
         fields.add(
             SlackField(
                 type = "mrkdwn",
-                text = "*Deployment Started:*\n`${changeLog.deploymentStartTime}`"
-            )
-        )
-    }
-
-    if (changeLog.deploymentEndTime != null) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Deployment Finished:*\n`${changeLog.deploymentEndTime}`"
-            )
-        )
-    }
-
-    if (changeLog.deploymentUrl != null) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Deployment URL:*\n<${changeLog.deploymentUrl}|View Deployment>"
+                text = "*Technical Details:*\n${technicalFields.joinToString("\n")}"
             )
         )
     }
