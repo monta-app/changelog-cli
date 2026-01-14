@@ -527,9 +527,20 @@ class ChangeLogService(
         appendLine("---")
         appendLine()
 
-        val startTime = DateTimeUtil.formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
-        val endTime = DateTimeUtil.formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
-        append("*Deployed $startTime → $endTime*")
+        // Build deployment summary line
+        val timeRange = DateTimeUtil.formatTimeRange(
+            changeLog.deploymentStartTime,
+            changeLog.deploymentEndTime
+        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+
+        // Build stage text
+        val stageText = if (changeLog.stage != null) {
+            " to **${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}**"
+        } else {
+            ""
+        }
+
+        append("*Deployed$stageText $timeRange*")
 
         // Build links section - inline with deployment time
         val links = mutableListOf<String>()
@@ -544,12 +555,27 @@ class ChangeLogService(
             links.add("[Deployment](${changeLog.deploymentUrl})")
         }
 
+        if (changeLog.jobUrl != null) {
+            links.add("[Job](${changeLog.jobUrl})")
+        }
+
         if (printResult.slackMessageUrl != null) {
             links.add("[Slack](${printResult.slackMessageUrl})")
         }
 
         if (links.isNotEmpty()) {
             append(" • ${links.joinToString(" • ")}")
+        }
+
+        // Add triggered by info if available
+        if (changeLog.triggeredBy != null) {
+            val username = changeLog.triggeredBy.removePrefix("@")
+            val displayText = if (changeLog.triggeredByName != null) {
+                "${changeLog.triggeredByName} ([@$username](https://github.com/$username))"
+            } else {
+                "[@$username](https://github.com/$username)"
+            }
+            append(" • $displayText")
         }
     }
 
@@ -591,9 +617,20 @@ class ChangeLogService(
         appendLine("---")
         appendLine()
 
-        val startTime = DateTimeUtil.formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
-        val endTime = DateTimeUtil.formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
-        append("Deployed $startTime → $endTime")
+        // Build deployment summary line
+        val timeRange = DateTimeUtil.formatTimeRange(
+            changeLog.deploymentStartTime,
+            changeLog.deploymentEndTime
+        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+
+        // Build stage text
+        val stageText = if (changeLog.stage != null) {
+            " to **${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}**"
+        } else {
+            ""
+        }
+
+        append("Deployed$stageText $timeRange")
 
         // Build links section - inline with deployment time
         val links = mutableListOf<String>()
@@ -608,12 +645,27 @@ class ChangeLogService(
             links.add("[Deployment](${changeLog.deploymentUrl})")
         }
 
+        if (changeLog.jobUrl != null) {
+            links.add("[Job](${changeLog.jobUrl})")
+        }
+
         if (printResult.slackMessageUrl != null) {
             links.add("[Slack](${printResult.slackMessageUrl})")
         }
 
         if (links.isNotEmpty()) {
             append(" • ${links.joinToString(" • ")}")
+        }
+
+        // Add triggered by info if available
+        if (changeLog.triggeredBy != null) {
+            val username = changeLog.triggeredBy.removePrefix("@")
+            val displayText = if (changeLog.triggeredByName != null) {
+                "${changeLog.triggeredByName} ([@$username](https://github.com/$username))"
+            } else {
+                "[@$username](https://github.com/$username)"
+            }
+            append(" • $displayText")
         }
     }
 

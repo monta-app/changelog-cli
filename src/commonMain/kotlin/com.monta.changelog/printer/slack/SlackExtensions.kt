@@ -72,8 +72,17 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
 
     // Add deployment summary section if we have timing information
     if (changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null) {
-        val startTime = DateTimeUtil.formatTimestamp(changeLog.deploymentStartTime) ?: changeLog.deploymentStartTime
-        val endTime = DateTimeUtil.formatTimestamp(changeLog.deploymentEndTime) ?: changeLog.deploymentEndTime
+        val timeRange = DateTimeUtil.formatTimeRange(
+            changeLog.deploymentStartTime,
+            changeLog.deploymentEndTime
+        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+
+        // Build stage text with bold formatting
+        val stageText = if (changeLog.stage != null) {
+            " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
+        } else {
+            ""
+        }
 
         // Build links
         val links = mutableListOf<String>()
@@ -90,12 +99,25 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
 
         val linksText = if (links.isNotEmpty()) " • ${links.joinToString(" • ")}" else ""
 
+        // Build triggered by text
+        val triggeredByText = if (changeLog.triggeredBy != null) {
+            val username = changeLog.triggeredBy.removePrefix("@")
+            val displayText = if (changeLog.triggeredByName != null) {
+                "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
+            } else {
+                "<https://github.com/$username|@$username>"
+            }
+            " • $displayText"
+        } else {
+            ""
+        }
+
         blocks.add(
             SlackBlock(
                 type = "section",
                 text = SlackText(
                     type = "mrkdwn",
-                    text = "_Deployed $startTime → ${endTime}_$linksText"
+                    text = "_Deployed$stageText ${timeRange}_$linksText$triggeredByText"
                 )
             )
         )
@@ -142,30 +164,32 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): List<SlackBlock> {
         )
     }
 
-    // Add triggered by if available
-    if (changeLog.triggeredBy != null) {
-        val username = changeLog.triggeredBy.removePrefix("@")
-        val displayText = if (changeLog.triggeredByName != null) {
-            "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
-        } else {
-            "<https://github.com/$username|@$username>"
+    // Triggered By and Stage are now in the deployment summary line above
+    // Only add them here if deployment summary is not shown
+    if (changeLog.deploymentStartTime == null || changeLog.deploymentEndTime == null) {
+        if (changeLog.triggeredBy != null) {
+            val username = changeLog.triggeredBy.removePrefix("@")
+            val displayText = if (changeLog.triggeredByName != null) {
+                "${changeLog.triggeredByName} (<https://github.com/$username|@$username>)"
+            } else {
+                "<https://github.com/$username|@$username>"
+            }
+            fields.add(
+                SlackField(
+                    type = "mrkdwn",
+                    text = "*Triggered By:*\n$displayText"
+                )
+            )
         }
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Triggered By:*\n$displayText"
-            )
-        )
-    }
 
-    // Add deployment stage if available
-    if (changeLog.stage != null) {
-        fields.add(
-            SlackField(
-                type = "mrkdwn",
-                text = "*Stage/Environment:*\n`${changeLog.stage}`"
+        if (changeLog.stage != null) {
+            fields.add(
+                SlackField(
+                    type = "mrkdwn",
+                    text = "*Stage/Environment:*\n`${changeLog.stage}`"
+                )
             )
-        )
+        }
     }
 
     // Add technical details section if any Docker info is available
