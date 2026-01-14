@@ -565,7 +565,7 @@ class ChangeLogService(
         linkResolvers: List<LinkResolver>,
     ): String = buildString {
         appendLine("## 🚀 Production Deployment")
-        appendLine("**${changeLog.serviceName}** - This ticket was included in production release ${changeLog.tagName}")
+        appendLine("This ticket had a production deploy - **${changeLog.serviceName}** ${changeLog.tagName}")
         appendLine()
         appendLine("---")
 
