@@ -170,33 +170,13 @@ private fun buildTriggeredByText(changeLog: ChangeLog): String {
 }
 
 /**
- * Builds metadata fields (stage only, if no deployment summary with timing).
+ * Builds metadata fields.
  * Repository and Triggered By are now always shown in the summary line.
+ * Stage is shown in deployment summary when deployment timing is available.
  */
 private fun buildMetadataFields(changeLog: ChangeLog): MutableList<SlackField> {
-    val fields = mutableListOf<SlackField>()
-    val hasDeploymentTiming = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
-
-    // Add stage field only if no deployment timing (since stage is included in deployment summary)
-    if (!hasDeploymentTiming) {
-        addStageField(changeLog, fields)
-    }
-
-    return fields
-}
-
-/**
- * Adds stage field if available.
- */
-private fun addStageField(changeLog: ChangeLog, fields: MutableList<SlackField>) {
-    if (changeLog.stage == null) return
-
-    fields.add(
-        SlackField(
-            type = "mrkdwn",
-            text = "*Stage/Environment:*\n`${changeLog.stage}`"
-        )
-    )
+    // No fields needed - everything is in summary or attachments
+    return mutableListOf()
 }
 
 /**
