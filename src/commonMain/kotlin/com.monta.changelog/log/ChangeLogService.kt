@@ -365,7 +365,7 @@ class ChangeLogService(
      *
      * Logs warnings when flag is enabled but conditions aren't met.
      */
-    private fun shouldCommentOnPRs(
+    internal fun shouldCommentOnPRs(
         changeLog: ChangeLog,
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
     ): Boolean {
@@ -382,21 +382,11 @@ class ChangeLogService(
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
     ): Boolean {
         val isProduction = changeLog.stage?.equals("production", ignoreCase = true) == true
-        val hasStartTime = changeLog.deploymentStartTime != null
-        val hasEndTime = changeLog.deploymentEndTime != null
         val hasSlackUrl = printResult?.slackMessageUrl != null
 
         return when {
             !isProduction -> {
                 logProductionStageWarning(changeLog.stage)
-                false
-            }
-            !hasStartTime -> {
-                logMissingStartTimeWarning()
-                false
-            }
-            !hasEndTime -> {
-                logMissingEndTimeWarning()
                 false
             }
             !hasSlackUrl -> {
@@ -410,16 +400,6 @@ class ChangeLogService(
     private fun logProductionStageWarning(stage: String?) {
         DebugLogger.warn("⚠️  PR commenting is enabled but stage is not 'production' (current: '${stage ?: "not set"}')")
         DebugLogger.warn("   → Set stage to 'production' or disable --comment-on-prs")
-    }
-
-    private fun logMissingStartTimeWarning() {
-        DebugLogger.warn("⚠️  PR commenting is enabled but deployment-start-time is not provided")
-        DebugLogger.warn("   → Provide --deployment-start-time or disable --comment-on-prs")
-    }
-
-    private fun logMissingEndTimeWarning() {
-        DebugLogger.warn("⚠️  PR commenting is enabled but deployment-end-time is not provided")
-        DebugLogger.warn("   → Provide --deployment-end-time or disable --comment-on-prs")
     }
 
     private fun logMissingSlackUrlWarning() {
@@ -438,7 +418,7 @@ class ChangeLogService(
      *
      * Logs warnings when flag is enabled but conditions aren't met.
      */
-    private fun shouldCommentOnJira(
+    internal fun shouldCommentOnJira(
         changeLog: ChangeLog,
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
     ): Boolean {
@@ -489,21 +469,42 @@ class ChangeLogService(
     }
 
     /**
-     * Builds the PR comment body with deployment information and changelog.
+     * Determines if this is a service deployment (has Docker image info).
+     * Services show "Deployment pending" when timing is missing.
+     * Libraries just show "Released" without the pending indicator.
      */
-    private fun buildPRComment(
-        changeLog: ChangeLog,
-        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
-        linkResolvers: List<LinkResolver>,
-    ): String = buildString {
-        appendLine("## 🚀 Production Deployment")
-        appendLine()
-        appendLine("This PR was included in production release **${changeLog.tagName}**")
-        appendLine()
-        appendLine("---")
-        appendLine()
+    private fun isServiceDeployment(changeLog: ChangeLog): Boolean =
+        changeLog.dockerImage != null || changeLog.imageTag != null
 
-        // Add the changelog content
+    /**
+     * Builds comment header with title and description based on deployment status.
+     */
+    private fun buildCommentHeader(
+        changeLog: ChangeLog,
+        hasDeploymentTiming: Boolean,
+        context: String,
+    ): String {
+        val title = if (hasDeploymentTiming) {
+            "🚀 Production Deployment"
+        } else {
+            "🚀 Production Release (Deployment Pending)"
+        }
+        val description = if (hasDeploymentTiming) {
+            "This $context was deployed to production"
+        } else {
+            "This $context was included in a production release and is awaiting deployment"
+        }
+        return "## $title\n\n$description - release **${changeLog.tagName}**\n\n---\n"
+    }
+
+    /**
+     * Builds changelog content section with grouped commits.
+     */
+    private fun buildChangelogSection(
+        changeLog: ChangeLog,
+        linkResolvers: List<LinkResolver>,
+        markdownFormatter: MarkdownFormatter,
+    ): String = buildString {
         changeLog.groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
             if (scope != null) {
                 appendLine("**${scope.replaceFirstChar { it.uppercaseChar() }}**")
@@ -514,7 +515,7 @@ class ChangeLogService(
                 appendLine()
                 commits.forEach { commit ->
                     val resolvedMessage = linkResolvers.resolve(
-                        markdownFormatter = MarkdownFormatter.GitHub,
+                        markdownFormatter = markdownFormatter,
                         message = commit.message
                     )
                     appendLine("- $resolvedMessage")
@@ -522,161 +523,142 @@ class ChangeLogService(
                 appendLine()
             }
         }
+    }
 
-        // Add footer with deployment timing and links - compact and minimal
+    /**
+     * Builds deployment status text (Deployed/Released with timing/pending indicator).
+     */
+    private fun buildDeploymentStatusText(
+        changeLog: ChangeLog,
+        hasDeploymentTiming: Boolean,
+        boldFormatting: Boolean,
+    ): String {
+        val stageText = changeLog.stage?.let {
+            val stage = it.replaceFirstChar { char -> char.uppercaseChar() }
+            if (boldFormatting) " to **$stage**" else " to $stage"
+        } ?: ""
+
+        return when {
+            hasDeploymentTiming -> {
+                val timeRange = DateTimeUtil.formatTimeRange(
+                    changeLog.deploymentStartTime,
+                    changeLog.deploymentEndTime
+                ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+                formatText("Deployed$stageText $timeRange", boldFormatting)
+            }
+            isServiceDeployment(changeLog) -> {
+                formatText("Released$stageText • ⏳ Deployment pending", boldFormatting)
+            }
+            else -> {
+                formatText("Released$stageText", boldFormatting)
+            }
+        }
+    }
+
+    /**
+     * Formats text with optional bold markdown.
+     */
+    private fun formatText(text: String, bold: Boolean): String =
+        if (bold) "*$text*" else text
+
+    /**
+     * Builds comment footer with deployment status and links.
+     */
+    private fun buildCommentFooter(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
+        hasDeploymentTiming: Boolean,
+        boldFormatting: Boolean = true,
+    ): String = buildString {
         appendLine("---")
         appendLine()
 
-        // Build deployment summary line
-        val timeRange = DateTimeUtil.formatTimeRange(
-            changeLog.deploymentStartTime,
-            changeLog.deploymentEndTime
-        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+        append(buildDeploymentStatusText(changeLog, hasDeploymentTiming, boldFormatting))
 
-        // Build stage text
-        val stageText = if (changeLog.stage != null) {
-            " to **${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}**"
-        } else {
-            ""
-        }
-
-        append("*Deployed$stageText $timeRange*")
-
-        // Build links section - inline with deployment time
-        val links = mutableListOf<String>()
-
-        // Add repository link
-        if (changeLog.repositoryUrl != null) {
-            links.add("[Repository](${changeLog.repositoryUrl})")
-        }
-
-        // Add changeset link if previous tag is available
-        if (changeLog.previousTagName != null) {
-            val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
-            links.add("[Changeset]($compareUrl)")
-        }
-
-        if (changeLog.deploymentUrl != null) {
-            links.add("[Deployment](${changeLog.deploymentUrl})")
-        }
-
-        if (changeLog.jobUrl != null) {
-            links.add("[Job](${changeLog.jobUrl})")
-        }
-
-        if (printResult.slackMessageUrl != null) {
-            links.add("[Slack](${printResult.slackMessageUrl})")
-        }
-
+        val links = buildCommentLinks(changeLog, printResult)
         if (links.isNotEmpty()) {
             append(" • ${links.joinToString(" • ")}")
         }
 
-        // Add triggered by info if available
-        if (changeLog.triggeredBy != null) {
-            val username = changeLog.triggeredBy.removePrefix("@")
-            val displayText = if (changeLog.triggeredByName != null) {
-                "${changeLog.triggeredByName} ([@$username](https://github.com/$username))"
-            } else {
-                "[@$username](https://github.com/$username)"
-            }
+        changeLog.triggeredBy?.let { triggeredBy ->
+            val username = triggeredBy.removePrefix("@")
+            val displayText = changeLog.triggeredByName?.let {
+                "$it ([@$username](https://github.com/$username))"
+            } ?: "[@$username](https://github.com/$username)"
             append(" • $displayText")
         }
+    }
+
+    /**
+     * Builds list of comment links (Repository, Changeset, etc.).
+     */
+    private fun buildCommentLinks(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
+    ): List<String> = buildList {
+        changeLog.repositoryUrl?.let { add("[Repository]($it)") }
+
+        if (changeLog.previousTagName != null && changeLog.repositoryUrl != null) {
+            val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
+            add("[Changeset]($compareUrl)")
+        }
+
+        changeLog.deploymentUrl?.let { add("[Deployment]($it)") }
+        changeLog.jobUrl?.let { add("[Job]($it)") }
+        printResult.slackMessageUrl?.let { add("[Slack]($it)") }
+    }
+
+    /**
+     * Builds the PR comment body with deployment information and changelog.
+     */
+    internal fun buildPRComment(
+        changeLog: ChangeLog,
+        printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
+        linkResolvers: List<LinkResolver>,
+    ): String = buildString {
+        val hasDeploymentTiming = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
+
+        append(buildCommentHeader(changeLog, hasDeploymentTiming, "PR"))
+        appendLine()
+        append(buildChangelogSection(changeLog, linkResolvers, MarkdownFormatter.GitHub))
+        append(buildCommentFooter(changeLog, printResult, hasDeploymentTiming, boldFormatting = true))
+    }
+
+    /**
+     * Builds JIRA-specific comment header.
+     */
+    private fun buildJiraCommentHeader(
+        changeLog: ChangeLog,
+        hasDeploymentTiming: Boolean,
+    ): String {
+        val title = if (hasDeploymentTiming) {
+            "🚀 Production Deployment"
+        } else {
+            "🚀 Production Release (Deployment Pending)"
+        }
+        val description = if (hasDeploymentTiming) {
+            "This ticket was deployed to production"
+        } else {
+            "This ticket was included in a production release and is awaiting deployment"
+        }
+        return "## $title\n$description - **${changeLog.serviceName}** ${changeLog.tagName}\n\n---"
     }
 
     /**
      * Builds the JIRA comment body with deployment information and changelog.
      * Uses plain text format that JIRA will convert to ADF.
      */
-    private fun buildJiraComment(
+    internal fun buildJiraComment(
         changeLog: ChangeLog,
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
         linkResolvers: List<LinkResolver>,
     ): String = buildString {
-        appendLine("## 🚀 Production Deployment")
-        appendLine("This ticket was included in production release - **${changeLog.serviceName}** ${changeLog.tagName}")
+        val hasDeploymentTiming = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
+
+        append(buildJiraCommentHeader(changeLog, hasDeploymentTiming))
         appendLine()
-        appendLine("---")
-
-        // Add the changelog content
-        changeLog.groupedCommitMap.forEach { (scope, commitsGroupedByType) ->
-            if (scope != null) {
-                appendLine()
-                appendLine("${scope.replaceFirstChar { it.uppercaseChar() }}")
-            }
-            commitsGroupedByType.forEach { (type, commits) ->
-                appendLine()
-                appendLine("${type.emoji} ${type.title}")
-                commits.forEach { commit ->
-                    val resolvedMessage = linkResolvers.resolve(
-                        markdownFormatter = MarkdownFormatter.GitHub,
-                        message = commit.message
-                    )
-                    appendLine("  • $resolvedMessage")
-                }
-            }
-        }
-
-        // Add footer with deployment timing and links - compact and minimal
-        appendLine()
-        appendLine("---")
-        appendLine()
-
-        // Build deployment summary line
-        val timeRange = DateTimeUtil.formatTimeRange(
-            changeLog.deploymentStartTime,
-            changeLog.deploymentEndTime
-        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
-
-        // Build stage text
-        val stageText = if (changeLog.stage != null) {
-            " to **${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}**"
-        } else {
-            ""
-        }
-
-        append("Deployed$stageText $timeRange")
-
-        // Build links section - inline with deployment time
-        val links = mutableListOf<String>()
-
-        // Add repository link
-        if (changeLog.repositoryUrl != null) {
-            links.add("[Repository](${changeLog.repositoryUrl})")
-        }
-
-        // Add changeset link if previous tag is available
-        if (changeLog.previousTagName != null) {
-            val compareUrl = "${changeLog.repositoryUrl}/compare/${changeLog.previousTagName}...${changeLog.tagName}"
-            links.add("[Changeset]($compareUrl)")
-        }
-
-        if (changeLog.deploymentUrl != null) {
-            links.add("[Deployment](${changeLog.deploymentUrl})")
-        }
-
-        if (changeLog.jobUrl != null) {
-            links.add("[Job](${changeLog.jobUrl})")
-        }
-
-        if (printResult.slackMessageUrl != null) {
-            links.add("[Slack](${printResult.slackMessageUrl})")
-        }
-
-        if (links.isNotEmpty()) {
-            append(" • ${links.joinToString(" • ")}")
-        }
-
-        // Add triggered by info if available
-        if (changeLog.triggeredBy != null) {
-            val username = changeLog.triggeredBy.removePrefix("@")
-            val displayText = if (changeLog.triggeredByName != null) {
-                "${changeLog.triggeredByName} ([@$username](https://github.com/$username))"
-            } else {
-                "[@$username](https://github.com/$username)"
-            }
-            append(" • $displayText")
-        }
+        append(buildChangelogSection(changeLog, linkResolvers, MarkdownFormatter.GitHub))
+        append(buildCommentFooter(changeLog, printResult, hasDeploymentTiming, boldFormatting = false))
     }
 
     /**

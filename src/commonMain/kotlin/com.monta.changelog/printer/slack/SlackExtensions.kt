@@ -114,22 +114,27 @@ private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<Slack
             changeLog.deploymentEndTime
         ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
 
-        val stageText = if (changeLog.stage != null) {
-            " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
-        } else {
-            ""
-        }
-
         if (isServiceDeployment) {
-            // Service with container - use "Deployed"
-            "Deployed$stageText $timeRange"
+            // Service with container - use "Deployed" with rocket emoji and stage
+            val stageText = if (changeLog.stage != null) {
+                " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
+            } else {
+                ""
+            }
+            "🚀 Deployed *${changeLog.tagName}*$stageText $timeRange"
         } else {
-            // Library/CLI - use "Released"
-            "Released *${changeLog.tagName}*$stageText $timeRange"
+            // Library/CLI - use "Released" without stage
+            "Released *${changeLog.tagName}* $timeRange"
         }
     } else {
         // Release without deployment timing
-        "Released *${changeLog.tagName}*"
+        if (isServiceDeployment) {
+            // Service without timing - deployment is pending
+            "Released *${changeLog.tagName}* (⏳ Deployment pending)"
+        } else {
+            // Library/CLI without timing - just released
+            "Released *${changeLog.tagName}*"
+        }
     }
 
     val links = buildSummaryLinks(changeLog)
