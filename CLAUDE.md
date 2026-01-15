@@ -17,8 +17,41 @@ This is a Kotlin/Native CLI tool that generates changelogs from Git commits usin
 - `./gradlew check` - Run all verification tasks (tests + linting)
 
 ### Local Development
-- `./gradlew linkDebugExecutableCommon` - Build debug executable
+- `./gradlew linkDebugExecutableHost` - Build debug executable
+- `./gradlew linkReleaseExecutableHost` - Build release executable (recommended for testing)
 - `./changelog-cli --help` - Run the built CLI to see all options
+
+### Rebuilding the Binary After Code Changes
+
+**CRITICAL**: After making code changes, you MUST rebuild and copy the binary before testing, or you'll be testing stale code.
+
+The Gradle build outputs the binary to `build/bin/host/releaseExecutable/changelog-cli.kexe`, but `test-local.sh` expects it at `./changelog-cli` in the project root. The build does NOT automatically copy the binary to the root.
+
+**Recommended workflow after code changes**:
+```bash
+# 1. Delete the old binary to avoid confusion
+rm -f ./changelog-cli
+
+# 2. Clean and rebuild
+./gradlew clean linkReleaseExecutableHost
+
+# 3. Copy the new binary to project root
+cp build/bin/host/releaseExecutable/changelog-cli.kexe ./changelog-cli
+
+# 4. Verify the build timestamp
+./changelog-cli --version
+# Should show recent build timestamp and latest commit
+
+# 5. Now test
+./test-local.sh . --from-tag=v1.0.0 --to-tag=v1.1.0
+```
+
+**Common mistake**: Running tests without rebuilding the binary after code changes. This leads to testing old code and confusion about whether changes are working.
+
+**Quick rebuild command** (combines all steps):
+```bash
+rm -f ./changelog-cli && ./gradlew clean linkReleaseExecutableHost && cp build/bin/host/releaseExecutable/changelog-cli.kexe ./changelog-cli && ./changelog-cli --version
+```
 
 ### Testing Locally
 

@@ -327,10 +327,10 @@ class SlackExtensionsTest :
 
             val result = buildMetadataBlocks(changeLog)
 
-            val summaryBlock = result.blocks.find { it.text?.text?.contains("Deployed") == true }
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("🚀 Deployed") == true }
             summaryBlock shouldNotBe null
-            summaryBlock?.text?.text shouldContain "Deployed to *Production*"
-            summaryBlock?.text?.text shouldNotContain "Released"
+            summaryBlock?.text?.text shouldContain "🚀 Deployed *v1.0.0* to *Production*"
+            summaryBlock?.text?.text shouldNotContain "⏳ Deployment pending"
         }
 
         "should show Released for library/CLI without Docker info but with deployment times" {
@@ -354,7 +354,7 @@ class SlackExtensionsTest :
             val summaryBlock = result.blocks.find { it.text?.text?.contains("Released") == true }
             summaryBlock shouldNotBe null
             summaryBlock?.text?.text shouldContain "Released *v1.9.58*"
-            summaryBlock?.text?.text shouldContain "to *Production*"
+            summaryBlock?.text?.text shouldNotContain "to *Production*" // Libraries don't show stage
             summaryBlock?.text?.text shouldNotContain "Deployed"
         }
 
@@ -377,5 +377,105 @@ class SlackExtensionsTest :
             summaryBlock shouldNotBe null
             summaryBlock?.text?.text shouldContain "Released *v2.0.0*"
             summaryBlock?.text?.text shouldNotContain "Deployed"
+        }
+
+        "should show deployment pending for service without deployment times" {
+            val changeLog = ChangeLog(
+                serviceName = "Test Service",
+                jiraAppName = null,
+                tagName = "v1.0.0",
+                previousTagName = null,
+                repoOwner = "test-org",
+                repoName = "test-repo",
+                repositoryUrl = "https://github.com/test-org/test-repo",
+                groupedCommitMap = emptyMap(),
+                dockerImage = "test-image",
+                imageTag = "abc123",
+                stage = "production"
+                // No deployment times
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("Released") == true }
+            summaryBlock shouldNotBe null
+            summaryBlock?.text?.text shouldContain "Released *v1.0.0*"
+            summaryBlock?.text?.text shouldContain "⏳ Deployment pending"
+            summaryBlock?.text?.text shouldNotContain "Deployed"
+        }
+
+        "should not show deployment pending for library without deployment times" {
+            val changeLog = ChangeLog(
+                serviceName = "Test Library",
+                jiraAppName = null,
+                tagName = "v2.5.0",
+                previousTagName = null,
+                repoOwner = "test-org",
+                repoName = "test-lib",
+                repositoryUrl = "https://github.com/test-org/test-lib",
+                groupedCommitMap = emptyMap(),
+                stage = "production"
+                // No deployment times, no Docker info - this is a library
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("Released") == true }
+            summaryBlock shouldNotBe null
+            summaryBlock?.text?.text shouldContain "Released *v2.5.0*"
+            // Libraries don't show "Deployment pending" - they're just released
+            summaryBlock?.text?.text shouldNotContain "⏳ Deployment pending"
+        }
+
+        "should show rocket emoji for service with Docker info and deployment times" {
+            val changeLog = ChangeLog(
+                serviceName = "Test Service",
+                jiraAppName = null,
+                tagName = "v1.0.0",
+                previousTagName = null,
+                repoOwner = "test-org",
+                repoName = "test-repo",
+                repositoryUrl = "https://github.com/test-org/test-repo",
+                groupedCommitMap = emptyMap(),
+                dockerImage = "test-image",
+                imageTag = "abc123",
+                deploymentStartTime = "2026-01-15T10:00:00Z",
+                deploymentEndTime = "2026-01-15T10:05:00Z",
+                stage = "production"
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("🚀") == true }
+            summaryBlock shouldNotBe null
+            summaryBlock?.text?.text shouldContain "🚀 Deployed *v1.0.0*"
+            summaryBlock?.text?.text shouldContain "to *Production*"
+            summaryBlock?.text?.text shouldNotContain "⏳ Deployment pending"
+        }
+
+        "should not show rocket emoji for library with deployment times" {
+            val changeLog = ChangeLog(
+                serviceName = "Test Library",
+                jiraAppName = null,
+                tagName = "v2.5.0",
+                previousTagName = null,
+                repoOwner = "test-org",
+                repoName = "test-lib",
+                repositoryUrl = "https://github.com/test-org/test-lib",
+                groupedCommitMap = emptyMap(),
+                deploymentStartTime = "2026-01-15T10:00:00Z",
+                deploymentEndTime = "2026-01-15T10:05:00Z",
+                stage = "production"
+                // No Docker info - this is a library
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val summaryBlock = result.blocks.find { it.text?.text?.contains("Released") == true }
+            summaryBlock shouldNotBe null
+            summaryBlock?.text?.text shouldContain "Released *v2.5.0*"
+            summaryBlock?.text?.text shouldNotContain "to *Production*" // Libraries don't show stage
+            summaryBlock?.text?.text shouldNotContain "🚀"
+            summaryBlock?.text?.text shouldNotContain "⏳ Deployment pending"
         }
     })
