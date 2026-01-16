@@ -359,7 +359,7 @@ class ChangeLogService(
      * Determines if we should comment on PRs for this deployment.
      * Requirements:
      * - commentOnPrs flag is enabled
-     * - Stage is "production" (case insensitive)
+     * - Stage is "production" or "internal" (case insensitive)
      * - Deployment start and end times are available
      * - Print result includes a Slack message URL
      *
@@ -381,12 +381,12 @@ class ChangeLogService(
         changeLog: ChangeLog,
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
     ): Boolean {
-        val isProduction = changeLog.stage?.equals("production", ignoreCase = true) == true
+        val isValidStage = changeLog.stage?.lowercase() in listOf("production", "internal")
         val hasSlackUrl = printResult?.slackMessageUrl != null
 
         return when {
-            !isProduction -> {
-                logProductionStageWarning(changeLog.stage)
+            !isValidStage -> {
+                logInvalidStageWarning(changeLog.stage)
                 false
             }
             !hasSlackUrl -> {
@@ -397,9 +397,9 @@ class ChangeLogService(
         }
     }
 
-    private fun logProductionStageWarning(stage: String?) {
-        DebugLogger.warn("⚠️  PR commenting is enabled but stage is not 'production' (current: '${stage ?: "not set"}')")
-        DebugLogger.warn("   → Set stage to 'production' or disable --comment-on-prs")
+    private fun logInvalidStageWarning(stage: String?) {
+        DebugLogger.warn("⚠️  PR commenting is enabled but stage is not 'production' or 'internal' (current: '${stage ?: "not set"}')")
+        DebugLogger.warn("   → Set stage to 'production' or 'internal', or disable --comment-on-prs")
     }
 
     private fun logMissingSlackUrlWarning() {
@@ -412,7 +412,7 @@ class ChangeLogService(
      * Requirements:
      * - commentOnJira flag is enabled
      * - JIRA service is available (credentials provided)
-     * - Stage is "production" (case insensitive)
+     * - Stage is "production" or "internal" (case insensitive)
      * - Deployment start and end times are available
      * - Print result includes a Slack message URL
      *
@@ -473,8 +473,7 @@ class ChangeLogService(
      * Services show "Deployment pending" when timing is missing.
      * Libraries just show "Released" without the pending indicator.
      */
-    private fun isServiceDeployment(changeLog: ChangeLog): Boolean =
-        changeLog.dockerImage != null || changeLog.imageTag != null
+    private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null || changeLog.imageTag != null
 
     /**
      * Builds comment header with title and description based on deployment status.
@@ -558,8 +557,7 @@ class ChangeLogService(
     /**
      * Formats text with optional bold markdown.
      */
-    private fun formatText(text: String, bold: Boolean): String =
-        if (bold) "*$text*" else text
+    private fun formatText(text: String, bold: Boolean): String = if (bold) "*$text*" else text
 
     /**
      * Builds comment footer with deployment status and links.
