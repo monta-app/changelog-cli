@@ -191,6 +191,7 @@ class ChangeLogService(
             groupedCommitMap = commitInfo.toGroupedCommitMap(),
             pullRequests = validatedPrs,
             jiraTickets = validatedTickets,
+            nonConventionalCommits = commitInfo.nonConventionalCommits,
             jobUrl = jobUrl,
             triggeredBy = triggeredBy,
             triggeredByName = triggeredByName,

@@ -77,10 +77,11 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     // Build main information fields
     val fields = buildMetadataFields(changeLog)
 
-    // Add attachments (container info first, then JIRA, then PRs)
+    // Add attachments (container info first, then JIRA, then PRs, then non-conventional commits)
     addTechnicalDetailsAttachment(changeLog, attachments)
     addJiraTicketAttachments(changeLog, attachments)
     addPullRequestAttachments(changeLog, attachments)
+    addNonConventionalCommitsAttachment(changeLog, attachments)
 
     // Add fields as section blocks
     addFieldBlocks(fields, blocks)
@@ -259,6 +260,34 @@ private fun addJiraTicketAttachments(changeLog: ChangeLog, attachments: MutableL
             header = "JIRA Tickets ($ticketCount)",
             items = ticketLinks,
             color = "#2068DB" // Jira brand color
+        )
+    )
+}
+
+/**
+ * Adds non-conventional commits attachment with warning color.
+ * Shows commits that didn't follow conventional commit syntax in a git shortlog format.
+ */
+private fun addNonConventionalCommitsAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    if (changeLog.nonConventionalCommits.isEmpty()) return
+
+    val commitCount = changeLog.nonConventionalCommits.size
+    val commitLines = changeLog.nonConventionalCommits.map { commit ->
+        val shortSha = commit.sha.take(7)
+        val repoUrl = changeLog.repositoryUrl
+        val commitLink = if (repoUrl != null) {
+            "<$repoUrl/commit/${commit.sha}|$shortSha>"
+        } else {
+            "`$shortSha`"
+        }
+        "$commitLink ${commit.subject} (${commit.author})"
+    }
+
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "⚠️ Non-Conventional Commits ($commitCount)",
+            items = commitLines,
+            color = "#FFA500" // Warning orange color
         )
     )
 }
