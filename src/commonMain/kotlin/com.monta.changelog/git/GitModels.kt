@@ -15,6 +15,14 @@ data class CommitInfo(
     val previousTagName: String?,
     val commits: List<Commit>,
     val allCommitShas: List<String> = emptyList(), // All commit SHAs including filtered ones (merge commits, etc.)
+    val nonConventionalCommits: List<NonConventionalCommit> = emptyList(), // Commits that didn't match conventional commit syntax
+)
+
+@Serializable
+data class NonConventionalCommit(
+    val sha: String,
+    val subject: String,
+    val author: String,
 )
 
 @Serializable

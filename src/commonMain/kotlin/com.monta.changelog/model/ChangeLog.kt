@@ -15,6 +15,7 @@ data class ChangeLog(
     val groupedCommitMap: GroupedCommitMap,
     val pullRequests: List<String> = emptyList(),
     val jiraTickets: List<String> = emptyList(),
+    val nonConventionalCommits: List<com.monta.changelog.git.NonConventionalCommit> = emptyList(),
     val jobUrl: String? = null,
     val triggeredBy: String? = null,
     val triggeredByName: String? = null,

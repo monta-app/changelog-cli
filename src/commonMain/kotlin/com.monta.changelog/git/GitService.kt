@@ -34,22 +34,26 @@ class GitService(
 
     fun getCommits(startSha: String, endSha: String): CommitInfo {
         val logs = gitCommandUtil.getLogs(startSha, endSha)
+        val (commits, nonConventional) = logs.mapToCommitsAndNonConventional()
         return CommitInfo(
             tagName = Clock.System.now().toString(),
             previousTagName = null,
-            commits = logs.mapToCommits(),
-            allCommitShas = logs.map { it.commit }
+            commits = commits,
+            allCommitShas = logs.map { it.commit },
+            nonConventionalCommits = nonConventional
         )
     }
 
     fun getCommitsBetweenTags(fromTag: String, toTag: String): CommitInfo {
         DebugLogger.info("generating changelog between tags $fromTag and $toTag")
         val logs = gitCommandUtil.getLogs(toTag, fromTag)
+        val (commits, nonConventional) = logs.mapToCommitsAndNonConventional()
         return CommitInfo(
             tagName = toTag.getTagValue(),
             previousTagName = fromTag.getTagValue(),
-            commits = logs.mapToCommits(),
-            allCommitShas = logs.map { it.commit }
+            commits = commits,
+            allCommitShas = logs.map { it.commit },
+            nonConventionalCommits = nonConventional
         )
     }
 
@@ -78,11 +82,13 @@ class GitService(
             0 -> {
                 DebugLogger.info("no tags found; returning from latest commit to last tag")
                 val logs = gitCommandUtil.getLogs()
+                val (commits, nonConventional) = logs.mapToCommitsAndNonConventional()
                 return CommitInfo(
                     tagName = Clock.System.now().toString(),
                     previousTagName = null,
-                    commits = logs.mapToCommits(),
-                    allCommitShas = logs.map { it.commit }
+                    commits = commits,
+                    allCommitShas = logs.map { it.commit },
+                    nonConventionalCommits = nonConventional
                 )
             }
 
@@ -90,11 +96,13 @@ class GitService(
                 val latestTag = tags[0].fullTag
                 DebugLogger.info("only one tag found $latestTag; returning from latest commit to last tag")
                 val logs = gitCommandUtil.getLogs(gitCommandUtil.getHeadSha(), latestTag)
+                val (commits, nonConventional) = logs.mapToCommitsAndNonConventional()
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
                     previousTagName = null,
-                    commits = logs.mapToCommits(),
-                    allCommitShas = logs.map { it.commit }
+                    commits = commits,
+                    allCommitShas = logs.map { it.commit },
+                    nonConventionalCommits = nonConventional
                 )
             }
 
@@ -103,27 +111,52 @@ class GitService(
                 val previousTag = tags[1].fullTag
                 DebugLogger.info("returning commits between tag $latestTag and $previousTag")
                 val logs = gitCommandUtil.getLogs(latestTag, previousTag)
+                val (commits, nonConventional) = logs.mapToCommitsAndNonConventional()
                 return CommitInfo(
                     tagName = latestTag.getTagValue(),
                     previousTagName = previousTag.getTagValue(),
-                    commits = logs.mapToCommits(),
-                    allCommitShas = logs.map { it.commit }
+                    commits = commits,
+                    allCommitShas = logs.map { it.commit },
+                    nonConventionalCommits = nonConventional
                 )
             }
         }
     }
 
-    private fun List<LogItem>.mapToCommits(): List<Commit> = this.filter { gitLogItem ->
-        when (pathExcludePattern) {
-            null -> true
-            else -> {
-                val filesInCommit = gitCommandUtil.getFilesInCommit(gitLogItem.commit)
-                filesInCommit.any { !pathExcludePattern.containsMatchIn(it) }
+    private fun List<LogItem>.mapToCommitsAndNonConventional(): Pair<List<Commit>, List<NonConventionalCommit>> {
+        val filteredLogs = this.filter { gitLogItem ->
+            when (pathExcludePattern) {
+                null -> true
+                else -> {
+                    val filesInCommit = gitCommandUtil.getFilesInCommit(gitLogItem.commit)
+                    filesInCommit.any { !pathExcludePattern.containsMatchIn(it) }
+                }
             }
         }
-    }.mapNotNull { gitLogItem ->
-        commitMapper.fromGitLogItem(gitLogItem)
-    }.toSet().toList()
+
+        val commits = mutableListOf<Commit>()
+        val nonConventional = mutableListOf<NonConventionalCommit>()
+
+        filteredLogs.forEach { gitLogItem ->
+            val commit = commitMapper.fromGitLogItem(gitLogItem)
+            if (commit != null) {
+                commits.add(commit)
+            } else {
+                // Skip merge commits - they're already excluded in CommitMapper
+                if (!gitLogItem.isMergeCommit()) {
+                    nonConventional.add(
+                        NonConventionalCommit(
+                            sha = gitLogItem.commit,
+                            subject = gitLogItem.subject,
+                            author = gitLogItem.author.name
+                        )
+                    )
+                }
+            }
+        }
+
+        return commits.toSet().toList() to nonConventional
+    }
 
     private fun getGitOwnerAndRepo(): Pair<String, String> = getGitOwnerAndRepo(
         url = requireNotNull(
