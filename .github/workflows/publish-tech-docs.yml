@@ -13,7 +13,7 @@ on:
 jobs:
   publish:
     name: Publish Tech Docs to S3
-    uses: monta-app/github-workflows/.github/workflows/publish-tech-docs.yaml@v3
+    uses: monta-app/github-workflows/.github/workflows/publish-tech-docs.yml@main
     secrets:
       TECHDOCS_AWS_ACCESS_KEY_ID: ${{ secrets.TECHDOCS_AWS_ACCESS_KEY_ID }}
       TECHDOCS_AWS_SECRET_ACCESS_KEY: ${{ secrets.TECHDOCS_AWS_SECRET_ACCESS_KEY }}
