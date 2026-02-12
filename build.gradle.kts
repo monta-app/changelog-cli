@@ -120,7 +120,7 @@ kotlin {
                 // Serialization
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
                 // Atomic
-                implementation("org.jetbrains.kotlinx:atomicfu:0.29.0")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.31.0")
                 // Http Client (core only - engines are platform-specific)
                 implementation("io.ktor:ktor-client-core:3.3.3")
                 implementation("io.ktor:ktor-client-content-negotiation:3.3.3")
