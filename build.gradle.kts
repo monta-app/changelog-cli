@@ -112,7 +112,7 @@ kotlin {
             kotlin.srcDir(layout.buildDirectory.dir("generated/kotlin"))
             dependencies {
                 // CLI
-                implementation("com.github.ajalt.clikt:clikt:5.0.3")
+                implementation("com.github.ajalt.clikt:clikt:5.1.0")
                 // Date Time Support
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")
                 // Coroutines
