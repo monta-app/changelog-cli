@@ -171,7 +171,7 @@ jobs:
           overwrite: true
 
   update-action-repo:
-    runs-on: ubuntu-latest
+    runs-on: linux-arm64
     needs: [create-release, create-tag-and-build]
     steps:
       - name: Setup SSH key
