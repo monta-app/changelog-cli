@@ -69,7 +69,7 @@ jobs:
 
   lint-workflows:
     name: Lint GitHub Workflows
-    runs-on: ubuntu-latest
+    runs-on: linux-arm64
     steps:
       - uses: actions/checkout@v6
       - name: Run actionlint
@@ -82,7 +82,7 @@ jobs:
 
   static-code-analysis:
     name: Static Code Analysis
-    runs-on: ubuntu-latest
+    runs-on: linux-arm64
     timeout-minutes: 30
     steps:
       - name: Run detekt
@@ -92,7 +92,7 @@ jobs:
 
   coverage-report:
     name: Coverage Report
-    runs-on: ubuntu-latest
+    runs-on: linux-arm64
     needs: build
     permissions:
       pull-requests: write
