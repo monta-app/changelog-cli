@@ -106,4 +106,21 @@ class CommitMapperTest :
 
             commit.shouldBeNull()
         }
+
+        "should map commit with double quotes in subject" {
+            val logItem = LogItem(
+                author = Author(date = "2026-01-12", email = "test@test.com", name = "Test"),
+                committer = Author(date = "2026-01-12", email = "test@test.com", name = "Test"),
+                commit = "abc123",
+                subject = "fix: revert \"prevent duplicate charge points\"",
+                body = "",
+                parents = "parent1"
+            )
+
+            val commit = mapper.fromGitLogItem(logItem)
+
+            commit.shouldNotBeNull()
+            commit.message shouldBe "revert \"prevent duplicate charge points\""
+            commit.sha shouldBe "abc123"
+        }
     })
