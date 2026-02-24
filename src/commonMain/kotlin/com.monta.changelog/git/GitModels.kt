@@ -25,7 +25,6 @@ data class NonConventionalCommit(
     val author: String,
 )
 
-@Serializable
 internal data class LogItem(
     val author: Author,
     val committer: Author,
@@ -40,7 +39,6 @@ internal data class LogItem(
     fun isMergeCommit(): Boolean = parents.trim().contains(" ")
 }
 
-@Serializable
 internal data class Author(
     val date: String,
     val email: String,
