@@ -139,7 +139,7 @@ kotlin {
         // JVM-specific test dependencies
         val jvmTest by getting {
             dependencies {
-                implementation("io.kotest:kotest-runner-junit5:6.0.7")
+                implementation("io.kotest:kotest-runner-junit5:6.1.4")
             }
         }
 
