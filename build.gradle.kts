@@ -132,7 +132,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation("io.kotest:kotest-framework-engine:6.0.7")
-                implementation("io.kotest:kotest-assertions-core:6.0.7")
+                implementation("io.kotest:kotest-assertions-core:6.1.4")
             }
         }
 
