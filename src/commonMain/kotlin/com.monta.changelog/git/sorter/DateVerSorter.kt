@@ -2,7 +2,10 @@ package com.monta.changelog.git.sorter
 
 import com.monta.changelog.git.getTagValue
 import com.monta.changelog.util.DebugLogger
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class DateVerSorter : TagSorter {
 
@@ -26,6 +29,13 @@ class DateVerSorter : TagSorter {
         .map { (_, tag) ->
             tag
         }
+
+    override fun generateInitialTag(): String {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+        return "${now.year}-${now.monthNumber.pad()}-${now.dayOfMonth.pad()}-${now.hour.pad()}-${now.minute.pad()}"
+    }
+
+    private fun Int.pad(): String = toString().padStart(2, '0')
 
     /**
      *  Kotlin native has no easy way of parsing dates :)

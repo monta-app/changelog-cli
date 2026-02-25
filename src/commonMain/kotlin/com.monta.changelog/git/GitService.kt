@@ -4,7 +4,6 @@ import com.monta.changelog.git.sorter.Tag
 import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.model.Commit
 import com.monta.changelog.util.DebugLogger
-import kotlin.time.Clock
 
 class GitService(
     private val tagSorter: TagSorter,
@@ -36,7 +35,7 @@ class GitService(
         val logs = gitCommandUtil.getLogs(startSha, endSha)
         val (commits, nonConventional) = logs.mapToCommitsAndNonConventional()
         return CommitInfo(
-            tagName = Clock.System.now().toString(),
+            tagName = tagSorter.generateInitialTag(),
             previousTagName = null,
             commits = commits,
             allCommitShas = logs.map { it.commit },
@@ -84,7 +83,7 @@ class GitService(
                 val logs = gitCommandUtil.getLogs()
                 val (commits, nonConventional) = logs.mapToCommitsAndNonConventional()
                 return CommitInfo(
-                    tagName = Clock.System.now().toString(),
+                    tagName = tagSorter.generateInitialTag(),
                     previousTagName = null,
                     commits = commits,
                     allCommitShas = logs.map { it.commit },

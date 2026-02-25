@@ -6,6 +6,8 @@ import io.github.z4kn4fein.semver.Version
 
 class SemVerSorter : TagSorter {
 
+    override fun generateInitialTag(): String = "0.1.0"
+
     override fun sort(tags: List<Tag>): List<Tag> = tags.mapNotNull { tag ->
         val shortTag = tag.shortTag
         // Get the last part of the tag so stuff like releases/tag/v1.2.3 can still be valid

@@ -2,6 +2,7 @@ package com.monta.changelog.git.sorter
 
 interface TagSorter {
     fun sort(tags: List<Tag>): List<Tag>
+    fun generateInitialTag(): String
 }
 
 data class Tag(
