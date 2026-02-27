@@ -122,9 +122,9 @@ kotlin {
                 // Atomic
                 implementation("org.jetbrains.kotlinx:atomicfu:0.29.0")
                 // Http Client (core only - engines are platform-specific)
-                implementation("io.ktor:ktor-client-core:3.3.3")
-                implementation("io.ktor:ktor-client-content-negotiation:3.3.3")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.3")
+                implementation("io.ktor:ktor-client-core:3.4.0")
+                implementation("io.ktor:ktor-client-content-negotiation:3.4.0")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.4.0")
                 // Semver parser
                 implementation("io.github.z4kn4fein:semver:3.0.0")
             }
@@ -147,7 +147,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 // Use OkHttp engine for JVM
-                implementation("io.ktor:ktor-client-okhttp:3.3.3")
+                implementation("io.ktor:ktor-client-okhttp:3.4.0")
             }
         }
 
@@ -156,7 +156,7 @@ kotlin {
             dependsOn(commonMain)
             dependencies {
                 // Use Curl engine for Native
-                implementation("io.ktor:ktor-client-curl:3.3.3")
+                implementation("io.ktor:ktor-client-curl:3.4.0")
             }
         }
 
