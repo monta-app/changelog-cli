@@ -22,19 +22,19 @@ jobs:
       - name: Generate coverage report
         run: ./gradlew koverXmlReport
       - name: Upload coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: build/reports/kover/report.xml
       - name: Build release binaries
         run: ./gradlew prepareReleaseBinaries
       - name: Upload x64 binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-cli-x64
           path: build/release/changelog-cli-x64
       - name: Upload ARM64 binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-cli-arm64
           path: build/release/changelog-cli-arm64
@@ -45,7 +45,7 @@ jobs:
     needs: build
     steps:
       - name: Download x64 binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: changelog-cli-x64
       - name: Make binary executable
@@ -59,7 +59,7 @@ jobs:
     needs: build
     steps:
       - name: Download ARM64 binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: changelog-cli-arm64
       - name: Make binary executable
@@ -98,7 +98,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download coverage report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: coverage-report
       - name: Parse coverage and comment on PR

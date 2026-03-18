@@ -96,12 +96,12 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew prepareReleaseBinaries
       - name: Upload x64 executable
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-cli-x64
           path: build/release/changelog-cli-x64
       - name: Upload ARM64 executable
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-cli-arm64
           path: build/release/changelog-cli-arm64
@@ -115,12 +115,12 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download x64 artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: changelog-cli-x64
           path: ./binaries
       - name: Download ARM64 artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: changelog-cli-arm64
           path: ./binaries
