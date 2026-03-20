@@ -4,6 +4,8 @@
     "config:recommended",
     ":semanticCommitTypeAll(chore)"
   ],
+  "semanticCommits": "enabled",
+  "prConcurrentLimit": 2,
   "packageRules": [
     {
       "groupName": "upgrade all gradle dependencies",
