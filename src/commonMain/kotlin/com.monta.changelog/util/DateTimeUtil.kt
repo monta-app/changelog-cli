@@ -1,8 +1,8 @@
 package com.monta.changelog.util
 
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /**
  * Utility object for date/time formatting operations.

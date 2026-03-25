@@ -180,6 +180,11 @@ kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarge
     }
 }
 
+// Gradle 9: native targets don't discover Kotest tests (testing runs on JVM via kotest-runner-junit5)
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+    failOnNoDiscoveredTests = false
+}
+
 // Make Kotlin compilation depend on version generation
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
     dependsOn(generateVersionInfo)
