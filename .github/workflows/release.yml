@@ -175,7 +175,7 @@ jobs:
     needs: [create-release, create-tag-and-build]
     steps:
       - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.9.1
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY_MONTA_BOT }}
       - name: Checkout changelog-cli-action
