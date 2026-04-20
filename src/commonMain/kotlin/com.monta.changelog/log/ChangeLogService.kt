@@ -123,9 +123,33 @@ class ChangeLogService(
         // Extract PRs and their bodies from ALL commits (including merge commits)
         val prInfos = extractPullRequestsFromCommitShas(commitInfo.commits, commitInfo.allCommitShas)
 
+        // If the triggering actor is a bot, try to find the real person
+        // by looking at who added the automerge label on the most recent PR
+        val resolvedTriggeredBy = if (triggeredBy != null && triggeredBy.contains("[bot]")) {
+            val prNumber = prInfos.maxByOrNull { it.number }?.number
+            if (prNumber != null) {
+                val labelAdder = gitHubService.findLabelAdder(
+                    repoOwner = repoInfo.repoOwner,
+                    repoName = repoInfo.repoName,
+                    prNumber = prNumber,
+                    labelName = "automerge"
+                )
+                if (labelAdder != null) {
+                    DebugLogger.info("Resolved bot actor '$triggeredBy' to real user '$labelAdder' (added automerge label on PR #$prNumber)")
+                    labelAdder
+                } else {
+                    triggeredBy
+                }
+            } else {
+                triggeredBy
+            }
+        } else {
+            triggeredBy
+        }
+
         // Fetch the user's real name from GitHub if triggeredBy is provided
-        val triggeredByName = if (triggeredBy != null) {
-            gitHubService.getUserName(triggeredBy)
+        val triggeredByName = if (resolvedTriggeredBy != null) {
+            gitHubService.getUserName(resolvedTriggeredBy)
         } else {
             null
         }
@@ -193,7 +217,7 @@ class ChangeLogService(
             jiraTickets = validatedTickets,
             nonConventionalCommits = commitInfo.nonConventionalCommits,
             jobUrl = jobUrl,
-            triggeredBy = triggeredBy,
+            triggeredBy = resolvedTriggeredBy,
             triggeredByName = triggeredByName,
             dockerImage = dockerImage,
             imageTag = imageTag,
