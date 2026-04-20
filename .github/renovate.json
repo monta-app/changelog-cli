@@ -5,22 +5,5 @@
     ":semanticCommitTypeAll(chore)"
   ],
   "semanticCommits": "enabled",
-  "prConcurrentLimit": 2,
-  "packageRules": [
-    {
-      "groupName": "upgrade all gradle dependencies",
-      "matchManagers": [
-        "gradle"
-      ],
-      "groupSlug": "gradle",
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "major"
-      ],
-      "matchPackageNames": [
-        "*"
-      ]
-    }
-  ]
+  "prConcurrentLimit": 2
 }
