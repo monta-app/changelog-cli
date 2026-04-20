@@ -1,10 +1,10 @@
 import java.time.Instant
 
 plugins {
-    kotlin("multiplatform") version "2.3.0"
-    kotlin("plugin.serialization") version "2.3.0"
-    id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
-    id("org.jetbrains.kotlinx.kover") version "0.9.4"
+    kotlin("multiplatform") version "2.3.20"
+    kotlin("plugin.serialization") version "2.3.20"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
+    id("org.jetbrains.kotlinx.kover") version "0.9.8"
 }
 
 group = "com.monta.gradle.changelog"
@@ -112,34 +112,34 @@ kotlin {
             kotlin.srcDir(layout.buildDirectory.dir("generated/kotlin"))
             dependencies {
                 // CLI
-                implementation("com.github.ajalt.clikt:clikt:5.0.3")
+                implementation("com.github.ajalt.clikt:clikt:5.1.0")
                 // Date Time Support
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")
                 // Coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
                 // Atomic
-                implementation("org.jetbrains.kotlinx:atomicfu:0.29.0")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.32.1")
                 // Http Client (core only - engines are platform-specific)
-                implementation("io.ktor:ktor-client-core:3.3.3")
-                implementation("io.ktor:ktor-client-content-negotiation:3.3.3")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.3")
+                implementation("io.ktor:ktor-client-core:3.4.2")
+                implementation("io.ktor:ktor-client-content-negotiation:3.4.2")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.4.2")
                 // Semver parser
                 implementation("io.github.z4kn4fein:semver:3.0.0")
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation("io.kotest:kotest-framework-engine:6.0.7")
-                implementation("io.kotest:kotest-assertions-core:6.0.7")
+                implementation("io.kotest:kotest-framework-engine:6.1.11")
+                implementation("io.kotest:kotest-assertions-core:6.1.11")
             }
         }
 
         // JVM-specific test dependencies
         val jvmTest by getting {
             dependencies {
-                implementation("io.kotest:kotest-runner-junit5:6.0.7")
+                implementation("io.kotest:kotest-runner-junit5:6.1.11")
             }
         }
 
@@ -147,7 +147,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 // Use OkHttp engine for JVM
-                implementation("io.ktor:ktor-client-okhttp:3.3.3")
+                implementation("io.ktor:ktor-client-okhttp:3.4.2")
             }
         }
 
@@ -156,7 +156,7 @@ kotlin {
             dependsOn(commonMain)
             dependencies {
                 // Use Curl engine for Native
-                implementation("io.ktor:ktor-client-curl:3.3.3")
+                implementation("io.ktor:ktor-client-curl:3.4.2")
             }
         }
 
