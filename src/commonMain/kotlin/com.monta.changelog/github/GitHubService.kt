@@ -539,6 +539,75 @@ class GitHubService(
         DebugLogger.warn("   →   pull-requests: write")
     }
 
+    /**
+     * Finds the GitHub username of the person who added a specific label to an issue/PR.
+     * Uses the Issues Events API to look through label events.
+     * Returns null if no token, no matching event found, or API call fails.
+     */
+    suspend fun findLabelAdder(
+        repoOwner: String,
+        repoName: String,
+        prNumber: Int,
+        labelName: String,
+    ): String? {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping label event lookup for PR #$prNumber")
+            return null
+        }
+
+        DebugLogger.debug("Querying GitHub API for who added '$labelName' label to PR #$prNumber")
+
+        return try {
+            val response = client.githubRequest<String?>(
+                path = "$repoOwner/$repoName/issues/$prNumber/events",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                val events = response.body<List<IssueEvent>>()
+                val labelEvent = events.lastOrNull { event ->
+                    event.event == "labeled" && event.label?.name == labelName
+                }
+                val actor = labelEvent?.actor?.login
+                if (actor != null) {
+                    DebugLogger.debug("Found '$labelName' label was added by: $actor")
+                } else {
+                    DebugLogger.debug("No '$labelName' label event found on PR #$prNumber")
+                }
+                actor
+            } else {
+                DebugLogger.warn("⚠️  Failed to get events for PR #$prNumber: HTTP ${response.status.value}")
+                null
+            }
+        } catch (e: Exception) {
+            DebugLogger.warn("⚠️  Exception getting events for PR #$prNumber: ${e.message}")
+            null
+        }
+    }
+
+    @Serializable
+    data class IssueEvent(
+        @SerialName("event")
+        val event: String,
+        @SerialName("actor")
+        val actor: EventActor? = null,
+        @SerialName("label")
+        val label: EventLabel? = null,
+    )
+
+    @Serializable
+    data class EventActor(
+        @SerialName("login")
+        val login: String,
+    )
+
+    @Serializable
+    data class EventLabel(
+        @SerialName("name")
+        val name: String,
+    )
+
     @Serializable
     data class CommentRequest(
         @SerialName("body")
