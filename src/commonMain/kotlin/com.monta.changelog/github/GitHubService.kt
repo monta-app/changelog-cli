@@ -566,10 +566,7 @@ class GitHubService(
 
             if (response.status.isSuccess()) {
                 val events = response.body<List<IssueEvent>>()
-                val labelEvent = events.lastOrNull { event ->
-                    event.event == "labeled" && event.label?.name == labelName
-                }
-                val actor = labelEvent?.actor?.login
+                val actor = findLabelAdderFromEvents(events, labelName)
                 if (actor != null) {
                     DebugLogger.debug("Found '$labelName' label was added by: $actor")
                 } else {
@@ -613,4 +610,20 @@ class GitHubService(
         @SerialName("body")
         val body: String,
     )
+
+    companion object {
+        /**
+         * Returns true if the given actor username looks like a GitHub bot account.
+         */
+        fun isBotActor(actor: String?): Boolean = actor != null && actor.contains("[bot]")
+
+        /**
+         * Finds the username of the person who last added a specific label,
+         * given a list of issue events. Pure function for testability.
+         */
+        fun findLabelAdderFromEvents(
+            events: List<IssueEvent>,
+            labelName: String,
+        ): String? = events.lastOrNull { it.event == "labeled" && it.label?.name == labelName }?.actor?.login
+    }
 }
