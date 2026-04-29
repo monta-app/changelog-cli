@@ -12,8 +12,10 @@
     {
       "description": "Do not pin internal monta-app GitHub Actions — these intentionally track @main",
       "matchManagers": ["github-actions"],
-      "matchPackagePatterns": ["^monta-app/"],
-      "pinDigests": false
+      "pinDigests": false,
+      "matchPackageNames": [
+        "/^monta-app//"
+      ]
     }
   ]
 }
