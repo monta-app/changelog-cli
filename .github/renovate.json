@@ -7,5 +7,13 @@
   ],
   "semanticCommits": "enabled",
   "prConcurrentLimit": 2,
-  "rebaseWhen": "conflicted"
+  "rebaseWhen": "conflicted",
+  "packageRules": [
+    {
+      "description": "Do not pin internal monta-app GitHub Actions — these intentionally track @main",
+      "matchManagers": ["github-actions"],
+      "matchPackagePatterns": ["^monta-app/"],
+      "pinDigests": false
+    }
+  ]
 }
