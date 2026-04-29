@@ -33,7 +33,7 @@ jobs:
       - name: Capture deployment start time
         id: deployment_start
         run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0  # Fetch all tags
       - name: Create new version tag
@@ -84,7 +84,7 @@ jobs:
 
           echo "✅ Successfully created and pushed tag $NEW_VERSION"
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
         with:
           java-version: '25'
           distribution: 'corretto'
@@ -96,12 +96,12 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew prepareReleaseBinaries
       - name: Upload x64 executable
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: changelog-cli-x64
           path: build/release/changelog-cli-x64
       - name: Upload ARM64 executable
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: changelog-cli-arm64
           path: build/release/changelog-cli-arm64
@@ -111,16 +111,16 @@ jobs:
     needs: create-tag-and-build
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
       - name: Download x64 artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: changelog-cli-x64
           path: ./binaries
       - name: Download ARM64 artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: changelog-cli-arm64
           path: ./binaries
@@ -154,7 +154,7 @@ jobs:
           CHANGELOG_DEPLOYMENT_END_TIME: ${{ steps.deployment_end.outputs.timestamp }}
           CHANGELOG_DEPLOYMENT_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.create-tag-and-build.outputs.new_version }}
       - name: Upload x64 binary to release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./binaries/changelog-cli-x64
@@ -162,7 +162,7 @@ jobs:
           tag: ${{ needs.create-tag-and-build.outputs.new_version }}
           overwrite: true
       - name: Upload ARM64 binary to release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./binaries/changelog-cli-arm64
@@ -175,11 +175,11 @@ jobs:
     needs: [create-release, create-tag-and-build]
     steps:
       - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.10.0
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY_MONTA_BOT }}
       - name: Checkout changelog-cli-action
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: monta-app/changelog-cli-action
           ssh-key: ${{ secrets.SSH_KEY_MONTA_BOT }}
