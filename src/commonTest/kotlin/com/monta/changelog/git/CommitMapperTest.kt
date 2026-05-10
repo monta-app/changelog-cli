@@ -1,5 +1,6 @@
 package com.monta.changelog.git
 
+import com.monta.changelog.model.ConventionalCommitType
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -105,6 +106,41 @@ class CommitMapperTest :
             val commit = mapper.fromGitLogItem(logItem)
 
             commit.shouldBeNull()
+        }
+
+        "should map build commit type" {
+            val logItem = LogItem(
+                author = Author(date = "2026-01-12", email = "test@test.com", name = "Test"),
+                committer = Author(date = "2026-01-12", email = "test@test.com", name = "Test"),
+                commit = "abc123",
+                subject = "build(deps): bump kotlin to 2.0",
+                body = "",
+                parents = "parent1"
+            )
+
+            val commit = mapper.fromGitLogItem(logItem)
+
+            commit.shouldNotBeNull()
+            commit.type shouldBe ConventionalCommitType.Build
+            commit.scope shouldBe "deps"
+            commit.message shouldBe "bump kotlin to 2.0"
+        }
+
+        "should map revert commit type" {
+            val logItem = LogItem(
+                author = Author(date = "2026-01-12", email = "test@test.com", name = "Test"),
+                committer = Author(date = "2026-01-12", email = "test@test.com", name = "Test"),
+                commit = "abc123",
+                subject = "revert: undo previous change",
+                body = "",
+                parents = "parent1"
+            )
+
+            val commit = mapper.fromGitLogItem(logItem)
+
+            commit.shouldNotBeNull()
+            commit.type shouldBe ConventionalCommitType.Revert
+            commit.message shouldBe "undo previous change"
         }
 
         "should map commit with double quotes in subject" {

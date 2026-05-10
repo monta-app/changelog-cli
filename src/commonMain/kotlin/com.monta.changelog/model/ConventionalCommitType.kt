@@ -60,6 +60,18 @@ enum class ConventionalCommitType(
         sortOrder = 8,
         values = listOf("ci")
     ),
+    Build(
+        title = "Build",
+        emoji = "\uD83D\uDCE6",
+        sortOrder = 9,
+        values = listOf("build")
+    ),
+    Revert(
+        title = "Revert",
+        emoji = "\u23EA",
+        sortOrder = 10,
+        values = listOf("revert")
+    ),
     ;
 
     companion object {
