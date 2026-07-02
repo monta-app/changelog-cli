@@ -47,7 +47,7 @@ sealed interface LinkResolver {
                 )
             }
 
-        private fun getUrl(ownerName: String, serviceName: String, pullRequestNumber: String): String = "https://github.com/$ownerName/$serviceName/pull/$pullRequestNumber"
+        private fun getUrl(ownerName: String, serviceName: String, pullRequestNumber: String): String = "https://redirect.github.com/$ownerName/$serviceName/pull/$pullRequestNumber"
     }
 
     class Jira(

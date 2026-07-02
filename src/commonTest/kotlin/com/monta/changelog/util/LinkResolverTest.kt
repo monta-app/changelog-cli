@@ -69,8 +69,8 @@ class LinkResolverTest :
                 message = "Merge #123 and #456"
             )
 
-            result shouldContain "<https://github.com/monta-app/changelog-cli/pull/123|#123>"
-            result shouldContain "<https://github.com/monta-app/changelog-cli/pull/456|#456>"
+            result shouldContain "<https://redirect.github.com/monta-app/changelog-cli/pull/123|#123>"
+            result shouldContain "<https://redirect.github.com/monta-app/changelog-cli/pull/456|#456>"
         }
 
         "should not create hyperlinks for invalid PRs" {
@@ -86,11 +86,11 @@ class LinkResolverTest :
             )
 
             // #123 should be hyperlinked
-            result shouldContain "<https://github.com/monta-app/changelog-cli/pull/123|#123>"
+            result shouldContain "<https://redirect.github.com/monta-app/changelog-cli/pull/123|#123>"
 
             // #999 should remain as plain text (not hyperlinked)
             result shouldContain "#999"
-            result shouldNotContain "https://github.com/monta-app/changelog-cli/pull/999"
+            result shouldNotContain "https://redirect.github.com/monta-app/changelog-cli/pull/999"
         }
 
         "should create hyperlinks for all PRs when validPullRequests is null" {
@@ -106,8 +106,8 @@ class LinkResolverTest :
             )
 
             // Both should be hyperlinked when validation is disabled
-            result shouldContain "<https://github.com/monta-app/changelog-cli/pull/123|#123>"
-            result shouldContain "<https://github.com/monta-app/changelog-cli/pull/999|#999>"
+            result shouldContain "<https://redirect.github.com/monta-app/changelog-cli/pull/123|#123>"
+            result shouldContain "<https://redirect.github.com/monta-app/changelog-cli/pull/999|#999>"
         }
 
         "should handle multiple JIRA tickets in one message" {
@@ -139,9 +139,9 @@ class LinkResolverTest :
                 message = "Merge #10 #20 and #99"
             )
 
-            result shouldContain "<https://github.com/monta-app/test-repo/pull/10|#10>"
-            result shouldContain "<https://github.com/monta-app/test-repo/pull/20|#20>"
+            result shouldContain "<https://redirect.github.com/monta-app/test-repo/pull/10|#10>"
+            result shouldContain "<https://redirect.github.com/monta-app/test-repo/pull/20|#20>"
             result shouldContain "#99"
-            result shouldNotContain "https://github.com/monta-app/test-repo/pull/99"
+            result shouldNotContain "https://redirect.github.com/monta-app/test-repo/pull/99"
         }
     })
