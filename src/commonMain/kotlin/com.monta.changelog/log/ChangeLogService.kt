@@ -602,14 +602,6 @@ class ChangeLogService(
         if (links.isNotEmpty()) {
             append(" • ${links.joinToString(" • ")}")
         }
-
-        changeLog.triggeredBy?.let { triggeredBy ->
-            val username = triggeredBy.removePrefix("@")
-            val displayText = changeLog.triggeredByName?.let {
-                "$it ([@$username](https://github.com/$username))"
-            } ?: "[@$username](https://github.com/$username)"
-            append(" • $displayText")
-        }
     }
 
     /**
