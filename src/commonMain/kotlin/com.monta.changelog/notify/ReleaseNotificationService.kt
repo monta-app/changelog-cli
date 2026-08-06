@@ -10,9 +10,13 @@ import com.monta.changelog.printer.slack.SlackUserResolver
 import com.monta.changelog.util.DebugLogger
 import com.monta.changelog.util.client
 import com.monta.changelog.util.getBodySafe
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.utils.io.charsets.*
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.charsets.name
 
 /**
  * A single person contributing to the release, tracked by the most specific identity

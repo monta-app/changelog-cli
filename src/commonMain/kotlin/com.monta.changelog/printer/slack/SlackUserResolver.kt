@@ -3,7 +3,8 @@ package com.monta.changelog.printer.slack
 import com.monta.changelog.util.DebugLogger
 import com.monta.changelog.util.client
 import com.monta.changelog.util.getBodySafe
-import io.ktor.client.request.*
+import io.ktor.client.request.get
+import io.ktor.client.request.header
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
