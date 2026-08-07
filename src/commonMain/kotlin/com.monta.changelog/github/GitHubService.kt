@@ -389,6 +389,167 @@ class GitHubService(
     )
 
     /**
+     * Gets the full GitHub user profile (including public email, if any) for a username.
+     * Returns null if no token is provided or if the API call fails.
+     */
+    suspend fun getUser(username: String): UserResponse? {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping user lookup for $username")
+            return null
+        }
+
+        val cleanUsername = username.removePrefix("@")
+
+        return try {
+            val response = client.githubRequest<String?>(
+                path = "../users/$cleanUsername",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                response.body<UserResponse>()
+            } else {
+                DebugLogger.debug("Could not look up GitHub user $cleanUsername: HTTP ${response.status.value}")
+                null
+            }
+        } catch (e: Exception) {
+            DebugLogger.debug("Exception looking up GitHub user $cleanUsername: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Represents a pull request's author and its approvers, used for tagging
+     * people in release notifications.
+     */
+    data class PullRequestDetails(
+        val number: Int,
+        val author: String?,
+        val htmlUrl: String?,
+        val approvers: List<String>,
+    )
+
+    /**
+     * Gets the author and list of users who approved the given pull request.
+     * Returns empty/null values if no token is provided or if the API calls fail.
+     */
+    suspend fun getPullRequestDetails(
+        repoOwner: String,
+        repoName: String,
+        prNumber: Int,
+    ): PullRequestDetails {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping PR detail lookup for #$prNumber")
+            return PullRequestDetails(number = prNumber, author = null, htmlUrl = null, approvers = emptyList())
+        }
+
+        val (author, htmlUrl) = try {
+            val response = client.githubRequest<String?>(
+                path = "$repoOwner/$repoName/pulls/$prNumber",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                val pr = response.body<PullRequestDetailResponse>()
+                pr.user?.login to pr.htmlUrl
+            } else {
+                DebugLogger.warn("⚠️  Failed to get PR #$prNumber details: HTTP ${response.status.value}")
+                null to null
+            }
+        } catch (e: Exception) {
+            DebugLogger.warn("⚠️  Exception getting PR #$prNumber details: ${e.message}")
+            null to null
+        }
+
+        val approvers = try {
+            val response = client.githubRequest<String?>(
+                path = "$repoOwner/$repoName/pulls/$prNumber/reviews",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                response.body<List<PullRequestReviewResponse>>()
+                    .filter { it.state == "APPROVED" }
+                    .mapNotNull { it.user?.login }
+                    .distinct()
+            } else {
+                DebugLogger.warn("⚠️  Failed to get reviews for PR #$prNumber: HTTP ${response.status.value}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            DebugLogger.warn("⚠️  Exception getting reviews for PR #$prNumber: ${e.message}")
+            emptyList()
+        }
+
+        return PullRequestDetails(number = prNumber, author = author, htmlUrl = htmlUrl, approvers = approvers)
+    }
+
+    @Serializable
+    data class PullRequestDetailResponse(
+        @SerialName("html_url")
+        val htmlUrl: String? = null,
+        @SerialName("user")
+        val user: EventActor? = null,
+    )
+
+    @Serializable
+    data class PullRequestReviewResponse(
+        @SerialName("state")
+        val state: String? = null,
+        @SerialName("user")
+        val user: EventActor? = null,
+    )
+
+    /**
+     * Gets the commit messages (subject + body) for every commit in a pull request.
+     * Used to detect `Co-authored-by:` trailers. Returns an empty list if no token is
+     * provided or if the API call fails.
+     */
+    suspend fun getPullRequestCommitMessages(
+        repoOwner: String,
+        repoName: String,
+        prNumber: Int,
+    ): List<String> {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping commit lookup for PR #$prNumber")
+            return emptyList()
+        }
+
+        return try {
+            val response = client.githubRequest<String?>(
+                path = "$repoOwner/$repoName/pulls/$prNumber/commits",
+                httpMethod = HttpMethod.Get,
+                body = null
+            )
+
+            if (response.status.isSuccess()) {
+                response.body<List<PullRequestCommitResponse>>().mapNotNull { it.commit?.message }
+            } else {
+                DebugLogger.warn("⚠️  Failed to get commits for PR #$prNumber: HTTP ${response.status.value}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            DebugLogger.warn("⚠️  Exception getting commits for PR #$prNumber: ${e.message}")
+            emptyList()
+        }
+    }
+
+    @Serializable
+    data class PullRequestCommitResponse(
+        @SerialName("commit")
+        val commit: PullRequestCommitDetail? = null,
+    )
+
+    @Serializable
+    data class PullRequestCommitDetail(
+        @SerialName("message")
+        val message: String? = null,
+    )
+
+    /**
      * Checks if a pull request exists in the repository.
      * Returns true if the PR exists and is accessible, false otherwise.
      */

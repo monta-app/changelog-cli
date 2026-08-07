@@ -140,6 +140,23 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_COMMENT_ON_JIRA"
     ).flag(default = false)
 
+    private val monitoringUrls: List<String>? by option(
+        help = "Comma-separated list of dashboard/monitoring URLs to post in the release notification. " +
+            "Each entry can be a bare URL or 'Label|https://url' (optional)",
+        envvar = "CHANGELOG_MONITORING_URLS"
+    ).split(",")
+
+    private val releaseNotifyChannel: String? by option(
+        help = "Slack channel ID or name to post a release notification to, tagging PR authors/approvers and " +
+            "linking the monitoring URLs (optional, requires CHANGELOG_SLACK_TOKEN)",
+        envvar = "CHANGELOG_RELEASE_NOTIFY_CHANNEL"
+    )
+
+    private val releaseNotifySlackToken: String? by option(
+        help = "Slack token used for posting the release notification message (falls back to the token used for --output slack)",
+        envvar = "CHANGELOG_SLACK_TOKEN"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -182,7 +199,10 @@ class GenerateChangeLogCommand : CliktCommand() {
                 deploymentEndTime = deploymentEndTime.valueOrNull(),
                 deploymentUrl = deploymentUrl.valueOrNull(),
                 commentOnPrs = commentOnPrs,
-                commentOnJira = commentOnJira
+                commentOnJira = commentOnJira,
+                monitoringUrls = monitoringUrls?.filter { it.isNotBlank() },
+                releaseNotifyChannel = releaseNotifyChannel.valueOrNull(),
+                releaseNotifySlackToken = releaseNotifySlackToken.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions

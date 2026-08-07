@@ -5,6 +5,8 @@ import com.monta.changelog.git.GitService
 import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.github.GitHubService
 import com.monta.changelog.model.ChangeLog
+import com.monta.changelog.notify.MonitoringUrl
+import com.monta.changelog.notify.ReleaseNotificationService
 import com.monta.changelog.printer.ChangeLogPrinter
 import com.monta.changelog.util.DateTimeUtil
 import com.monta.changelog.util.DebugLogger
@@ -35,6 +37,9 @@ class ChangeLogService(
     private val deploymentUrl: String?,
     private val commentOnPrs: Boolean,
     private val commentOnJira: Boolean,
+    private val monitoringUrls: List<String>? = null,
+    private val releaseNotifyChannel: String? = null,
+    private val releaseNotifySlackToken: String? = null,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -46,6 +51,17 @@ class ChangeLogService(
     }
     private val repoInfo = gitService.getRepoInfo()
     private val repositoryUrl = gitService.getRepositoryUrl()
+
+    private val releaseNotificationService = if (releaseNotifyChannel != null && releaseNotifySlackToken != null) {
+        ReleaseNotificationService(
+            slackToken = releaseNotifySlackToken,
+            slackChannel = releaseNotifyChannel,
+            monitoringUrls = MonitoringUrl.parseAll(monitoringUrls),
+            gitHubService = gitHubService
+        )
+    } else {
+        null
+    }
 
     private fun linkResolvers(
         validatedTickets: List<String>? = null,
@@ -82,6 +98,10 @@ class ChangeLogService(
         }
         if (pathExcludePattern != null) {
             DebugLogger.info("pathExclude   $pathExcludePattern")
+        }
+        if (releaseNotifyChannel != null && releaseNotifySlackToken == null) {
+            DebugLogger.warn("⚠️  Release notify channel is set but no Slack token was provided")
+            DebugLogger.warn("   → Set CHANGELOG_SLACK_TOKEN to enable the release notification message")
         }
     }
 
@@ -235,6 +255,13 @@ class ChangeLogService(
                     validatedPrs = validatedPrs
                 ),
                 changeLog = changeLog
+            )
+        }
+
+        if (releaseNotificationService != null) {
+            releaseNotificationService.notify(
+                changeLog = changeLog,
+                pullRequests = validatedPrs
             )
         }
 

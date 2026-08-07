@@ -34,9 +34,40 @@ CHANGELOG_STAGE # Deployment stage/environment (e.g., dev, staging, production) 
 CHANGELOG_DOCKER_IMAGE # Docker image repository URL (e.g., 077199819609.dkr.ecr.eu-west-1.amazonaws.com/geo-production) (shown in Slack metadata) [optional]
 CHANGELOG_IMAGE_TAG # Current Docker image tag being deployed (e.g., commit SHA) (shown in Slack metadata) [optional]
 CHANGELOG_PREVIOUS_IMAGE_TAG # Previous Docker image tag for rollback reference (shown in Slack metadata) [optional]
+CHANGELOG_MONITORING_URLS # Comma-separated list of dashboard/monitoring URLs for the release notification. Each entry is a bare URL or 'Label|https://url' [optional]
+CHANGELOG_RELEASE_NOTIFY_CHANNEL # Slack channel ID or name to post a release notification to, tagging PR authors/approvers and linking the monitoring URLs [optional, requires CHANGELOG_SLACK_TOKEN]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
+
+### Release Notifications
+
+Independently of `CHANGELOG_OUTPUT`, you can have the CLI post a short Slack message announcing the release,
+listing dashboards to keep an eye on, and tagging the people who authored or approved the pull requests included
+in it:
+
+```shell
+CHANGELOG_RELEASE_NOTIFY_CHANNEL=C02PDBL6GAU
+CHANGELOG_SLACK_TOKEN=xoxb-...
+CHANGELOG_MONITORING_URLS="Grafana|https://grafana.example.com/d/abc,Sentry|https://sentry.example.com/my-project"
+```
+
+The message looks roughly like:
+
+```
+Release <link to the GitHub release> is out 🚀
+Dashboards to monitor:
+• Grafana
+• Sentry
+Contributors:
+• @alice #123 #124
+• @bob (approver) #125
+```
+
+Contributors are tagged with a real Slack mention (`@user`) when their public GitHub email matches a Slack
+account; otherwise they're linked to their GitHub profile instead. Anyone who only approved a pull request
+(and didn't author one in this release) is suffixed with `(approver)`. Requires `CHANGELOG_GITHUB_TOKEN` to
+resolve PR authors/approvers.
 
 ### How to Release This Project
 
