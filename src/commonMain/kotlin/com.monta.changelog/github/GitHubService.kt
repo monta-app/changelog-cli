@@ -776,7 +776,12 @@ class GitHubService(
         /**
          * Returns true if the given actor username looks like a GitHub bot account.
          */
-        fun isBotActor(actor: String?): Boolean = actor != null && actor.contains("[bot]")
+        fun isBotActor(actor: String?): Boolean = when {
+            actor == null -> false
+            actor.contains("[bot]") -> true
+            actor == "claude" -> true
+            else -> false
+        }
 
         /**
          * Finds the username of the person who last added a specific label,

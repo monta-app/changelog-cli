@@ -11,6 +11,7 @@ class GitHubServiceTest :
             GitHubService.isBotActor("monta-zipper[bot]") shouldBe true
             GitHubService.isBotActor("dependabot[bot]") shouldBe true
             GitHubService.isBotActor("github-actions[bot]") shouldBe true
+            GitHubService.isBotActor("claude") shouldBe true
         }
 
         "isBotActor should return false for human actors" {
