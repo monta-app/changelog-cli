@@ -36,6 +36,8 @@ CHANGELOG_IMAGE_TAG # Current Docker image tag being deployed (e.g., commit SHA)
 CHANGELOG_PREVIOUS_IMAGE_TAG # Previous Docker image tag for rollback reference (shown in Slack metadata) [optional]
 CHANGELOG_MONITORING_URLS # Comma-separated list of dashboard/monitoring URLs for the release notification. Each entry is a bare URL or 'Label|https://url' [optional]
 CHANGELOG_RELEASE_NOTIFY_CHANNEL # Slack channel ID or name to post a release notification to, tagging PR authors/approvers and linking the monitoring URLs [optional, requires CHANGELOG_SLACK_TOKEN]
+CHANGELOG_DM_AUTHORS # Send each author of the release a DM telling them their change is deployed and pointing them at the monitoring URLs [optional, requires CHANGELOG_SLACK_TOKEN and CHANGELOG_MONITORING_URLS]
+CHANGELOG_IDENTITY_API_URL # Base URL of the identity resolver used to map GitHub logins to Slack accounts [optional, strongly recommended with CHANGELOG_DM_AUTHORS]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
@@ -68,6 +70,58 @@ Contributors are tagged with a real Slack mention (`@user`) when their public Gi
 account; otherwise they're linked to their GitHub profile instead. Anyone who only approved a pull request
 (and didn't author one in this release) is suffixed with `(approver)`. Requires `CHANGELOG_GITHUB_TOKEN` to
 resolve PR authors/approvers.
+
+### Author DMs
+
+`CHANGELOG_DM_AUTHORS` adds a **second, separate** message: a direct message to each author of the release,
+telling them their change is deployed and pointing them at the dashboards to watch. The channel notification
+above is unchanged and independent - you can run either, both, or neither.
+
+```shell
+CHANGELOG_DM_AUTHORS=true
+CHANGELOG_SLACK_TOKEN=xoxb-...
+CHANGELOG_MONITORING_URLS="Server Error Dashboard|https://montaapp.grafana.net/d/ja52q4d/server-error-dashboard?from=now-30m&to=now&timezone=browser&var-container=$__all&var-filter=&var-Filters="
+CHANGELOG_IDENTITY_API_URL=https://project-tracker.vpn.internal.monta.app
+```
+
+The DM looks roughly like:
+
+```
+🚀 Your changes are live - Monta PHP Monolith release 2026-08-19-11-52 is now deployed to Production.
+Please keep an eye out for errors over the next 30 minutes:
+• Server Error Dashboard
+Your pull requests in this release: #25545
+```
+
+A channel announcement is easy for everyone to scroll past; a DM lands as a personal to-do, which is the point.
+Only authors and co-authors are messaged - reviewers aren't put on release watch, since the person who wrote the
+change is the one who can tell whether it's misbehaving.
+
+The headline only claims the change is **live** when the deployment has actually finished (both
+`CHANGELOG_DEPLOYMENT_START_TIME` and `CHANGELOG_DEPLOYMENT_END_TIME` are set). Otherwise it says the release is
+*being deployed*, matching the `⏳ Deployment pending` state the PR and Jira comments already use - a DM that
+tells you to go look at a dashboard before your code is running is worse than no DM.
+
+#### Reaching the author in Slack
+
+Mapping a GitHub author to a Slack account is the hard part of this feature, and doing it from GitHub data alone
+does not work well:
+
+| What we can read from GitHub | How often it reaches Slack |
+|------------------------------|----------------------------|
+| Public profile email         | Set on a small minority of org members - and may be the wrong domain (`cr@monta.app` on GitHub vs `cr@monta.com` in Slack) |
+| Commit author email          | Frequently a `users.noreply.github.com` or personal address Slack has never seen |
+
+So `CHANGELOG_IDENTITY_API_URL` should point at project-tracker's identity resolver, which is built for exactly
+this and knows each person's work email and Slack id. Resolution tries, in order: the resolver's Slack id, the
+resolver's work email, the `Co-authored-by:` trailer email, then the public GitHub profile email - each looked up
+in Slack via `users.lookupByEmail`.
+
+The resolver is **VPN-only**, so a GitHub-hosted runner can't reach it: join the runner to the tailnet with
+`tailscale/github-action` (the same `TAILSCALE_AUTHKEY` pattern several of our workflows already use) or run the
+job on a self-hosted runner. Without it the DM still works, but only for the authors whose GitHub-visible email
+happens to match Slack. Authors who can't be reached are named in a warning rather than silently skipped, so a
+missing DM is diagnosable from the job log.
 
 ### How to Release This Project
 

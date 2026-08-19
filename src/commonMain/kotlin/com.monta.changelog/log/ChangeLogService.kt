@@ -4,7 +4,9 @@ import com.monta.changelog.git.CommitInfo
 import com.monta.changelog.git.GitService
 import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.github.GitHubService
+import com.monta.changelog.identity.IdentityService
 import com.monta.changelog.model.ChangeLog
+import com.monta.changelog.notify.AuthorDmService
 import com.monta.changelog.notify.MonitoringUrl
 import com.monta.changelog.notify.ReleaseNotificationService
 import com.monta.changelog.printer.ChangeLogPrinter
@@ -40,6 +42,8 @@ class ChangeLogService(
     private val monitoringUrls: List<String>? = null,
     private val releaseNotifyChannel: String? = null,
     private val releaseNotifySlackToken: String? = null,
+    private val dmAuthors: Boolean = false,
+    private val identityApiUrl: String? = null,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -58,6 +62,19 @@ class ChangeLogService(
             slackChannel = releaseNotifyChannel,
             monitoringUrls = MonitoringUrl.parseAll(monitoringUrls),
             gitHubService = gitHubService
+        )
+    } else {
+        null
+    }
+
+    // Independent of the channel notification: the DM needs a Slack token and dashboards, but no
+    // channel to post to.
+    private val authorDmService = if (dmAuthors && releaseNotifySlackToken != null) {
+        AuthorDmService(
+            slackToken = releaseNotifySlackToken,
+            monitoringUrls = MonitoringUrl.parseAll(monitoringUrls),
+            gitHubService = gitHubService,
+            identityService = identityApiUrl?.let { IdentityService(it) }
         )
     } else {
         null
@@ -102,6 +119,13 @@ class ChangeLogService(
         if (releaseNotifyChannel != null && releaseNotifySlackToken == null) {
             DebugLogger.warn("⚠️  Release notify channel is set but no Slack token was provided")
             DebugLogger.warn("   → Set CHANGELOG_SLACK_TOKEN to enable the release notification message")
+        }
+        if (dmAuthors && releaseNotifySlackToken == null) {
+            DebugLogger.warn("⚠️  Author DMs are enabled but no Slack token was provided")
+            DebugLogger.warn("   → Set CHANGELOG_SLACK_TOKEN to enable the author DM")
+        }
+        if (dmAuthors) {
+            DebugLogger.info("dmAuthors     enabled${if (identityApiUrl == null) " (no identity resolver configured)" else ""}")
         }
     }
 
@@ -260,6 +284,13 @@ class ChangeLogService(
 
         if (releaseNotificationService != null) {
             releaseNotificationService.notify(
+                changeLog = changeLog,
+                pullRequests = validatedPrs
+            )
+        }
+
+        if (authorDmService != null) {
+            authorDmService.notifyAuthors(
                 changeLog = changeLog,
                 pullRequests = validatedPrs
             )

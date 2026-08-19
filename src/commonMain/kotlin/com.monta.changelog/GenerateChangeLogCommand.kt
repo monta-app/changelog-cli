@@ -157,6 +157,19 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_SLACK_TOKEN"
     )
 
+    private val dmAuthors: Boolean by option(
+        "--dm-authors",
+        help = "Send each author of the release a direct message telling them their change is deployed and " +
+            "pointing them at the monitoring URLs (requires CHANGELOG_SLACK_TOKEN and CHANGELOG_MONITORING_URLS)",
+        envvar = "CHANGELOG_DM_AUTHORS"
+    ).flag(default = false)
+
+    private val identityApiUrl: String? by option(
+        help = "Base URL of the identity resolver used to map GitHub logins to Slack accounts, e.g. " +
+            "https://project-tracker.vpn.internal.monta.app (optional, improves author DM delivery)",
+        envvar = "CHANGELOG_IDENTITY_API_URL"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -202,7 +215,9 @@ class GenerateChangeLogCommand : CliktCommand() {
                 commentOnJira = commentOnJira,
                 monitoringUrls = monitoringUrls?.filter { it.isNotBlank() },
                 releaseNotifyChannel = releaseNotifyChannel.valueOrNull(),
-                releaseNotifySlackToken = releaseNotifySlackToken.valueOrNull()
+                releaseNotifySlackToken = releaseNotifySlackToken.valueOrNull(),
+                dmAuthors = dmAuthors,
+                identityApiUrl = identityApiUrl.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions
