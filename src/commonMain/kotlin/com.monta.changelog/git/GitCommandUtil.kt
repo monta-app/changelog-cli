@@ -2,7 +2,7 @@ package com.monta.changelog.git
 
 import com.monta.changelog.util.DebugLogger
 
-internal class GitCommandUtil {
+internal open class GitCommandUtil {
 
     private val commandExecutor: CommandExecutor = createCommandExecutor()
 
@@ -18,7 +18,7 @@ internal class GitCommandUtil {
         tag.trim()
     }
 
-    fun getFilesInCommit(commitId: String): List<String> = executeCommand("git diff-tree --no-commit-id --name-only $commitId -r").map { file ->
+    open fun getFilesInCommit(commitId: String): List<String> = executeCommand("git diff-tree --no-commit-id --name-only $commitId -r").map { file ->
         file.trim()
     }
 
@@ -31,7 +31,7 @@ internal class GitCommandUtil {
         )
     )
 
-    fun getLogs(latestTag: String, previousTag: String): List<LogItem> = parseLogsWithBody(
+    open fun getLogs(latestTag: String, previousTag: String): List<LogItem> = parseLogsWithBody(
         executeCommand(
             buildString {
                 append("git log ")

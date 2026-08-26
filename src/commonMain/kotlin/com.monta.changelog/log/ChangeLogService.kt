@@ -412,9 +412,9 @@ class ChangeLogService(
      * Requirements:
      * - commentOnPrs flag is enabled
      * - Stage is "production" or "internal" (case insensitive)
-     * - Deployment start and end times are available
      * - Print result includes a Slack message URL
      *
+     * Deployment start/end times are NOT required (they only affect wording).
      * Logs warnings when flag is enabled but conditions aren't met.
      */
     internal fun shouldCommentOnPRs(

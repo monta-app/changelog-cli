@@ -14,7 +14,7 @@ data class CommitInfo(
     val tagName: String,
     val previousTagName: String?,
     val commits: List<Commit>,
-    val allCommitShas: List<String> = emptyList(), // All commit SHAs including filtered ones (merge commits, etc.)
+    val allCommitShas: List<String> = emptyList(), // Commit SHAs surviving path filtering (incl. merge commits); used for PR discovery
     val nonConventionalCommits: List<NonConventionalCommit> = emptyList(), // Commits that didn't match conventional commit syntax
 )
 
