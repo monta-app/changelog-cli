@@ -34,11 +34,33 @@ CHANGELOG_STAGE # Deployment stage/environment (e.g., dev, staging, production) 
 CHANGELOG_DOCKER_IMAGE # Docker image repository URL (e.g., 077199819609.dkr.ecr.eu-west-1.amazonaws.com/geo-production) (shown in Slack metadata) [optional]
 CHANGELOG_IMAGE_TAG # Current Docker image tag being deployed (e.g., commit SHA) (shown in Slack metadata) [optional]
 CHANGELOG_PREVIOUS_IMAGE_TAG # Previous Docker image tag for rollback reference (shown in Slack metadata) [optional]
+CHANGELOG_DEPLOYMENTS # JSON array of systems deployed in this release (see "Deployment metadata" below). Typically the deploy pipeline's rollout-wait output [optional]
 CHANGELOG_MONITORING_URLS # Comma-separated list of dashboard/monitoring URLs for the release notification. Each entry is a bare URL or 'Label|https://url' [optional]
 CHANGELOG_RELEASE_NOTIFY_CHANNEL # Slack channel ID or name to post a release notification to, tagging PR authors/approvers and linking the monitoring URLs [optional, requires CHANGELOG_SLACK_TOKEN]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
+
+### Deployment metadata
+
+`CHANGELOG_DEPLOYMENTS` accepts a JSON array describing the systems deployed in this release —
+typically piped straight from the deploy pipeline's rollout wait. Each entry:
+
+| Field | Required | Format | Example |
+|---|---|---|---|
+| `name` | yes | display name | `hub` |
+| `revision` | no | git commit SHA (full or short) | `80aad1c` |
+| `start` | no | ISO 8601 UTC timestamp | `2026-08-26T08:19:18Z` |
+| `end` | no | ISO 8601 UTC timestamp | `2026-08-26T08:30:59Z` |
+| `status` | no | rollout health | `healthy` |
+| `url` | no | link (e.g. ArgoCD app) | `https://argocd.monta.app/applications/argocd/frontend-hub-production` |
+
+Unknown fields are ignored and malformed JSON is dropped — it never fails the changelog.
+Non-ISO `start`/`end` values are shown verbatim rather than formatted.
+
+```shell
+CHANGELOG_DEPLOYMENTS='[{"name":"hub","revision":"80aad1c","start":"2026-08-26T08:19:18Z","end":"2026-08-26T08:30:59Z","status":"healthy","url":"https://argocd.monta.app/applications/argocd/frontend-hub-production"}]'
+```
 
 ### Release Notifications
 
