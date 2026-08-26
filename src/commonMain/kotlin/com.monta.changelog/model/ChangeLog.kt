@@ -26,6 +26,7 @@ data class ChangeLog(
     val deploymentStartTime: String? = null,
     val deploymentEndTime: String? = null,
     val deploymentUrl: String? = null,
+    val deployedSystems: List<DeployedSystem> = emptyList(),
 ) {
     val title: String
         get() = "$serviceName release $tagName"

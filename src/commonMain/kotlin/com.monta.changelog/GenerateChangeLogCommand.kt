@@ -140,6 +140,13 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_COMMENT_ON_JIRA"
     ).flag(default = false)
 
+    private val deployments: String? by option(
+        help = "JSON array of systems deployed in this release. Each entry: name (required), revision (git SHA), " +
+            "start and end (ISO 8601 UTC, e.g. 2026-08-26T08:19:18Z), status, url. Unknown fields are ignored and " +
+            "malformed input is dropped. Typically the output of the deploy pipeline's rollout wait (optional)",
+        envvar = "CHANGELOG_DEPLOYMENTS"
+    )
+
     private val monitoringUrls: List<String>? by option(
         help = "Comma-separated list of dashboard/monitoring URLs to post in the release notification. " +
             "Each entry can be a bare URL or 'Label|https://url' (optional)",
@@ -200,6 +207,7 @@ class GenerateChangeLogCommand : CliktCommand() {
                 deploymentUrl = deploymentUrl.valueOrNull(),
                 commentOnPrs = commentOnPrs,
                 commentOnJira = commentOnJira,
+                deployments = deployments.valueOrNull(),
                 monitoringUrls = monitoringUrls?.filter { it.isNotBlank() },
                 releaseNotifyChannel = releaseNotifyChannel.valueOrNull(),
                 releaseNotifySlackToken = releaseNotifySlackToken.valueOrNull()

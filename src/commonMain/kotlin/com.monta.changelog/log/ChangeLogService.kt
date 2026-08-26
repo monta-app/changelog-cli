@@ -37,6 +37,7 @@ class ChangeLogService(
     private val deploymentUrl: String?,
     private val commentOnPrs: Boolean,
     private val commentOnJira: Boolean,
+    deployments: String? = null,
     private val monitoringUrls: List<String>? = null,
     private val releaseNotifyChannel: String? = null,
     private val releaseNotifySlackToken: String? = null,
@@ -51,6 +52,7 @@ class ChangeLogService(
     }
     private val repoInfo = gitService.getRepoInfo()
     private val repositoryUrl = gitService.getRepositoryUrl()
+    private val deployedSystems = com.monta.changelog.model.DeployedSystem.parseAll(deployments)
 
     private val releaseNotificationService = if (releaseNotifyChannel != null && releaseNotifySlackToken != null) {
         ReleaseNotificationService(
@@ -98,6 +100,9 @@ class ChangeLogService(
         }
         if (pathExcludePattern != null) {
             DebugLogger.info("pathExclude   $pathExcludePattern")
+        }
+        if (deployedSystems.isNotEmpty()) {
+            DebugLogger.info("deployedSystems ${deployedSystems.size} (${deployedSystems.joinToString { it.name }})")
         }
         if (releaseNotifyChannel != null && releaseNotifySlackToken == null) {
             DebugLogger.warn("⚠️  Release notify channel is set but no Slack token was provided")
@@ -245,7 +250,8 @@ class ChangeLogService(
             stage = stage,
             deploymentStartTime = deploymentStartTime,
             deploymentEndTime = deploymentEndTime,
-            deploymentUrl = deploymentUrl
+            deploymentUrl = deploymentUrl,
+            deployedSystems = deployedSystems
         )
 
         if (githubRelease) {
