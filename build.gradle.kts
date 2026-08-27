@@ -131,7 +131,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation("io.kotest:kotest-framework-engine:6.1.11")
+                implementation("io.kotest:kotest-framework-engine:6.2.4")
                 implementation("io.kotest:kotest-assertions-core:6.2.4")
             }
         }
