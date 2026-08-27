@@ -554,6 +554,47 @@ class SlackExtensionsTest :
             deployed.text shouldContain "14:19:05 → 14:22:30 UTC"
         }
 
+        "deployed systems card leads with the overall window and total duration" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(
+                    listOf(
+                        DeployedSystem(name = "hub", start = "2026-08-27T18:44:47Z", end = "2026-08-27T18:47:02Z"),
+                        DeployedSystem(name = "portals", start = "2026-08-27T18:44:51Z", end = "2026-08-27T18:47:04Z")
+                    )
+                )
+            )
+
+            val deployed = result.attachments.first { it.text.startsWith("*Deployed systems") }
+            // earliest start 18:44:47 -> latest end 18:47:04, total 2m 17s
+            deployed.text shouldContain "⏱️ 18:44:47 → 18:47:04 UTC · *2m 17s*"
+            // overview precedes the per-system rows
+            (deployed.text.indexOf("⏱️") < deployed.text.indexOf("*hub*")) shouldBe true
+        }
+
+        "single-service deployment shows how long it took" {
+            val changeLog = ChangeLog(
+                serviceName = "Monta PHP Monolith",
+                jiraAppName = null,
+                tagName = "2026-08-27-18-31",
+                previousTagName = null,
+                repoOwner = "monta-app",
+                repoName = "server-php",
+                repositoryUrl = "https://github.com/monta-app/server-php",
+                groupedCommitMap = emptyMap(),
+                dockerImage = "server-php-production",
+                imageTag = "2f4caa6",
+                stage = "production",
+                deploymentStartTime = "2026-08-27T18:26:30Z",
+                deploymentEndTime = "2026-08-27T18:31:02Z"
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val deployment = result.attachments.first { it.text.startsWith("*Deployment:*") }
+            deployment.color shouldBe "#2EB67D"
+            deployment.text shouldContain "→ 18:31:02 UTC · *4m 32s*"
+        }
+
         "containers attachment links previous → new revision per system" {
             val result = buildMetadataBlocks(
                 monorepoChangeLog(

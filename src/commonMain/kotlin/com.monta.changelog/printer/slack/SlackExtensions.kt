@@ -230,10 +230,12 @@ private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: Mut
 
 private fun addDeploymentAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
     val window = DateTimeUtil.formatTimeRange(changeLog.deploymentStartTime, changeLog.deploymentEndTime) ?: return
+    val duration = DateTimeUtil.formatDuration(changeLog.deploymentStartTime, changeLog.deploymentEndTime)
+    val item = if (duration != null) "$window · *$duration*" else window
     attachments.addAll(
         splitIntoAttachments(
             header = "Deployment",
-            items = listOf(window),
+            items = listOf(item),
             color = "#2EB67D" // green — healthy
         )
     )
@@ -243,9 +245,11 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
     val systems = changeLog.deployedSystems
     if (systems.isEmpty()) return
 
-    val items = systems.map { system ->
+    val items = mutableListOf<String>()
+    deployedSystemsOverviewLine(systems)?.let { items.add(it) }
+    systems.forEach { system ->
         val suffix = deployRowSuffix(system)
-        if (suffix.isEmpty()) "• *${system.name}*" else "• *${system.name}* — $suffix"
+        items.add(if (suffix.isEmpty()) "• *${system.name}*" else "• *${system.name}* — $suffix")
     }
 
     val color = when (systems.outcome()) {
@@ -261,6 +265,17 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
             color = color
         )
     )
+}
+
+/** Overall rollout window (earliest start → latest end) and total duration across systems. */
+private fun deployedSystemsOverviewLine(systems: List<DeployedSystem>): String? {
+    val overallStart = systems.mapNotNull { it.start }.minOrNull() ?: return null
+    val overallEnd = systems.mapNotNull { it.end }.maxOrNull() ?: return null
+    val start = DateTimeUtil.formatClock(overallStart) ?: return null
+    val end = DateTimeUtil.formatClock(overallEnd) ?: return null
+    val duration = DateTimeUtil.formatDuration(overallStart, overallEnd)
+    val durationSuffix = if (duration != null) " · *$duration*" else ""
+    return "⏱️ $start → $end UTC$durationSuffix"
 }
 
 private fun addContainersAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
