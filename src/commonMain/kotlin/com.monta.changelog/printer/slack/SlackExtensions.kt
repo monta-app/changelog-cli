@@ -92,10 +92,13 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     // Deploy outcome first (multi-service systems, or single-service timing), then container info, JIRA, PRs, non-conventional
     if (changeLog.deployedSystems.isNotEmpty()) {
         addDeployedSystemsAttachment(changeLog, attachments)
-    } else if (isServiceDeployment(changeLog)) {
-        addDeploymentAttachment(changeLog, attachments)
+        addContainersAttachment(changeLog, attachments)
+    } else {
+        if (isServiceDeployment(changeLog)) {
+            addDeploymentAttachment(changeLog, attachments)
+        }
+        addTechnicalDetailsAttachment(changeLog, attachments)
     }
-    addTechnicalDetailsAttachment(changeLog, attachments)
     addJiraTicketAttachments(changeLog, attachments)
     addPullRequestAttachments(changeLog, attachments)
     addNonConventionalCommitsAttachment(changeLog, attachments)
@@ -258,6 +261,36 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
             color = color
         )
     )
+}
+
+private fun addContainersAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    val items = changeLog.deployedSystems.mapNotNull { system ->
+        containerRow(system, changeLog.repositoryUrl)
+    }
+    if (items.isEmpty()) return
+
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "Containers (${items.size})",
+            items = items,
+            color = "#575757" // containerd grey
+        )
+    )
+}
+
+private fun containerRow(system: DeployedSystem, repositoryUrl: String?): String? {
+    val revision = system.revision?.takeIf { it.isNotBlank() } ?: return null
+    val previous = system.previousRevision?.takeIf { it.isNotBlank() && it != revision }
+    val newRef = commitLink(revision, repositoryUrl)
+    if (previous == null) {
+        return "• *${system.name}* — $newRef"
+    }
+    return "• *${system.name}* — ${commitLink(previous, repositoryUrl)} → $newRef"
+}
+
+private fun commitLink(sha: String, repositoryUrl: String?): String {
+    val short = sha.take(7)
+    return if (repositoryUrl != null) "<$repositoryUrl/commit/$sha|`$short`>" else "`$short`"
 }
 
 private fun deployRowSuffix(system: DeployedSystem): String {

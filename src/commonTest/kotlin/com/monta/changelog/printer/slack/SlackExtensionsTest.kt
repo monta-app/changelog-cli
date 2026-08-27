@@ -555,4 +555,50 @@ class SlackExtensionsTest :
             deployed.text shouldContain "14:19:01 → 14:21:00 UTC"
             deployed.text shouldContain "14:19:05 → 14:22:30 UTC"
         }
+
+        "containers attachment links previous → new revision per system" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(
+                    listOf(
+                        DeployedSystem(name = "hub", revision = "80aad1c0000000", previousRevision = "1f4c9a20000000"),
+                        DeployedSystem(name = "portals", revision = "80aad1c0000000", previousRevision = "abcdef10000000")
+                    )
+                )
+            )
+
+            val containers = result.attachments.first { it.text.startsWith("*Containers") }
+            containers.color shouldBe "#575757"
+            containers.text shouldStartWith "*Containers (2):*"
+            containers.text shouldContain "*hub*"
+            containers.text shouldContain "https://github.com/monta-app/monorepo-typescript/commit/1f4c9a20000000|`1f4c9a2`"
+            containers.text shouldContain "https://github.com/monta-app/monorepo-typescript/commit/80aad1c0000000|`80aad1c`"
+            containers.text shouldContain "→"
+        }
+
+        "container row drops the arrow when there is no previous revision" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(listOf(DeployedSystem(name = "hub", revision = "80aad1c0000000")))
+            )
+
+            val containers = result.attachments.first { it.text.startsWith("*Containers") }
+            containers.text shouldContain "*hub* — <https://github.com/monta-app/monorepo-typescript/commit/80aad1c0000000|`80aad1c`>"
+            containers.text shouldNotContain "→"
+        }
+
+        "multi-service deployment suppresses the single-service container card" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(listOf(DeployedSystem(name = "hub", revision = "80aad1c0000000")))
+                    .copy(dockerImage = "ghcr.io/monta-app/x", imageTag = "80aad1c0000000")
+            )
+
+            result.attachments.none { it.text.startsWith("*Container information") } shouldBe true
+            result.attachments.any { it.text.startsWith("*Containers") } shouldBe true
+        }
+
+        "systems without a revision produce no containers card" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(listOf(DeployedSystem(name = "hub", start = "2026-08-27T14:19:01Z", end = "2026-08-27T14:21:00Z")))
+            )
+            result.attachments.any { it.text.startsWith("*Containers") } shouldBe false
+        }
     })

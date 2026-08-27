@@ -19,6 +19,11 @@ data class DeployedSystem(
     /** Deployed git commit SHA (full or short), shown for reference, e.g. `"80aad1c"`. */
     val revision: String? = null,
     /**
+     * Previously-deployed git commit SHA (the revert target — what was live before
+     * this deploy), e.g. `"1f4c9a2"`. Empty/absent on a first-ever deploy.
+     */
+    val previousRevision: String? = null,
+    /**
      * When the rollout started, as an **ISO 8601 UTC** timestamp
      * (e.g. `"2026-08-26T08:19:18Z"`). Non-ISO values are rendered verbatim.
      */
