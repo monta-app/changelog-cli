@@ -269,10 +269,12 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
 
 /** Overall rollout window (earliest start → latest end) and total duration across systems. */
 private fun deployedSystemsOverviewLine(systems: List<DeployedSystem>): String? {
-    val overallStart = systems.mapNotNull { it.start }.minOrNull() ?: return null
-    val overallEnd = systems.mapNotNull { it.end }.maxOrNull() ?: return null
-    val start = DateTimeUtil.formatClock(overallStart) ?: return null
-    val end = DateTimeUtil.formatClock(overallEnd) ?: return null
+    val overallStart = systems.mapNotNull { it.start }.minOrNull()
+    val overallEnd = systems.mapNotNull { it.end }.maxOrNull()
+    val start = overallStart?.let { DateTimeUtil.formatClock(it) }
+    val end = overallEnd?.let { DateTimeUtil.formatClock(it) }
+    if (start == null || end == null) return null
+
     val duration = DateTimeUtil.formatDuration(overallStart, overallEnd)
     val durationSuffix = if (duration != null) " · *$duration*" else ""
     return "⏱️ $start → $end UTC$durationSuffix"
