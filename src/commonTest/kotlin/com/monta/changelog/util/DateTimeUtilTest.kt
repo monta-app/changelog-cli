@@ -126,4 +126,22 @@ class DateTimeUtilTest :
             val result = DateTimeUtil.formatTimeRange("invalid", "also-invalid")
             result shouldBe "invalid → also-invalid"
         }
+
+        "should format sub-minute duration in seconds" {
+            DateTimeUtil.formatDuration("2026-08-27T18:31:00Z", "2026-08-27T18:31:45Z") shouldBe "45s"
+        }
+
+        "should format minutes-and-seconds duration" {
+            DateTimeUtil.formatDuration("2026-08-27T18:26:30Z", "2026-08-27T18:31:02Z") shouldBe "4m 32s"
+        }
+
+        "should format hours-minutes-seconds duration" {
+            DateTimeUtil.formatDuration("2026-08-27T10:00:00Z", "2026-08-27T11:03:20Z") shouldBe "1h 3m 20s"
+        }
+
+        "should return null for negative or null duration" {
+            DateTimeUtil.formatDuration("2026-08-27T18:31:02Z", "2026-08-27T18:26:30Z") shouldBe null
+            DateTimeUtil.formatDuration(null, "2026-08-27T18:31:02Z") shouldBe null
+            DateTimeUtil.formatDuration("2026-08-27T18:31:02Z", null) shouldBe null
+        }
     })

@@ -29,13 +29,12 @@ class SlackExtensionsTest :
         }
 
         "should split attachments when content exceeds limit" {
-            // Create enough items to definitely exceed 2500 char limit
-            // Each item is about 80 chars, need many more items to exceed
-            val items = List(50) { index ->
+            // Each item is ~74 chars; 120 items (~8.9k) exceeds the 6000 char limit
+            val items = List(120) { index ->
                 "https://github.com/monta-app/service-geo-with-long-name/pull/${10000 + index}|#${10000 + index}"
             }
             val result = splitIntoAttachments(
-                header = "Pull Requests (50)",
+                header = "Pull Requests (120)",
                 items = items,
                 color = "#1F2328"
             )
@@ -43,10 +42,10 @@ class SlackExtensionsTest :
             // Should be split into at least 2 attachments
             (result.size >= 2) shouldBe true
             result[0].color shouldBe "#1F2328"
-            result[0].text shouldStartWith "*Pull Requests (50):*"
+            result[0].text shouldStartWith "*Pull Requests (120):*"
             if (result.size > 1) {
                 result[1].color shouldBe "#1F2328"
-                result[1].text shouldStartWith "*Pull Requests (50) (cont'd):*"
+                result[1].text shouldStartWith "*Pull Requests (120) (cont'd):*"
             }
         }
 
@@ -100,12 +99,12 @@ class SlackExtensionsTest :
         }
 
         "should split very long items correctly" {
-            // Create items that are individually long
-            val items = List(20) { index ->
+            // Each item is ~175 chars; 40 items (~7k) exceeds the 6000 char limit
+            val items = List(40) { index ->
                 "https://github.com/organization-with-very-long-name/repository-with-very-long-name/pull/${10000 + index}|#${10000 + index} - This is a PR with a very long title that contains lots of text"
             }
             val result = splitIntoAttachments(
-                header = "Pull Requests (20)",
+                header = "Pull Requests (40)",
                 items = items,
                 color = "#1F2328"
             )
@@ -117,14 +116,13 @@ class SlackExtensionsTest :
                 attachment.color shouldBe "#1F2328"
             }
             // First should have main header
-            result[0].text shouldStartWith "*Pull Requests (20):*"
+            result[0].text shouldStartWith "*Pull Requests (40):*"
             // Second should have continuation header
-            result[1].text shouldStartWith "*Pull Requests (20) (cont'd):*"
+            result[1].text shouldStartWith "*Pull Requests (40) (cont'd):*"
         }
 
         "should not split when items fit within limit" {
-            // Create items that fit within the 2500 char limit
-            // 20 items of 100 chars each = 2000 chars, well under the limit
+            // 20 items of 100 chars each = 2000 chars, well under the 6000 limit
             val items = List(20) { "x".repeat(100) }
 
             val result = splitIntoAttachments(
@@ -556,6 +554,47 @@ class SlackExtensionsTest :
             deployed.text shouldContain "14:19:05 → 14:22:30 UTC"
         }
 
+        "deployed systems card leads with the overall window and total duration" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(
+                    listOf(
+                        DeployedSystem(name = "hub", start = "2026-08-27T18:44:47Z", end = "2026-08-27T18:47:02Z"),
+                        DeployedSystem(name = "portals", start = "2026-08-27T18:44:51Z", end = "2026-08-27T18:47:04Z")
+                    )
+                )
+            )
+
+            val deployed = result.attachments.first { it.text.startsWith("*Deployed systems") }
+            // earliest start 18:44:47 -> latest end 18:47:04, total 2m 17s
+            deployed.text shouldContain "⏱️ 18:44:47 → 18:47:04 UTC · *2m 17s*"
+            // overview precedes the per-system rows
+            (deployed.text.indexOf("⏱️") < deployed.text.indexOf("*hub*")) shouldBe true
+        }
+
+        "single-service deployment shows how long it took" {
+            val changeLog = ChangeLog(
+                serviceName = "Monta PHP Monolith",
+                jiraAppName = null,
+                tagName = "2026-08-27-18-31",
+                previousTagName = null,
+                repoOwner = "monta-app",
+                repoName = "server-php",
+                repositoryUrl = "https://github.com/monta-app/server-php",
+                groupedCommitMap = emptyMap(),
+                dockerImage = "server-php-production",
+                imageTag = "2f4caa6",
+                stage = "production",
+                deploymentStartTime = "2026-08-27T18:26:30Z",
+                deploymentEndTime = "2026-08-27T18:31:02Z"
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+
+            val deployment = result.attachments.first { it.text.startsWith("*Deployment:*") }
+            deployment.color shouldBe "#2EB67D"
+            deployment.text shouldContain "→ 18:31:02 UTC · *4m 32s*"
+        }
+
         "containers attachment links previous → new revision per system" {
             val result = buildMetadataBlocks(
                 monorepoChangeLog(
@@ -573,6 +612,18 @@ class SlackExtensionsTest :
             containers.text shouldContain "https://github.com/monta-app/monorepo-typescript/commit/1f4c9a20000000|`1f4c9a2`"
             containers.text shouldContain "https://github.com/monta-app/monorepo-typescript/commit/80aad1c0000000|`80aad1c`"
             containers.text shouldContain "→"
+        }
+
+        "containers card stays a single attachment for 15 systems (no cont'd split)" {
+            val systems = (1..15).map { i ->
+                DeployedSystem(name = "service-number-$i", revision = "80aad1c0000000", previousRevision = "1f4c9a20000000")
+            }
+            val result = buildMetadataBlocks(monorepoChangeLog(systems))
+
+            val containerAttachments = result.attachments.filter { it.text.startsWith("*Containers") }
+            containerAttachments shouldHaveSize 1
+            containerAttachments.single().text shouldStartWith "*Containers (15):*"
+            result.attachments.none { it.text.contains("(cont'd)") } shouldBe true
         }
 
         "container row drops the arrow when there is no previous revision" {

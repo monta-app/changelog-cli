@@ -115,4 +115,30 @@ object DateTimeUtil {
             "$startTimestamp → $endTimestamp"
         }
     }
+
+    /**
+     * Formats the elapsed time between two ISO 8601 timestamps as a compact,
+     * human-readable duration. Example: 272s → "4m 32s", 3800s → "1h 3m 20s".
+     * Null on parse failure or when the range is negative.
+     */
+    fun formatDuration(startTimestamp: String?, endTimestamp: String?): String? {
+        if (startTimestamp == null || endTimestamp == null) return null
+
+        return try {
+            val totalSeconds = (Instant.parse(endTimestamp) - Instant.parse(startTimestamp)).inWholeSeconds
+            if (totalSeconds < 0) return null
+
+            val hours = totalSeconds / 3600
+            val minutes = (totalSeconds % 3600) / 60
+            val seconds = totalSeconds % 60
+            buildString {
+                if (hours > 0) append("${hours}h ")
+                if (hours > 0 || minutes > 0) append("${minutes}m ")
+                append("${seconds}s")
+            }
+        } catch (e: Exception) {
+            DebugLogger.debug("Failed to parse duration: $startTimestamp → $endTimestamp - ${e.message}")
+            null
+        }
+    }
 }

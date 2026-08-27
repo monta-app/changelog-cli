@@ -230,10 +230,12 @@ private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: Mut
 
 private fun addDeploymentAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
     val window = DateTimeUtil.formatTimeRange(changeLog.deploymentStartTime, changeLog.deploymentEndTime) ?: return
+    val duration = DateTimeUtil.formatDuration(changeLog.deploymentStartTime, changeLog.deploymentEndTime)
+    val item = if (duration != null) "$window · *$duration*" else window
     attachments.addAll(
         splitIntoAttachments(
             header = "Deployment",
-            items = listOf(window),
+            items = listOf(item),
             color = "#2EB67D" // green — healthy
         )
     )
@@ -243,9 +245,11 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
     val systems = changeLog.deployedSystems
     if (systems.isEmpty()) return
 
-    val items = systems.map { system ->
+    val items = mutableListOf<String>()
+    deployedSystemsOverviewLine(systems)?.let { items.add(it) }
+    systems.forEach { system ->
         val suffix = deployRowSuffix(system)
-        if (suffix.isEmpty()) "• *${system.name}*" else "• *${system.name}* — $suffix"
+        items.add(if (suffix.isEmpty()) "• *${system.name}*" else "• *${system.name}* — $suffix")
     }
 
     val color = when (systems.outcome()) {
@@ -261,6 +265,19 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
             color = color
         )
     )
+}
+
+/** Overall rollout window (earliest start → latest end) and total duration across systems. */
+private fun deployedSystemsOverviewLine(systems: List<DeployedSystem>): String? {
+    val overallStart = systems.mapNotNull { it.start }.minOrNull()
+    val overallEnd = systems.mapNotNull { it.end }.maxOrNull()
+    val start = overallStart?.let { DateTimeUtil.formatClock(it) }
+    val end = overallEnd?.let { DateTimeUtil.formatClock(it) }
+    if (start == null || end == null) return null
+
+    val duration = DateTimeUtil.formatDuration(overallStart, overallEnd)
+    val durationSuffix = if (duration != null) " · *$duration*" else ""
+    return "⏱️ $start → $end UTC$durationSuffix"
 }
 
 private fun addContainersAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
@@ -312,7 +329,7 @@ private fun deployedSystemsSummaryLine(systems: List<DeployedSystem>): String? {
     val extra = systems.size - minOf(systems.size, 3)
     val suffix = if (extra > 0) " +$extra" else ""
     val noun = if (systems.size == 1) "system" else "systems"
-    return "🚀 *${systems.size} $noun:* $shown$suffix"
+    return "📦 *${systems.size} $noun:* $shown$suffix"
 }
 
 /**
@@ -513,8 +530,12 @@ internal fun splitIntoAttachments(
     items: List<String>,
     color: String,
 ): List<SlackAttachment> {
-    // Slack's attachment text limit is 3000 chars but we use 2500 to be safe with header overhead
-    val maxCharsPerAttachment = 2500
+    // The API accepts very large attachment text, but the Slack client stops
+    // rendering mrkdwn and truncates mid-link around ~7.8k chars. Stay under that
+    // so a card renders whole; beyond it we split into a "(cont'd)" attachment.
+    // 6000 keeps a 15-system Containers card (two commit links per row, ~3.7k) a
+    // single attachment with headroom (~25 rows), matching the deployed-systems card.
+    val maxCharsPerAttachment = 6000
     val attachments = mutableListOf<SlackAttachment>()
 
     val headerWithIndex = { index: Int ->
