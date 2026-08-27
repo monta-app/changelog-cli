@@ -312,7 +312,7 @@ private fun deployedSystemsSummaryLine(systems: List<DeployedSystem>): String? {
     val extra = systems.size - minOf(systems.size, 3)
     val suffix = if (extra > 0) " +$extra" else ""
     val noun = if (systems.size == 1) "system" else "systems"
-    return "🚀 *${systems.size} $noun:* $shown$suffix"
+    return "📦 *${systems.size} $noun:* $shown$suffix"
 }
 
 /**
@@ -513,8 +513,12 @@ internal fun splitIntoAttachments(
     items: List<String>,
     color: String,
 ): List<SlackAttachment> {
-    // Slack's attachment text limit is 3000 chars but we use 2500 to be safe with header overhead
-    val maxCharsPerAttachment = 2500
+    // The API accepts very large attachment text, but the Slack client stops
+    // rendering mrkdwn and truncates mid-link around ~7.8k chars. Stay under that
+    // so a card renders whole; beyond it we split into a "(cont'd)" attachment.
+    // 6000 keeps a 15-system Containers card (two commit links per row, ~3.7k) a
+    // single attachment with headroom (~25 rows), matching the deployed-systems card.
+    val maxCharsPerAttachment = 6000
     val attachments = mutableListOf<SlackAttachment>()
 
     val headerWithIndex = { index: Int ->
