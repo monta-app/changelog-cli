@@ -20,7 +20,8 @@ data class DeployedSystem(
     val revision: String? = null,
     /**
      * Previously-deployed git commit SHA (the revert target — what was live before
-     * this deploy), e.g. `"1f4c9a2"`. Empty/absent on a first-ever deploy.
+     * this deploy), e.g. `"1f4c9a2"`. Empty/absent when there is no prior commit to
+     * link to — a first-ever deploy, or a previous tag that wasn't a commit SHA.
      */
     val previousRevision: String? = null,
     /**
