@@ -19,6 +19,11 @@ data class DeployedSystem(
     /** Deployed git commit SHA (full or short), shown for reference, e.g. `"80aad1c"`. */
     val revision: String? = null,
     /**
+     * Previously-deployed git commit SHA (the revert target — what was live before
+     * this deploy), e.g. `"1f4c9a2"`. Empty/absent on a first-ever deploy.
+     */
+    val previousRevision: String? = null,
+    /**
      * When the rollout started, as an **ISO 8601 UTC** timestamp
      * (e.g. `"2026-08-26T08:19:18Z"`). Non-ISO values are rendered verbatim.
      */
@@ -51,4 +56,18 @@ data class DeployedSystem(
             }
         }
     }
+}
+
+enum class DeployOutcome {
+    HEALTHY,
+    PARTIAL,
+    FAILED,
+}
+
+private fun DeployedSystem.isHealthy(): Boolean = status == null || status.equals("healthy", ignoreCase = true)
+
+fun List<DeployedSystem>.outcome(): DeployOutcome = when {
+    isEmpty() || all { it.isHealthy() } -> DeployOutcome.HEALTHY
+    none { it.isHealthy() } -> DeployOutcome.FAILED
+    else -> DeployOutcome.PARTIAL
 }

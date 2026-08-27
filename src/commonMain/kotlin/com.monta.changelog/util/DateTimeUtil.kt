@@ -10,12 +10,23 @@ import kotlin.time.Instant
 object DateTimeUtil {
 
     /**
-     * Formats an ISO 8601 timestamp string into a human-readable format with seconds.
-     * Example: "2026-01-13T22:00:15Z" → "Jan 13, 2026 at 22:00:15 UTC"
-     *
-     * @param isoTimestamp ISO 8601 formatted timestamp string
-     * @return Human-readable timestamp string, or null if input is null
+     * Formats an ISO 8601 timestamp to a compact UTC clock time.
+     * Example: "2026-08-27T14:19:01Z" → "14:19:01". Null on parse failure.
      */
+    fun formatClock(isoTimestamp: String?): String? {
+        if (isoTimestamp == null) return null
+        return try {
+            val dateTime = Instant.parse(isoTimestamp).toLocalDateTime(TimeZone.UTC)
+            val hour = dateTime.hour.toString().padStart(2, '0')
+            val minute = dateTime.minute.toString().padStart(2, '0')
+            val second = dateTime.second.toString().padStart(2, '0')
+            "$hour:$minute:$second"
+        } catch (e: Exception) {
+            DebugLogger.debug("Failed to parse timestamp: $isoTimestamp - ${e.message}")
+            null
+        }
+    }
+
     fun formatTimestamp(isoTimestamp: String?): String? {
         if (isoTimestamp == null) return null
 
