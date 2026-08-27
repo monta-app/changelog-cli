@@ -33,7 +33,7 @@ jobs:
       - name: Capture deployment start time
         id: deployment_start
         run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0  # Fetch all tags
       - name: Create new version tag
@@ -111,7 +111,7 @@ jobs:
     needs: create-tag-and-build
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
       - name: Download x64 artifact
@@ -179,7 +179,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY_MONTA_BOT }}
       - name: Checkout changelog-cli-action
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: monta-app/changelog-cli-action
           ssh-key: ${{ secrets.SSH_KEY_MONTA_BOT }}
