@@ -571,6 +571,19 @@ class SlackExtensionsTest :
             (deployed.text.indexOf("⏱️") < deployed.text.indexOf("*hub*")) shouldBe true
         }
 
+        "single system shows duration on its row without a repeated overview line" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(
+                    listOf(DeployedSystem(name = "hub", start = "2026-08-27T21:09:48Z", end = "2026-08-27T21:11:16Z"))
+                )
+            )
+
+            val deployed = result.attachments.first { it.text.startsWith("*Deployed systems") }
+            deployed.text shouldContain "• *hub* — 21:09:48 → 21:11:16 UTC · *1m 28s*"
+            // no separate overview line repeating the same window
+            deployed.text shouldNotContain "⏱️"
+        }
+
         "single-service deployment shows how long it took" {
             val changeLog = ChangeLog(
                 serviceName = "Monta PHP Monolith",
