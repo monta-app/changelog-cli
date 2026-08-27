@@ -5,10 +5,10 @@ import com.monta.changelog.git.GitService
 import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.github.GitHubService
 import com.monta.changelog.model.ChangeLog
+import com.monta.changelog.model.DeployedSystem
 import com.monta.changelog.notify.MonitoringUrl
 import com.monta.changelog.notify.ReleaseNotificationService
 import com.monta.changelog.printer.ChangeLogPrinter
-import com.monta.changelog.util.DateTimeUtil
 import com.monta.changelog.util.DebugLogger
 import com.monta.changelog.util.GroupedCommitMap
 import com.monta.changelog.util.LinkResolver
@@ -531,7 +531,7 @@ class ChangeLogService(
      * Services show "Deployment pending" when timing is missing.
      * Libraries just show "Released" without the pending indicator.
      */
-    private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null || changeLog.imageTag != null
+    private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null || changeLog.imageTag != null || changeLog.deployedSystems.isNotEmpty()
 
     /**
      * Builds comment header with title and description based on deployment status.
@@ -595,13 +595,10 @@ class ChangeLogService(
             if (boldFormatting) " to **$stage**" else " to $stage"
         } ?: ""
 
+        val windowLabel = deploymentWindowLabel(changeLog)
         return when {
-            hasDeploymentTiming -> {
-                val timeRange = DateTimeUtil.formatTimeRange(
-                    changeLog.deploymentStartTime,
-                    changeLog.deploymentEndTime
-                ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
-                formatText("Deployed$stageText $timeRange", boldFormatting)
+            hasDeploymentTiming && windowLabel != null -> {
+                formatText("Deployed$stageText $windowLabel", boldFormatting)
             }
             isServiceDeployment(changeLog) -> {
                 formatText("Released$stageText • ⏳ Deployment pending", boldFormatting)
@@ -664,11 +661,14 @@ class ChangeLogService(
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
         linkResolvers: List<LinkResolver>,
     ): String = buildString {
-        val hasDeploymentTiming = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
+        val hasDeploymentTiming = effectiveDeploymentWindow(changeLog) != null
 
         append(buildCommentHeader(changeLog, hasDeploymentTiming, "PR"))
         appendLine()
         append(buildChangelogSection(changeLog, linkResolvers, MarkdownFormatter.GitHub))
+        append(deployedSystemsSection(changeLog))
+        append(foldableLinkSection("Deployed tickets", jiraTicketLinks(changeLog)))
+        append(foldableLinkSection("Pull requests", pullRequestLinks(changeLog)))
         append(buildCommentFooter(changeLog, printResult, hasDeploymentTiming, boldFormatting = true))
     }
 
@@ -701,7 +701,7 @@ class ChangeLogService(
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
         linkResolvers: List<LinkResolver>,
     ): String = buildString {
-        val hasDeploymentTiming = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
+        val hasDeploymentTiming = effectiveDeploymentWindow(changeLog) != null
 
         append(buildJiraCommentHeader(changeLog, hasDeploymentTiming))
         appendLine()
