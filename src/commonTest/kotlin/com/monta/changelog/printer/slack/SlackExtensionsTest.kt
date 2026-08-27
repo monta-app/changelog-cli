@@ -536,18 +536,23 @@ class SlackExtensionsTest :
             summary shouldContain "+3"
         }
 
-        "deployment summary derives the window from deployments" {
-            val summary = buildMetadataBlocks(
+        "deployment summary shows deployed state without inlining the window" {
+            val result = buildMetadataBlocks(
                 monorepoChangeLog(
                     listOf(
                         DeployedSystem(name = "hub", start = "2026-08-27T14:19:01Z", end = "2026-08-27T14:21:00Z"),
                         DeployedSystem(name = "portals", start = "2026-08-27T14:19:05Z", end = "2026-08-27T14:22:30Z")
                     )
                 )
-            ).blocks.mapNotNull { it.text?.text }.firstOrNull { it.contains("🚀 Deployed") }
+            )
+
+            val summary = result.blocks.mapNotNull { it.text?.text }.firstOrNull { it.contains("🚀 Deployed") }
             summary shouldNotBe null
             summary!! shouldContain "to *Production*"
-            summary shouldContain "14:19:01"
-            summary shouldContain "14:22:30"
+            summary shouldNotContain "14:19:01"
+
+            val deployed = result.attachments.first { it.text.startsWith("*Deployed systems") }
+            deployed.text shouldContain "14:19:01 → 14:21:00 UTC"
+            deployed.text shouldContain "14:19:05 → 14:22:30 UTC"
         }
     })

@@ -5,7 +5,6 @@ import com.monta.changelog.model.Commit
 import com.monta.changelog.model.ConventionalCommitType
 import com.monta.changelog.model.DeployOutcome
 import com.monta.changelog.model.DeployedSystem
-import com.monta.changelog.model.aggregateWindow
 import com.monta.changelog.model.outcome
 import com.monta.changelog.util.DateTimeUtil
 import com.monta.changelog.util.LinkResolver
@@ -90,12 +89,13 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     // Build main information fields
     val fields = buildMetadataFields(changeLog)
 
-    // Add attachments (deployed systems / container info first, then JIRA, then PRs, then non-conventional commits)
+    // Deploy outcome first (multi-service systems, or single-service timing), then container info, JIRA, PRs, non-conventional
     if (changeLog.deployedSystems.isNotEmpty()) {
         addDeployedSystemsAttachment(changeLog, attachments)
-    } else {
-        addTechnicalDetailsAttachment(changeLog, attachments)
+    } else if (isServiceDeployment(changeLog)) {
+        addDeploymentAttachment(changeLog, attachments)
     }
+    addTechnicalDetailsAttachment(changeLog, attachments)
     addJiraTicketAttachments(changeLog, attachments)
     addPullRequestAttachments(changeLog, attachments)
     addNonConventionalCommitsAttachment(changeLog, attachments)
@@ -124,37 +124,17 @@ private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.docke
  * Distinguishes between service deployments (with Docker info) and library/CLI releases.
  */
 private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<SlackBlock>) {
-    val aggregate = changeLog.deployedSystems.aggregateWindow()
-    val startTime = changeLog.deploymentStartTime ?: aggregate?.first
-    val endTime = changeLog.deploymentEndTime ?: aggregate?.second
-    val hasDeploymentTimes = startTime != null && endTime != null
     val isServiceDeployment = isServiceDeployment(changeLog)
+    val isDeployed = (changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null) ||
+        changeLog.deployedSystems.isNotEmpty()
 
-    val summaryText = if (hasDeploymentTimes) {
-        val timeRange = DateTimeUtil.formatTimeRange(startTime, endTime)
-            ?: "$startTime → $endTime"
-
-        if (isServiceDeployment) {
-            // Service with container - use "Deployed" with rocket emoji and stage
-            val stageText = if (changeLog.stage != null) {
-                " to *${changeLog.stage.replaceFirstChar { it.uppercaseChar() }}*"
-            } else {
-                ""
-            }
-            "🚀 Deployed *${changeLog.tagName}*$stageText $timeRange"
-        } else {
-            // Library/CLI - use "Released" without stage
-            "Released *${changeLog.tagName}* $timeRange"
+    val summaryText = when {
+        isServiceDeployment && isDeployed -> {
+            val stageText = changeLog.stage?.let { " to *${it.replaceFirstChar { char -> char.uppercaseChar() }}*" } ?: ""
+            "🚀 Deployed *${changeLog.tagName}*$stageText"
         }
-    } else {
-        // Release without deployment timing
-        if (isServiceDeployment) {
-            // Service without timing - deployment is pending
-            "Released *${changeLog.tagName}* (⏳ Deployment pending)"
-        } else {
-            // Library/CLI without timing - just released
-            "Released *${changeLog.tagName}*"
-        }
+        isServiceDeployment -> "Released *${changeLog.tagName}* (⏳ Deployment pending)"
+        else -> "Released *${changeLog.tagName}*"
     }
 
     val links = buildSummaryLinks(changeLog)
@@ -241,6 +221,17 @@ private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: Mut
             header = "Container information",
             items = containerItems,
             color = "#575757" // Containerd grey
+        )
+    )
+}
+
+private fun addDeploymentAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    val window = DateTimeUtil.formatTimeRange(changeLog.deploymentStartTime, changeLog.deploymentEndTime) ?: return
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "Deployment",
+            items = listOf(window),
+            color = "#2EB67D" // green — healthy
         )
     )
 }
