@@ -531,7 +531,9 @@ class ChangeLogService(
      * Services show "Deployment pending" when timing is missing.
      * Libraries just show "Released" without the pending indicator.
      */
-    private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null || changeLog.imageTag != null || changeLog.deployedSystems.isNotEmpty()
+    private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null ||
+        changeLog.imageTag != null ||
+        changeLog.deployedSystems.isNotEmpty()
 
     /**
      * Builds comment header with title and description based on deployment status.
