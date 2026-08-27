@@ -3,6 +3,10 @@ package com.monta.changelog.printer.slack
 import com.monta.changelog.model.ChangeLog
 import com.monta.changelog.model.Commit
 import com.monta.changelog.model.ConventionalCommitType
+import com.monta.changelog.model.DeployOutcome
+import com.monta.changelog.model.DeployedSystem
+import com.monta.changelog.model.aggregateWindow
+import com.monta.changelog.model.outcome
 import com.monta.changelog.util.DateTimeUtil
 import com.monta.changelog.util.LinkResolver
 import com.monta.changelog.util.MarkdownFormatter
@@ -30,6 +34,15 @@ internal fun buildSlackBlocks(
             )
         )
     )
+
+    deployedSystemsSummaryLine(changeLog.deployedSystems)?.let { line ->
+        currentChunk.add(
+            SlackBlock(
+                type = "section",
+                text = SlackText(type = "mrkdwn", text = line)
+            )
+        )
+    }
 
     for ((scope, commitsGroupedByType) in changeLog.groupedCommitMap) {
         // Add scope header if this is a scoped section
@@ -77,8 +90,12 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
     // Build main information fields
     val fields = buildMetadataFields(changeLog)
 
-    // Add attachments (container info first, then JIRA, then PRs, then non-conventional commits)
-    addTechnicalDetailsAttachment(changeLog, attachments)
+    // Add attachments (deployed systems / container info first, then JIRA, then PRs, then non-conventional commits)
+    if (changeLog.deployedSystems.isNotEmpty()) {
+        addDeployedSystemsAttachment(changeLog, attachments)
+    } else {
+        addTechnicalDetailsAttachment(changeLog, attachments)
+    }
     addJiraTicketAttachments(changeLog, attachments)
     addPullRequestAttachments(changeLog, attachments)
     addNonConventionalCommitsAttachment(changeLog, attachments)
@@ -98,7 +115,8 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
  */
 private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.dockerImage != null ||
     changeLog.imageTag != null ||
-    changeLog.previousImageTag != null
+    changeLog.previousImageTag != null ||
+    changeLog.deployedSystems.isNotEmpty()
 
 /**
  * Adds release/deployment summary section to blocks.
@@ -106,14 +124,15 @@ private fun isServiceDeployment(changeLog: ChangeLog): Boolean = changeLog.docke
  * Distinguishes between service deployments (with Docker info) and library/CLI releases.
  */
 private fun addDeploymentSummary(changeLog: ChangeLog, blocks: MutableList<SlackBlock>) {
-    val hasDeploymentTimes = changeLog.deploymentStartTime != null && changeLog.deploymentEndTime != null
+    val aggregate = changeLog.deployedSystems.aggregateWindow()
+    val startTime = changeLog.deploymentStartTime ?: aggregate?.first
+    val endTime = changeLog.deploymentEndTime ?: aggregate?.second
+    val hasDeploymentTimes = startTime != null && endTime != null
     val isServiceDeployment = isServiceDeployment(changeLog)
 
     val summaryText = if (hasDeploymentTimes) {
-        val timeRange = DateTimeUtil.formatTimeRange(
-            changeLog.deploymentStartTime,
-            changeLog.deploymentEndTime
-        ) ?: "${changeLog.deploymentStartTime} → ${changeLog.deploymentEndTime}"
+        val timeRange = DateTimeUtil.formatTimeRange(startTime, endTime)
+            ?: "$startTime → $endTime"
 
         if (isServiceDeployment) {
             // Service with container - use "Deployed" with rocket emoji and stage
@@ -224,6 +243,52 @@ private fun addTechnicalDetailsAttachment(changeLog: ChangeLog, attachments: Mut
             color = "#575757" // Containerd grey
         )
     )
+}
+
+private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: MutableList<SlackAttachment>) {
+    val systems = changeLog.deployedSystems
+    if (systems.isEmpty()) return
+
+    val items = systems.map { system ->
+        val suffix = deployRowSuffix(system)
+        if (suffix.isEmpty()) "• *${system.name}*" else "• *${system.name}* — $suffix"
+    }
+
+    val color = when (systems.outcome()) {
+        DeployOutcome.HEALTHY -> "#2EB67D" // green
+        DeployOutcome.PARTIAL -> "#ECB22E" // yellow
+        DeployOutcome.FAILED -> "#E01E5A" // red
+    }
+
+    attachments.addAll(
+        splitIntoAttachments(
+            header = "Deployed systems (${systems.size})",
+            items = items,
+            color = color
+        )
+    )
+}
+
+private fun deployRowSuffix(system: DeployedSystem): String {
+    val parts = mutableListOf<String>()
+    if (system.status != null && !system.status.equals("healthy", ignoreCase = true)) {
+        parts.add("⚠️ ${system.status}")
+    }
+    val start = DateTimeUtil.formatClock(system.start)
+    val end = DateTimeUtil.formatClock(system.end)
+    if (start != null && end != null) {
+        parts.add("$start → $end UTC")
+    }
+    return parts.joinToString(" · ")
+}
+
+private fun deployedSystemsSummaryLine(systems: List<DeployedSystem>): String? {
+    if (systems.isEmpty()) return null
+    val shown = systems.take(3).joinToString(", ") { it.name }
+    val extra = systems.size - minOf(systems.size, 3)
+    val suffix = if (extra > 0) " +$extra" else ""
+    val noun = if (systems.size == 1) "system" else "systems"
+    return "🚀 *${systems.size} $noun:* $shown$suffix"
 }
 
 /**

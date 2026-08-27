@@ -52,3 +52,24 @@ data class DeployedSystem(
         }
     }
 }
+
+enum class DeployOutcome {
+    HEALTHY,
+    PARTIAL,
+    FAILED,
+}
+
+private fun DeployedSystem.isHealthy(): Boolean = status == null || status.equals("healthy", ignoreCase = true)
+
+fun List<DeployedSystem>.outcome(): DeployOutcome = when {
+    isEmpty() || all { it.isHealthy() } -> DeployOutcome.HEALTHY
+    none { it.isHealthy() } -> DeployOutcome.FAILED
+    else -> DeployOutcome.PARTIAL
+}
+
+/** Earliest start and latest end across systems (ISO 8601 UTC sorts chronologically), or null if unavailable. */
+fun List<DeployedSystem>.aggregateWindow(): Pair<String, String>? {
+    val start = mapNotNull { it.start }.minOrNull() ?: return null
+    val end = mapNotNull { it.end }.maxOrNull() ?: return null
+    return start to end
+}

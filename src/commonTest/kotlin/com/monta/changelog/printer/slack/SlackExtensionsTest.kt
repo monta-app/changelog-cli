@@ -1,6 +1,7 @@
 package com.monta.changelog.printer.slack
 
 import com.monta.changelog.model.ChangeLog
+import com.monta.changelog.model.DeployedSystem
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -477,5 +478,76 @@ class SlackExtensionsTest :
             summaryBlock?.text?.text shouldNotContain "to *Production*" // Libraries don't show stage
             summaryBlock?.text?.text shouldNotContain "🚀"
             summaryBlock?.text?.text shouldNotContain "⏳ Deployment pending"
+        }
+
+        fun monorepoChangeLog(systems: List<DeployedSystem>) = ChangeLog(
+            serviceName = "TypeScript Monorepo",
+            jiraAppName = null,
+            tagName = "monorepo-2026-08-27-14-50",
+            previousTagName = "monorepo-2026-08-27-14-40",
+            repoOwner = "monta-app",
+            repoName = "monorepo-typescript",
+            repositoryUrl = "https://github.com/monta-app/monorepo-typescript",
+            groupedCommitMap = emptyMap(),
+            stage = "production",
+            deployedSystems = systems
+        )
+
+        "deployed systems attachment replaces container info, green when all healthy" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(
+                    listOf(
+                        DeployedSystem(name = "hub", start = "2026-08-27T14:19:01Z", end = "2026-08-27T14:21:00Z", status = "healthy"),
+                        DeployedSystem(name = "portals", start = "2026-08-27T14:19:05Z", end = "2026-08-27T14:22:30Z", status = "healthy")
+                    )
+                )
+            )
+            val deployed = result.attachments.first()
+            deployed.color shouldBe "#2EB67D"
+            deployed.text shouldStartWith "*Deployed systems (2):*"
+            deployed.text shouldContain "*hub*"
+            deployed.text shouldContain "14:19:01 → 14:21:00 UTC"
+            result.attachments.any { it.color == "#575757" } shouldBe false
+        }
+
+        "deployed systems attachment is yellow on partial and red on all-failed" {
+            fun colorFor(statuses: List<String>) = buildMetadataBlocks(
+                monorepoChangeLog(statuses.mapIndexed { i, s -> DeployedSystem(name = "svc$i", status = s) })
+            ).attachments.first().color
+
+            colorFor(listOf("healthy", "degraded")) shouldBe "#ECB22E"
+            colorFor(listOf("degraded", "timeout")) shouldBe "#E01E5A"
+        }
+
+        "not-healthy system shows a status glyph" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(listOf(DeployedSystem(name = "studio", status = "degraded")))
+            )
+            result.attachments.first().text shouldContain "⚠️ degraded"
+        }
+
+        "main message includes a deployed-systems summary line with +N" {
+            val summary = buildSlackBlocks(emptyList(), monorepoChangeLog((1..6).map { DeployedSystem(name = "svc$it") }))
+                .flatten()
+                .mapNotNull { it.text?.text }
+                .firstOrNull { it.contains("systems:") }
+            summary shouldNotBe null
+            summary!! shouldContain "*6 systems:*"
+            summary shouldContain "+3"
+        }
+
+        "deployment summary derives the window from deployments" {
+            val summary = buildMetadataBlocks(
+                monorepoChangeLog(
+                    listOf(
+                        DeployedSystem(name = "hub", start = "2026-08-27T14:19:01Z", end = "2026-08-27T14:21:00Z"),
+                        DeployedSystem(name = "portals", start = "2026-08-27T14:19:05Z", end = "2026-08-27T14:22:30Z")
+                    )
+                )
+            ).blocks.mapNotNull { it.text?.text }.firstOrNull { it.contains("🚀 Deployed") }
+            summary shouldNotBe null
+            summary!! shouldContain "to *Production*"
+            summary shouldContain "14:19:01"
+            summary shouldContain "14:22:30"
         }
     })
