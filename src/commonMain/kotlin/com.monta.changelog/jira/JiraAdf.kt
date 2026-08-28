@@ -74,7 +74,7 @@ internal fun deployedSystemsExpand(changeLog: ChangeLog): AdfNode? {
     if (systems.isEmpty()) return null
 
     val items = systems.map { system ->
-        listItem(parseInlineMarkdown(deployedSystemRow(system, changeLog.repositoryUrl)))
+        listItem(deployedSystemParagraph(system, changeLog.repositoryUrl))
     }
     return expand("Deployed systems (${systems.size})", listOf(bulletList(items)))
 }
@@ -87,18 +87,36 @@ internal fun linkExpand(title: String, links: List<String>): AdfNode? {
     return expand("$title (${links.size})", listOf(bulletList(items)))
 }
 
-private fun deployedSystemRow(system: DeployedSystem, repositoryUrl: String?): String {
-    val row = StringBuilder("**${system.name}**")
+/**
+ * The paragraph content for one deployed system: the name (bold, and a link to its
+ * ArgoCD app when known) followed by status, revisions and rollout window. The name
+ * is built as its own node because a single text node needs both `strong` and `link`
+ * marks, which the line-based markdown parser cannot express.
+ */
+private fun deployedSystemParagraph(system: DeployedSystem, repositoryUrl: String?): List<AdfNode> {
+    val nodes = mutableListOf(systemNameNode(system))
+    val rest = StringBuilder()
     if (system.status != null && system.isNotHealthy()) {
-        row.append(" ⚠️ ${system.status}")
+        rest.append(" ⚠️ ${system.status}")
     }
-    versionMarkdown(system, repositoryUrl)?.let { row.append(" — $it") }
+    versionMarkdown(system, repositoryUrl)?.let { rest.append(" — $it") }
     val start = DateTimeUtil.formatClock(system.start)
     val end = DateTimeUtil.formatClock(system.end)
     if (start != null && end != null) {
-        row.append(" · $start → $end UTC")
+        rest.append(" · $start → $end UTC")
     }
-    return row.toString()
+    if (rest.isNotEmpty()) {
+        nodes += parseInlineMarkdown(rest.toString())
+    }
+    return nodes
+}
+
+private fun systemNameNode(system: DeployedSystem): AdfNode {
+    val marks = mutableListOf(AdfMark(type = "strong"))
+    system.url?.takeIf { it.isNotBlank() }?.let {
+        marks += AdfMark(type = "link", attrs = AdfMarkAttrs(href = it))
+    }
+    return textNode(system.name, marks)
 }
 
 private fun versionMarkdown(system: DeployedSystem, repositoryUrl: String?): String? {

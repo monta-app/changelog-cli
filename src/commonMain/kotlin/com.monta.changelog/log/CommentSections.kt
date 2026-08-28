@@ -78,7 +78,9 @@ internal fun pullRequestLinks(changeLog: ChangeLog): List<String> {
 
 private fun systemNameCell(system: DeployedSystem): String {
     val warning = if (system.status != null && system.isNotHealthy()) " ⚠️ ${system.status}" else ""
-    return "**${system.name}**$warning"
+    val name = "**${system.name}**"
+    val linked = system.url?.takeIf { it.isNotBlank() }?.let { "[$name]($it)" } ?: name
+    return "$linked$warning"
 }
 
 private fun versionCell(system: DeployedSystem, repositoryUrl: String?): String {

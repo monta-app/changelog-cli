@@ -72,6 +72,27 @@ class JiraAdfTest :
             } shouldBe true
         }
 
+        "deployedSystemsExpand links the system name to its ArgoCD app when a url is set" {
+            val expand = deployedSystemsExpand(
+                changeLog(
+                    deployedSystems = listOf(
+                        DeployedSystem(
+                            name = "hub",
+                            revision = "ee2026f0000000",
+                            url = "https://argocd.monta.app/applications/argocd/hub-production"
+                        )
+                    )
+                )
+            )!!
+
+            val paragraph = expand.content!!.single().content!!.single().content!!.single()
+            paragraph.content!!.any {
+                it.text == "hub" &&
+                    it.marks?.any { m -> m.type == "strong" } == true &&
+                    it.marks?.any { m -> m.type == "link" && m.attrs?.href == "https://argocd.monta.app/applications/argocd/hub-production" } == true
+            } shouldBe true
+        }
+
         "deployedSystemsExpand marks an unhealthy system and drops the arrow without a previous" {
             val expand = deployedSystemsExpand(
                 changeLog(deployedSystems = listOf(DeployedSystem(name = "studio", revision = "ee2026f0000000", status = "degraded")))

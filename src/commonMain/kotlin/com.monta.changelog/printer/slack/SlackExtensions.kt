@@ -253,8 +253,9 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
         deployedSystemsOverviewLine(systems)?.let { items.add(it) }
     }
     systems.forEach { system ->
+        val name = deployedSystemName(system)
         val suffix = deployRowSuffix(system, withDuration = isSingle)
-        items.add(if (suffix.isEmpty()) "• *${system.name}*" else "• *${system.name}* — $suffix")
+        items.add(if (suffix.isEmpty()) "• $name" else "• $name — $suffix")
     }
 
     val color = when (systems.outcome()) {
@@ -313,6 +314,13 @@ private fun containerRow(system: DeployedSystem, repositoryUrl: String?): String
 private fun commitLink(sha: String, repositoryUrl: String?): String {
     val short = sha.take(7)
     return if (repositoryUrl != null) "<$repositoryUrl/commit/$sha|`$short`>" else "`$short`"
+}
+
+/** The system name, bold, linked to its ArgoCD app when a URL is known. */
+private fun deployedSystemName(system: DeployedSystem): String {
+    val name = "*${system.name}*"
+    val url = system.url?.takeIf { it.isNotBlank() } ?: return name
+    return "<$url|$name>"
 }
 
 private fun deployRowSuffix(system: DeployedSystem, withDuration: Boolean = false): String {
