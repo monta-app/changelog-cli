@@ -93,16 +93,15 @@ class JiraService(
      * Adds a comment to a JIRA ticket.
      * Returns true if the comment was successfully added, false otherwise.
      */
-    suspend fun commentOnTicket(
+    internal suspend fun commentOnTicket(
         ticketKey: String,
-        commentBody: String,
+        body: AdfDocument,
     ): Boolean = try {
         val url = "https://$jiraAppName.atlassian.net/rest/api/3/issue/$ticketKey/comment"
         val credentials = "$jiraEmail:$jiraToken"
         val encodedCredentials = credentials.encodeBase64()
 
-        val adfDocument = commentBody.toAdfDocument()
-        val request = JiraCommentRequest(body = adfDocument)
+        val request = JiraCommentRequest(body = body)
 
         val response = client.post(url) {
             header("Authorization", "Basic $encodedCredentials")
@@ -145,155 +144,6 @@ class JiraService(
             DebugLogger.debug("Could not read error response body: ${e.message}")
         }
     }
-
-    /**
-     * Converts plain text with markdown-style links to JIRA's Atlassian Document Format (ADF).
-     * Each non-empty line becomes a separate paragraph.
-     * Markdown links [text](url) are converted to proper ADF links.
-     * Markdown headings (##, ###) are converted to ADF headings.
-     * Lines with "---" are converted to horizontal rules.
-     * Empty lines are skipped as ADF doesn't support empty paragraphs.
-     */
-    private fun String.toAdfDocument(): AdfDocument {
-        val lines = this.split("\n")
-        val nodes = lines
-            .filter { it.isNotEmpty() }
-            .map { line ->
-                when {
-                    line.trim() == "---" -> AdfNode(type = "rule")
-                    line.startsWith("### ") -> AdfNode(
-                        type = "heading",
-                        attrs = AdfNodeAttrs(level = 3),
-                        content = parseLineWithLinks(line.substring(4))
-                    )
-                    line.startsWith("## ") -> AdfNode(
-                        type = "heading",
-                        attrs = AdfNodeAttrs(level = 2),
-                        content = parseLineWithLinks(line.substring(3))
-                    )
-                    line.startsWith("# ") -> AdfNode(
-                        type = "heading",
-                        attrs = AdfNodeAttrs(level = 1),
-                        content = parseLineWithLinks(line.substring(2))
-                    )
-                    else -> AdfNode(
-                        type = "paragraph",
-                        content = parseLineWithLinks(line)
-                    )
-                }
-            }
-
-        return AdfDocument(
-            type = "doc",
-            version = 1,
-            content = nodes
-        )
-    }
-
-    /**
-     * Parses a line of text and converts markdown-style formatting to ADF text with marks.
-     * Supports: links [text](url) and bold **text**
-     */
-    private fun parseLineWithLinks(line: String): List<AdfText> {
-        // Process the line to find both links and bold text
-        val elements = mutableListOf<TextElement>()
-
-        // Find all links
-        val linkRegex = Regex("""\[([^\]]+)]\(([^)]+)\)""")
-        linkRegex.findAll(line).forEach { match ->
-            elements.add(
-                TextElement(
-                    start = match.range.first,
-                    end = match.range.last + 1,
-                    text = match.groupValues[1],
-                    type = ElementType.LINK,
-                    url = match.groupValues[2]
-                )
-            )
-        }
-
-        // Find all bold text
-        val boldRegex = Regex("""\*\*([^*]+)\*\*""")
-        boldRegex.findAll(line).forEach { match ->
-            elements.add(
-                TextElement(
-                    start = match.range.first,
-                    end = match.range.last + 1,
-                    text = match.groupValues[1],
-                    type = ElementType.BOLD
-                )
-            )
-        }
-
-        // Sort elements by position
-        elements.sortBy { it.start }
-
-        // Build result
-        val result = mutableListOf<AdfText>()
-        var lastIndex = 0
-
-        elements.forEach { element ->
-            // Add plain text before this element
-            if (element.start > lastIndex) {
-                val plainText = line.substring(lastIndex, element.start)
-                result.add(AdfText(type = "text", text = plainText))
-            }
-
-            // Add the formatted element
-            when (element.type) {
-                ElementType.LINK -> {
-                    result.add(
-                        AdfText(
-                            type = "text",
-                            text = element.text,
-                            marks = listOf(
-                                AdfMark(
-                                    type = "link",
-                                    attrs = AdfMarkAttrs(href = element.url)
-                                )
-                            )
-                        )
-                    )
-                }
-                ElementType.BOLD -> {
-                    result.add(
-                        AdfText(
-                            type = "text",
-                            text = element.text,
-                            marks = listOf(AdfMark(type = "strong"))
-                        )
-                    )
-                }
-            }
-
-            lastIndex = element.end
-        }
-
-        // Add remaining text
-        if (lastIndex < line.length) {
-            result.add(AdfText(type = "text", text = line.substring(lastIndex)))
-        }
-
-        // If no formatting found, return whole line as text
-        if (result.isEmpty()) {
-            result.add(AdfText(type = "text", text = line))
-        }
-
-        return result
-    }
-
-    private enum class ElementType {
-        LINK,
-        BOLD,
-    }
-
-    private data class TextElement(
-        val start: Int,
-        val end: Int,
-        val text: String,
-        val type: ElementType,
-        val url: String? = null,
-    )
 }
 
 @Serializable
@@ -307,59 +157,4 @@ internal data class JiraIssueResponse(
 @Serializable
 internal data class JiraCommentRequest(
     val body: AdfDocument,
-)
-
-/**
- * Atlassian Document Format (ADF) root document.
- */
-@Serializable
-internal data class AdfDocument(
-    val type: String = "doc",
-    val version: Int = 1,
-    val content: List<AdfNode>,
-)
-
-/**
- * ADF node representing a structural element (paragraph, heading, etc.).
- */
-@Serializable
-internal data class AdfNode(
-    val type: String,
-    val content: List<AdfText>? = null,
-    val attrs: AdfNodeAttrs? = null,
-)
-
-/**
- * Attributes for ADF nodes (e.g., level for headings).
- */
-@Serializable
-internal data class AdfNodeAttrs(
-    val level: Int? = null,
-)
-
-/**
- * ADF text content within a node.
- */
-@Serializable
-internal data class AdfText(
-    val type: String = "text",
-    val text: String,
-    val marks: List<AdfMark>? = null,
-)
-
-/**
- * ADF mark for text formatting (links, bold, italic, etc.).
- */
-@Serializable
-internal data class AdfMark(
-    val type: String,
-    val attrs: AdfMarkAttrs? = null,
-)
-
-/**
- * Attributes for ADF marks (e.g., href for links).
- */
-@Serializable
-internal data class AdfMarkAttrs(
-    val href: String? = null,
 )
