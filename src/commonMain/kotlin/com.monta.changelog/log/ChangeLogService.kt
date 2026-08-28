@@ -4,6 +4,8 @@ import com.monta.changelog.git.CommitInfo
 import com.monta.changelog.git.GitService
 import com.monta.changelog.git.sorter.TagSorter
 import com.monta.changelog.github.GitHubService
+import com.monta.changelog.jira.AdfDocument
+import com.monta.changelog.jira.buildJiraCommentDocument
 import com.monta.changelog.model.ChangeLog
 import com.monta.changelog.model.DeployedSystem
 import com.monta.changelog.notify.MonitoringUrl
@@ -695,20 +697,23 @@ class ChangeLogService(
     }
 
     /**
-     * Builds the JIRA comment body with deployment information and changelog.
-     * Uses plain text format that JIRA will convert to ADF.
+     * Builds the JIRA comment as an ADF document: the markdown header, changelog and
+     * footer are converted line-by-line, while deployed systems, tickets and PRs render
+     * as native collapsible expand panels.
      */
     internal fun buildJiraComment(
         changeLog: ChangeLog,
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult,
         linkResolvers: List<LinkResolver>,
-    ): String = buildString {
+    ): AdfDocument {
         val hasDeploymentTiming = effectiveDeploymentWindow(changeLog) != null
 
-        append(buildJiraCommentHeader(changeLog, hasDeploymentTiming))
-        appendLine()
-        append(buildChangelogSection(changeLog, linkResolvers, MarkdownFormatter.GitHub))
-        append(buildCommentFooter(changeLog, printResult, hasDeploymentTiming, boldFormatting = false))
+        return buildJiraCommentDocument(
+            headerMarkdown = buildJiraCommentHeader(changeLog, hasDeploymentTiming),
+            changelogMarkdown = buildChangelogSection(changeLog, linkResolvers, MarkdownFormatter.GitHub),
+            footerMarkdown = buildCommentFooter(changeLog, printResult, hasDeploymentTiming, boldFormatting = false),
+            changeLog = changeLog
+        )
     }
 
     /**
@@ -726,7 +731,7 @@ class ChangeLogService(
 
         DebugLogger.info("Commenting on ${changeLog.jiraTickets.size} JIRA ticket(s) with production deployment info")
 
-        val commentBody = buildJiraComment(
+        val commentAdf = buildJiraComment(
             changeLog = changeLog,
             printResult = printResult,
             linkResolvers = linkResolvers
@@ -735,7 +740,7 @@ class ChangeLogService(
         changeLog.jiraTickets.forEach { ticketKey ->
             jiraService!!.commentOnTicket(
                 ticketKey = ticketKey,
-                commentBody = commentBody
+                body = commentAdf
             )
         }
     }
