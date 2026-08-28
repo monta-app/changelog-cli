@@ -245,10 +245,15 @@ private fun addDeployedSystemsAttachment(changeLog: ChangeLog, attachments: Muta
     val systems = changeLog.deployedSystems
     if (systems.isEmpty()) return
 
+    // The overall window only adds information across multiple systems; for a single
+    // system it just repeats that system's own row, so show the duration on the row instead.
+    val isSingle = systems.size == 1
     val items = mutableListOf<String>()
-    deployedSystemsOverviewLine(systems)?.let { items.add(it) }
+    if (!isSingle) {
+        deployedSystemsOverviewLine(systems)?.let { items.add(it) }
+    }
     systems.forEach { system ->
-        val suffix = deployRowSuffix(system)
+        val suffix = deployRowSuffix(system, withDuration = isSingle)
         items.add(if (suffix.isEmpty()) "• *${system.name}*" else "• *${system.name}* — $suffix")
     }
 
@@ -310,7 +315,7 @@ private fun commitLink(sha: String, repositoryUrl: String?): String {
     return if (repositoryUrl != null) "<$repositoryUrl/commit/$sha|`$short`>" else "`$short`"
 }
 
-private fun deployRowSuffix(system: DeployedSystem): String {
+private fun deployRowSuffix(system: DeployedSystem, withDuration: Boolean = false): String {
     val parts = mutableListOf<String>()
     if (system.status != null && !system.status.equals("healthy", ignoreCase = true)) {
         parts.add("⚠️ ${system.status}")
@@ -318,7 +323,9 @@ private fun deployRowSuffix(system: DeployedSystem): String {
     val start = DateTimeUtil.formatClock(system.start)
     val end = DateTimeUtil.formatClock(system.end)
     if (start != null && end != null) {
-        parts.add("$start → $end UTC")
+        val duration = if (withDuration) DateTimeUtil.formatDuration(system.start, system.end) else null
+        val durationSuffix = if (duration != null) " · *$duration*" else ""
+        parts.add("$start → $end UTC$durationSuffix")
     }
     return parts.joinToString(" · ")
 }
