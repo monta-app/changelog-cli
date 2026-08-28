@@ -93,6 +93,22 @@ class CommentSectionsTest :
             section shouldContain "</details>"
         }
 
+        "deployedSystemsSection links the system name to its ArgoCD app when a url is set" {
+            val section = deployedSystemsSection(
+                changeLog(
+                    deployedSystems = listOf(
+                        DeployedSystem(
+                            name = "hub",
+                            revision = "ee2026f0000000",
+                            url = "https://argocd.monta.app/applications/argocd/hub-production"
+                        )
+                    )
+                )
+            )
+
+            section shouldContain "[**hub**](https://argocd.monta.app/applications/argocd/hub-production)"
+        }
+
         "deployedSystemsSection marks an unhealthy system and drops the arrow without a previous" {
             val section = deployedSystemsSection(
                 changeLog(

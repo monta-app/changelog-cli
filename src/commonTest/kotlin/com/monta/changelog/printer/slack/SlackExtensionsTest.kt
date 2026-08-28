@@ -508,6 +508,21 @@ class SlackExtensionsTest :
             result.attachments.any { it.color == "#575757" } shouldBe false
         }
 
+        "deployed systems attachment links the system name to its ArgoCD app when a url is set" {
+            val result = buildMetadataBlocks(
+                monorepoChangeLog(
+                    listOf(
+                        DeployedSystem(
+                            name = "hub",
+                            status = "healthy",
+                            url = "https://argocd.monta.app/applications/argocd/hub-production"
+                        )
+                    )
+                )
+            )
+            result.attachments.first().text shouldContain "<https://argocd.monta.app/applications/argocd/hub-production|*hub*>"
+        }
+
         "deployed systems attachment is yellow on partial and red on all-failed" {
             fun colorFor(statuses: List<String>) = buildMetadataBlocks(
                 monorepoChangeLog(statuses.mapIndexed { i, s -> DeployedSystem(name = "svc$i", status = s) })
