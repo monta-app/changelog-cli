@@ -357,6 +357,27 @@ class SlackExtensionsTest :
             summaryBlock?.text?.text shouldNotContain "Deployed"
         }
 
+        "renders the Deployment timing card when only deploy times are set (no image info)" {
+            val changeLog = ChangeLog(
+                serviceName = "OCPP Toolkit V2",
+                jiraAppName = null,
+                tagName = "ocpp-toolkit-v2-2026-08-31-11-19",
+                previousTagName = null,
+                repoOwner = "monta-app",
+                repoName = "service-ocpp-toolkit-v2",
+                repositoryUrl = "https://github.com/monta-app/service-ocpp-toolkit-v2",
+                groupedCommitMap = emptyMap(),
+                // No dockerImage / imageTag — only the deploy window + ArgoCD url
+                deploymentStartTime = "2026-08-31T11:18:54Z",
+                deploymentEndTime = "2026-08-31T11:19:09Z",
+                deploymentUrl = "https://argocd.monta.app/applications/argocd/ocpp-toolkit-v2-production",
+                stage = "production"
+            )
+
+            val result = buildMetadataBlocks(changeLog)
+            result.attachments.any { it.text.startsWith("*Deployment:*") } shouldBe true
+        }
+
         "should show Released for release without deployment times" {
             val changeLog = ChangeLog(
                 serviceName = "Test Project",

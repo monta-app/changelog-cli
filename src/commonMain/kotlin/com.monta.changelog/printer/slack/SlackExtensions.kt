@@ -94,9 +94,7 @@ internal fun buildMetadataBlocks(changeLog: ChangeLog): SlackMessageComponents {
         addDeployedSystemsAttachment(changeLog, attachments)
         addContainersAttachment(changeLog, attachments)
     } else {
-        if (isServiceDeployment(changeLog)) {
-            addDeploymentAttachment(changeLog, attachments)
-        }
+        addDeploymentAttachment(changeLog, attachments)
         addTechnicalDetailsAttachment(changeLog, attachments)
     }
     addJiraTicketAttachments(changeLog, attachments)
