@@ -23,7 +23,7 @@ CHANGELOG_GITHUB_TOKEN # (ght_xxx) the github PAT used for creating the release 
 CHANGELOG_JIRA_APP_NAME # (myapp) the jira app name used for generating issue urls [optional]
 CHANGELOG_JIRA_EMAIL # (user@example.com) email for JIRA API authentication - required with JIRA_TOKEN to validate tickets [optional]
 CHANGELOG_JIRA_TOKEN # JIRA API token for validating that tickets exist - filters out invalid tickets when provided with JIRA_EMAIL [optional]
-CHANGELOG_JIRA_PROJECT_BLACKLIST # Comma-separated list of JIRA project keys (e.g. CUST,PARTNER) that should never receive deployment comments. Tickets in these projects are skipped when commenting on JIRA; other tickets in the same release are still commented on [optional]
+CHANGELOG_JIRA_PROJECT_BLACKLIST # Comma-separated JIRA project keys (e.g. CUST,PARTNER) to skip when commenting on JIRA; other tickets in the release are unaffected [optional]
 CHANGELOG_VERSION_MODE # (SemVer,DateVer) what type of tagging format is being used defaults to DateVer
 CHANGELOG_OUTPUT # (console,slack) where should the CLI output [defaults to console]
 CHANGELOG_SLACK_TOKEN # If the output is set to slack then a slack app token should be entered here [only required if output is set to slack]

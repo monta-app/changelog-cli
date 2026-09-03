@@ -142,9 +142,8 @@ class GenerateChangeLogCommand : CliktCommand() {
 
     private val jiraProjectBlacklist: List<String>? by option(
         "--jira-project-blacklist",
-        help = "Comma-separated list of JIRA project keys (e.g. CUST,PARTNER) that should never receive deployment " +
-            "comments. Tickets in these projects are skipped when commenting on JIRA; other tickets in the same " +
-            "release are still commented on (optional)",
+        help = "Comma-separated JIRA project keys (e.g. CUST,PARTNER) to skip when commenting on JIRA; " +
+            "other tickets in the release are unaffected (optional)",
         envvar = "CHANGELOG_JIRA_PROJECT_BLACKLIST"
     ).split(",")
 

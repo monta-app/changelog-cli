@@ -765,19 +765,12 @@ class ChangeLogService(
     }
 
     companion object {
-        /**
-         * Normalizes a raw JIRA project blacklist (as passed on the CLI / env var) into a set of
-         * upper-cased project keys, dropping blank entries.
-         */
         internal fun normalizeProjectBlacklist(blacklist: List<String>?): Set<String> = blacklist
             .orEmpty()
             .mapNotNull { it.trim().uppercase().ifEmpty { null } }
             .toSet()
 
-        /**
-         * Splits tickets into (allowed, blacklisted) based on their JIRA project key. A ticket key
-         * like "ABC-123" has project key "ABC"; the match is case-insensitive.
-         */
+        // A ticket's project key is the prefix before the "-" (ABC-123 -> ABC); matched case-insensitively.
         internal fun partitionByProjectBlacklist(
             tickets: List<String>,
             blacklist: Set<String>,
