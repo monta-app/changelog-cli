@@ -140,6 +140,13 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_COMMENT_ON_JIRA"
     ).flag(default = false)
 
+    private val jiraProjectBlacklist: List<String>? by option(
+        "--jira-project-blacklist",
+        help = "Comma-separated JIRA project keys (e.g. CUST,PARTNER) to skip when commenting on JIRA; " +
+            "other tickets in the release are unaffected (optional)",
+        envvar = "CHANGELOG_JIRA_PROJECT_BLACKLIST"
+    ).split(",")
+
     private val deployments: String? by option(
         help = "JSON array of systems deployed in this release. Each entry: name (required), revision (git SHA), " +
             "start and end (ISO 8601 UTC, e.g. 2026-08-26T08:19:18Z), status, url. Unknown fields are ignored and " +
@@ -207,6 +214,7 @@ class GenerateChangeLogCommand : CliktCommand() {
                 deploymentUrl = deploymentUrl.valueOrNull(),
                 commentOnPrs = commentOnPrs,
                 commentOnJira = commentOnJira,
+                jiraProjectBlacklist = jiraProjectBlacklist?.filter { it.isNotBlank() },
                 deployments = deployments.valueOrNull(),
                 monitoringUrls = monitoringUrls?.filter { it.isNotBlank() },
                 releaseNotifyChannel = releaseNotifyChannel.valueOrNull(),

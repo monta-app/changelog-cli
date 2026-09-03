@@ -39,6 +39,7 @@ class ChangeLogService(
     private val deploymentUrl: String?,
     private val commentOnPrs: Boolean,
     private val commentOnJira: Boolean,
+    jiraProjectBlacklist: List<String>? = null,
     deployments: String? = null,
     private val monitoringUrls: List<String>? = null,
     private val releaseNotifyChannel: String? = null,
@@ -55,6 +56,7 @@ class ChangeLogService(
     private val repoInfo = gitService.getRepoInfo()
     private val repositoryUrl = gitService.getRepositoryUrl()
     private val deployedSystems = com.monta.changelog.model.DeployedSystem.parseAll(deployments)
+    private val jiraProjectBlacklist = normalizeProjectBlacklist(jiraProjectBlacklist)
 
     private val releaseNotificationService = if (releaseNotifyChannel != null && releaseNotifySlackToken != null) {
         ReleaseNotificationService(
@@ -729,7 +731,24 @@ class ChangeLogService(
             return
         }
 
-        DebugLogger.info("Commenting on ${changeLog.jiraTickets.size} JIRA ticket(s) with production deployment info")
+        val (ticketsToComment, blacklistedTickets) = partitionByProjectBlacklist(
+            tickets = changeLog.jiraTickets,
+            blacklist = jiraProjectBlacklist
+        )
+
+        if (blacklistedTickets.isNotEmpty()) {
+            DebugLogger.info(
+                "Skipping ${blacklistedTickets.size} JIRA ticket(s) in blacklisted project(s): " +
+                    blacklistedTickets.joinToString()
+            )
+        }
+
+        if (ticketsToComment.isEmpty()) {
+            DebugLogger.debug("No JIRA tickets to comment on after applying project blacklist")
+            return
+        }
+
+        DebugLogger.info("Commenting on ${ticketsToComment.size} JIRA ticket(s) with production deployment info")
 
         val commentAdf = buildJiraComment(
             changeLog = changeLog,
@@ -737,11 +756,26 @@ class ChangeLogService(
             linkResolvers = linkResolvers
         )
 
-        changeLog.jiraTickets.forEach { ticketKey ->
+        ticketsToComment.forEach { ticketKey ->
             jiraService!!.commentOnTicket(
                 ticketKey = ticketKey,
                 body = commentAdf
             )
+        }
+    }
+
+    companion object {
+        internal fun normalizeProjectBlacklist(blacklist: List<String>?): Set<String> = blacklist
+            .orEmpty()
+            .mapNotNull { it.trim().uppercase().ifEmpty { null } }
+            .toSet()
+
+        // A ticket's project key is the prefix before the "-" (ABC-123 -> ABC); matched case-insensitively.
+        internal fun partitionByProjectBlacklist(
+            tickets: List<String>,
+            blacklist: Set<String>,
+        ): Pair<List<String>, List<String>> = tickets.partition { ticketKey ->
+            ticketKey.substringBefore("-").uppercase() !in blacklist
         }
     }
 }
