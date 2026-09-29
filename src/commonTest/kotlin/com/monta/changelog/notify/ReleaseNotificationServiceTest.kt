@@ -78,11 +78,11 @@ class ReleaseNotificationServiceTest :
         "addContributor should key a co-author without a login by email" {
             val contributors = mutableMapOf<String, Contributor>()
 
-            addContributor(contributors, email = "jane@example.com", displayName = "Jane Doe", prNumber = 1) { it.isCoAuthor = true }
+            addContributor(contributors, email = "jane@test.invalid", displayName = "Jane Doe", prNumber = 1) { it.isCoAuthor = true }
 
             contributors.values.single().let { contributor ->
                 contributor.login.shouldBeNull()
-                contributor.email shouldBe "jane@example.com"
+                contributor.email shouldBe "jane@test.invalid"
                 contributor.displayName shouldBe "Jane Doe"
                 contributor.isCoAuthor shouldBe true
             }
@@ -214,7 +214,7 @@ class ReleaseNotificationServiceTest :
         }
 
         "shouldSkipNotification should be false when there are monitoring urls even without prs" {
-            shouldSkipNotification(emptyList(), listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.example.com"))) shouldBe false
+            shouldSkipNotification(emptyList(), listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.test.invalid"))) shouldBe false
         }
 
         "buildContributors should collect the author and approvers of a single pr" {
@@ -245,7 +245,7 @@ class ReleaseNotificationServiceTest :
                     GitHubService.PullRequestDetails(number = 42, author = "alice", htmlUrl = null, approvers = emptyList())
                 },
                 getPullRequestCommitMessages = {
-                    listOf("fix: thing\n\nCo-authored-by: Jane Doe <jane@example.com>")
+                    listOf("fix: thing\n\nCo-authored-by: Jane Doe <jane@test.invalid>")
                 }
             )
 
@@ -328,13 +328,112 @@ class ReleaseNotificationServiceTest :
         "buildReleaseNotificationBlocks should include dashboards and contributors when both are present" {
             val blocks = buildReleaseNotificationBlocks(
                 testChangeLog(),
-                listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.example.com")),
+                listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.test.invalid")),
                 listOf("• <@U1> #1")
             )
 
             blocks shouldHaveSize 3
             blocks[1].text?.text shouldContain "Grafana"
             blocks[2].text?.text shouldContain "<@U1> #1"
+        }
+
+        "resolveEmail should use the identity-service email without calling the fallback" {
+            var fallbackCalled = false
+
+            val email = resolveEmail(identityEmail = "alice@test.invalid") {
+                fallbackCalled = true
+                "alice@personal.test.invalid"
+            }
+
+            email shouldBe "alice@test.invalid"
+            fallbackCalled shouldBe false
+        }
+
+        "resolveEmail should call the fallback when there is no identity-service email" {
+            val email = resolveEmail(identityEmail = null) { "bob@personal.test.invalid" }
+
+            email shouldBe "bob@personal.test.invalid"
+        }
+
+        "resolveSlackUserId should use the identity-service slack user id, calling neither fallback nor lookup" {
+            var fallbackCalled = false
+            var lookupCalled = false
+
+            val slackUserId = resolveSlackUserId(
+                identity = ResolvedIdentity(slackUserId = "1234567890", email = "alice@test.invalid"),
+                fallbackEmail = {
+                    fallbackCalled = true
+                    null
+                },
+                lookupSlackUserId = {
+                    lookupCalled = true
+                    null
+                }
+            )
+
+            slackUserId shouldBe "1234567890"
+            fallbackCalled shouldBe false
+            lookupCalled shouldBe false
+        }
+
+        "resolveSlackUserId should look up the identity-service email when there is no slack user id yet" {
+            var fallbackCalled = false
+            var lookedUpEmail: String? = null
+
+            val slackUserId = resolveSlackUserId(
+                identity = ResolvedIdentity(slackUserId = null, email = "alice@test.invalid"),
+                fallbackEmail = {
+                    fallbackCalled = true
+                    null
+                },
+                lookupSlackUserId = { email ->
+                    lookedUpEmail = email
+                    "1234567890"
+                }
+            )
+
+            slackUserId shouldBe "1234567890"
+            lookedUpEmail shouldBe "alice@test.invalid"
+            fallbackCalled shouldBe false
+        }
+
+        "resolveSlackUserId should fall back and look up that email when there is no identity at all" {
+            var lookedUpEmail: String? = null
+
+            val slackUserId = resolveSlackUserId(
+                identity = null,
+                fallbackEmail = { "bob@personal.test.invalid" },
+                lookupSlackUserId = { email ->
+                    lookedUpEmail = email
+                    "1234567890"
+                }
+            )
+
+            slackUserId shouldBe "1234567890"
+            lookedUpEmail shouldBe "bob@personal.test.invalid"
+        }
+
+        "resolveSlackUserId should return null when neither the identity nor the fallback resolve an email" {
+            val slackUserId = resolveSlackUserId(
+                identity = null,
+                fallbackEmail = { null },
+                lookupSlackUserId = { "should not be called" }
+            )
+
+            slackUserId.shouldBeNull()
+        }
+
+        "findIdentity should match the login case-insensitively against lowercased keys" {
+            val identity = ResolvedIdentity(slackUserId = "1234567890", email = "jd@test.invalid")
+
+            findIdentity("John-Doe", mapOf("john-doe" to identity)) shouldBe identity
+        }
+
+        "findIdentity should return null when the login is unknown or missing" {
+            val identities = mapOf("john-doe" to ResolvedIdentity(slackUserId = "1234567890", email = null))
+
+            findIdentity("someone-else", identities).shouldBeNull()
+            findIdentity(null, identities).shouldBeNull()
         }
     })
 

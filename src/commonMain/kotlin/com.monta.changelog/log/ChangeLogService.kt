@@ -7,7 +7,7 @@ import com.monta.changelog.github.GitHubService
 import com.monta.changelog.jira.AdfDocument
 import com.monta.changelog.jira.buildJiraCommentDocument
 import com.monta.changelog.model.ChangeLog
-import com.monta.changelog.model.DeployedSystem
+import com.monta.changelog.notify.IdentityResolver
 import com.monta.changelog.notify.MonitoringUrl
 import com.monta.changelog.notify.ReleaseNotificationService
 import com.monta.changelog.printer.ChangeLogPrinter
@@ -44,6 +44,7 @@ class ChangeLogService(
     private val monitoringUrls: List<String>? = null,
     private val releaseNotifyChannel: String? = null,
     private val releaseNotifySlackToken: String? = null,
+    private val identityResolveUrl: String? = null,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -63,7 +64,8 @@ class ChangeLogService(
             slackToken = releaseNotifySlackToken,
             slackChannel = releaseNotifyChannel,
             monitoringUrls = MonitoringUrl.parseAll(monitoringUrls),
-            gitHubService = gitHubService
+            gitHubService = gitHubService,
+            identityResolver = identityResolveUrl?.let { IdentityResolver(it) }
         )
     } else {
         null
