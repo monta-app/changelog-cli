@@ -2,6 +2,7 @@ package com.monta.changelog.notify
 
 import com.monta.changelog.util.json
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 
 class IdentityResolverTest :
@@ -144,5 +145,104 @@ class IdentityResolverTest :
             val response = json.decodeFromString<IdentityResolveResponse>(rawJson)
 
             extractIdentities(response) shouldBe emptyMap()
+        }
+
+        "resolveEmail should use the identity-service email without calling the fallback" {
+            var fallbackCalled = false
+
+            val email = resolveEmail(identityEmail = "alice@test.invalid") {
+                fallbackCalled = true
+                "alice@personal.test.invalid"
+            }
+
+            email shouldBe "alice@test.invalid"
+            fallbackCalled shouldBe false
+        }
+
+        "resolveEmail should call the fallback when there is no identity-service email" {
+            val email = resolveEmail(identityEmail = null) { "bob@personal.test.invalid" }
+
+            email shouldBe "bob@personal.test.invalid"
+        }
+
+        "resolveSlackUserId should use the identity-service slack user id, calling neither fallback nor lookup" {
+            var fallbackCalled = false
+            var lookupCalled = false
+
+            val slackUserId = resolveSlackUserId(
+                identity = ResolvedIdentity(slackUserId = "1234567890", email = "alice@test.invalid"),
+                fallbackEmail = {
+                    fallbackCalled = true
+                    null
+                },
+                lookupSlackUserId = {
+                    lookupCalled = true
+                    null
+                }
+            )
+
+            slackUserId shouldBe "1234567890"
+            fallbackCalled shouldBe false
+            lookupCalled shouldBe false
+        }
+
+        "resolveSlackUserId should look up the identity-service email when there is no slack user id yet" {
+            var fallbackCalled = false
+            var lookedUpEmail: String? = null
+
+            val slackUserId = resolveSlackUserId(
+                identity = ResolvedIdentity(slackUserId = null, email = "alice@test.invalid"),
+                fallbackEmail = {
+                    fallbackCalled = true
+                    null
+                },
+                lookupSlackUserId = { email ->
+                    lookedUpEmail = email
+                    "1234567890"
+                }
+            )
+
+            slackUserId shouldBe "1234567890"
+            lookedUpEmail shouldBe "alice@test.invalid"
+            fallbackCalled shouldBe false
+        }
+
+        "resolveSlackUserId should fall back and look up that email when there is no identity at all" {
+            var lookedUpEmail: String? = null
+
+            val slackUserId = resolveSlackUserId(
+                identity = null,
+                fallbackEmail = { "bob@personal.test.invalid" },
+                lookupSlackUserId = { email ->
+                    lookedUpEmail = email
+                    "1234567890"
+                }
+            )
+
+            slackUserId shouldBe "1234567890"
+            lookedUpEmail shouldBe "bob@personal.test.invalid"
+        }
+
+        "resolveSlackUserId should return null when neither the identity nor the fallback resolve an email" {
+            val slackUserId = resolveSlackUserId(
+                identity = null,
+                fallbackEmail = { null },
+                lookupSlackUserId = { "should not be called" }
+            )
+
+            slackUserId.shouldBeNull()
+        }
+
+        "findIdentity should match the login case-insensitively against lowercased keys" {
+            val identity = ResolvedIdentity(slackUserId = "1234567890", email = "jd@test.invalid")
+
+            findIdentity("John-Doe", mapOf("john-doe" to identity)) shouldBe identity
+        }
+
+        "findIdentity should return null when the login is unknown or missing" {
+            val identities = mapOf("john-doe" to ResolvedIdentity(slackUserId = "1234567890", email = null))
+
+            findIdentity("someone-else", identities).shouldBeNull()
+            findIdentity(null, identities).shouldBeNull()
         }
     })

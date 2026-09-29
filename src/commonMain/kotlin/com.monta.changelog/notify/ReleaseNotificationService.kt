@@ -106,33 +106,6 @@ internal fun formatMention(slackUserId: String?, login: String?, displayName: St
 }
 
 /**
- * Finds a contributor's identity-service entry by GitHub login. Keys in [identities] are
- * lowercased (see [extractIdentities]), so the login is matched case-insensitively.
- */
-internal fun findIdentity(login: String?, identities: Map<String, ResolvedIdentity>): ResolvedIdentity? = login?.let { identities[it.lowercase()] }
-
-/**
- * Picks which email to look up in Slack for a contributor when there's no identity-service
- * Slack ID to use directly: the identity service's email is authoritative when present;
- * [fallbackEmail] is only invoked (and so only hits the GitHub API) when it isn't.
- */
-internal suspend fun resolveEmail(
-    identityEmail: String?,
-    fallbackEmail: suspend () -> String?,
-): String? = identityEmail ?: fallbackEmail()
-
-/**
- * Resolves a contributor's Slack user ID. The identity service's Slack ID always wins and
- * skips email resolution/lookup entirely; otherwise an email is resolved ([resolveEmail]'s
- * precedence) and looked up in Slack via [lookupSlackUserId].
- */
-internal suspend fun resolveSlackUserId(
-    identity: ResolvedIdentity?,
-    fallbackEmail: suspend () -> String?,
-    lookupSlackUserId: suspend (String) -> String?,
-): String? = identity?.slackUserId ?: resolveEmail(identity?.email, fallbackEmail)?.let { lookupSlackUserId(it) }
-
-/**
  * Builds the "• <mention> (role) <pr links>" line for a single contributor.
  */
 internal fun buildMentionLine(
