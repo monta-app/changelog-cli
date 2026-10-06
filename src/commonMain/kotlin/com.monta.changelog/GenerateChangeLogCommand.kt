@@ -171,6 +171,13 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_SLACK_TOKEN"
     )
 
+    private val identityResolveUrl: String? by option(
+        help = "URL of an internal identity-resolution API that maps GitHub logins to Slack user IDs/emails, " +
+            "used to tag contributors in the release notification more reliably than their public GitHub " +
+            "profile email. Omit to skip this resolution step (optional)",
+        envvar = "CHANGELOG_IDENTITY_RESOLVE_URL"
+    )
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -218,7 +225,8 @@ class GenerateChangeLogCommand : CliktCommand() {
                 deployments = deployments.valueOrNull(),
                 monitoringUrls = monitoringUrls?.filter { it.isNotBlank() },
                 releaseNotifyChannel = releaseNotifyChannel.valueOrNull(),
-                releaseNotifySlackToken = releaseNotifySlackToken.valueOrNull()
+                releaseNotifySlackToken = releaseNotifySlackToken.valueOrNull(),
+                identityResolveUrl = identityResolveUrl.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions

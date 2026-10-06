@@ -78,11 +78,11 @@ class ReleaseNotificationServiceTest :
         "addContributor should key a co-author without a login by email" {
             val contributors = mutableMapOf<String, Contributor>()
 
-            addContributor(contributors, email = "jane@example.com", displayName = "Jane Doe", prNumber = 1) { it.isCoAuthor = true }
+            addContributor(contributors, email = "jane@test.invalid", displayName = "Jane Doe", prNumber = 1) { it.isCoAuthor = true }
 
             contributors.values.single().let { contributor ->
                 contributor.login.shouldBeNull()
-                contributor.email shouldBe "jane@example.com"
+                contributor.email shouldBe "jane@test.invalid"
                 contributor.displayName shouldBe "Jane Doe"
                 contributor.isCoAuthor shouldBe true
             }
@@ -214,7 +214,7 @@ class ReleaseNotificationServiceTest :
         }
 
         "shouldSkipNotification should be false when there are monitoring urls even without prs" {
-            shouldSkipNotification(emptyList(), listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.example.com"))) shouldBe false
+            shouldSkipNotification(emptyList(), listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.test.invalid"))) shouldBe false
         }
 
         "buildContributors should collect the author and approvers of a single pr" {
@@ -245,7 +245,7 @@ class ReleaseNotificationServiceTest :
                     GitHubService.PullRequestDetails(number = 42, author = "alice", htmlUrl = null, approvers = emptyList())
                 },
                 getPullRequestCommitMessages = {
-                    listOf("fix: thing\n\nCo-authored-by: Jane Doe <jane@example.com>")
+                    listOf("fix: thing\n\nCo-authored-by: Jane Doe <jane@test.invalid>")
                 }
             )
 
@@ -328,7 +328,7 @@ class ReleaseNotificationServiceTest :
         "buildReleaseNotificationBlocks should include dashboards and contributors when both are present" {
             val blocks = buildReleaseNotificationBlocks(
                 testChangeLog(),
-                listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.example.com")),
+                listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.test.invalid")),
                 listOf("• <@U1> #1")
             )
 

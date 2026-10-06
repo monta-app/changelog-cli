@@ -209,6 +209,7 @@ class ReleaseNotificationService(
     private val slackChannel: String,
     private val monitoringUrls: List<MonitoringUrl>,
     private val gitHubService: GitHubService,
+    private val identityResolver: IdentityResolver? = null,
 ) {
 
     suspend fun notify(
@@ -240,13 +241,18 @@ class ReleaseNotificationService(
             }
         )
 
+        // One batched lookup for every contributor's GitHub login, ahead of the
+        // per-contributor email resolution/lookup in resolveMention. Skipped entirely
+        // when no identity-resolve URL was configured.
+        val identities = identityResolver?.resolveGithubIdentities(contributors.values.mapNotNull { it.login }).orEmpty()
+
         val mentionLines = sortContributors(contributors.values).map { contributor ->
             buildMentionLine(
                 repoOwner = changeLog.repoOwner,
                 repoName = changeLog.repoName,
                 contributor = contributor,
                 prUrls = prUrls,
-                mention = resolveMention(contributor)
+                mention = resolveMention(contributor, identities)
             )
         }
 
@@ -257,12 +263,20 @@ class ReleaseNotificationService(
     }
 
     /**
-     * Resolves a contributor to a real Slack mention by looking up their public GitHub
-     * email (or commit trailer email) in Slack.
+     * Resolves a contributor to a real Slack mention. Uses the identity service's Slack
+     * user ID directly when it has one - skipping the email lookup entirely. Otherwise
+     * falls back to resolving an email (identity service, commit trailer, or public GitHub
+     * profile) and looking that up in Slack.
      */
-    private suspend fun resolveMention(contributor: Contributor): String {
-        val email = contributor.email ?: contributor.login?.let { gitHubService.getUser(it)?.email }
-        val slackUserId = email?.let { SlackUserResolver.lookupUserIdByEmail(slackToken, it) }
+    private suspend fun resolveMention(contributor: Contributor, identities: Map<String, ResolvedIdentity>): String {
+        val identity = findIdentity(contributor.login, identities)
+
+        val slackUserId = resolveSlackUserId(
+            identity = identity,
+            fallbackEmail = { contributor.email ?: contributor.login?.let { gitHubService.getUser(it)?.email } },
+            lookupSlackUserId = { email -> SlackUserResolver.lookupUserIdByEmail(slackToken, email) }
+        )
+
         return formatMention(slackUserId = slackUserId, login = contributor.login, displayName = contributor.displayName)
     }
 

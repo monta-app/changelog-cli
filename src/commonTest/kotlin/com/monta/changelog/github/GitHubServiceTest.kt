@@ -14,6 +14,23 @@ class GitHubServiceTest :
             GitHubService.isBotActor("claude") shouldBe true
         }
 
+        "isBotActor should return true for any display name whose first word is Claude" {
+            GitHubService.isBotActor("Claude Sonnet 5") shouldBe true
+            GitHubService.isBotActor("Claude Opus 4.6") shouldBe true
+            GitHubService.isBotActor("Claude") shouldBe true
+            GitHubService.isBotActor("claude sonnet 5") shouldBe true
+            GitHubService.isBotActor("CLAUDE") shouldBe true
+        }
+
+        "isBotActor should not match a name that merely starts with the letters Claude" {
+            GitHubService.isBotActor("Claudette Smith") shouldBe false
+            GitHubService.isBotActor("Claudio Bianchi") shouldBe false
+        }
+
+        "isBotActor should not match Claude appearing later in the name" {
+            GitHubService.isBotActor("Not Claude") shouldBe false
+        }
+
         "isBotActor should return false for human actors" {
             GitHubService.isBotActor("JesperTerkelsen") shouldBe false
             GitHubService.isBotActor("some-user") shouldBe false

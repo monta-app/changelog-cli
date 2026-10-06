@@ -779,7 +779,7 @@ class GitHubService(
         fun isBotActor(actor: String?): Boolean = when {
             actor == null -> false
             actor.contains("[bot]") -> true
-            actor == "claude" -> true
+            actor.substringBefore(' ').equals("claude", ignoreCase = true) -> true
             else -> false
         }
 

@@ -38,6 +38,7 @@ CHANGELOG_PREVIOUS_IMAGE_TAG # Previous Docker image tag for rollback reference 
 CHANGELOG_DEPLOYMENTS # JSON array of systems deployed in this release (see "Deployment metadata" below). Typically the deploy pipeline's rollout-wait output [optional]
 CHANGELOG_MONITORING_URLS # Comma-separated list of dashboard/monitoring URLs for the release notification. Each entry is a bare URL or 'Label|https://url' [optional]
 CHANGELOG_RELEASE_NOTIFY_CHANNEL # Slack channel ID or name to post a release notification to, tagging PR authors/approvers and linking the monitoring URLs [optional, requires CHANGELOG_SLACK_TOKEN]
+CHANGELOG_IDENTITY_RESOLVE_URL # URL of an internal identity-resolution API mapping GitHub logins to Slack user IDs/emails, for more reliable contributor tagging [optional]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
@@ -87,10 +88,22 @@ Contributors:
 • @bob (approver) #125
 ```
 
-Contributors are tagged with a real Slack mention (`@user`) when their public GitHub email matches a Slack
-account; otherwise they're linked to their GitHub profile instead. Anyone who only approved a pull request
-(and didn't author one in this release) is suffixed with `(approver)`. Requires `CHANGELOG_GITHUB_TOKEN` to
-resolve PR authors/approvers.
+Contributors are tagged with a real Slack mention (`<@user_id>`) when one can be resolved; otherwise they're
+linked to their GitHub profile instead. Anyone who only approved a pull request (and didn't author one in
+this release) is suffixed with `(approver)`, and anyone credited only via a `Co-authored-by:` commit trailer
+with `(co-author)`. Requires `CHANGELOG_GITHUB_TOKEN` to resolve PR authors/approvers/co-authors.
+
+A contributor's GitHub login is resolved to a Slack mention in this order:
+
+1. **`CHANGELOG_IDENTITY_RESOLVE_URL`**, if set - an internal identity-resolution API (called as
+   `<url>?github=<login>`) that's the authoritative source. If it returns a Slack user ID directly, that's
+   used as-is. Typically an internal, VPN-only URL, so this is left unset in the public repo and configured
+   via CI secrets/env; if unset, unreachable or slow (10s timeout), this step is skipped with a warning.
+2. Otherwise, an email is resolved (the identity API's email, a `Co-authored-by:` trailer email, or the
+   contributor's public GitHub profile email - unreliable, since few people expose one, let alone a work one)
+   and looked up via Slack's `users.lookupByEmail`.
+
+If nothing resolves a Slack account, the contributor falls back to a GitHub profile link.
 
 ### How to Release This Project
 
