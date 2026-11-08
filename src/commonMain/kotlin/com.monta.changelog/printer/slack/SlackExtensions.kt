@@ -5,6 +5,7 @@ import com.monta.changelog.model.Commit
 import com.monta.changelog.model.ConventionalCommitType
 import com.monta.changelog.model.DeployOutcome
 import com.monta.changelog.model.DeployedSystem
+import com.monta.changelog.model.isNotHealthy
 import com.monta.changelog.model.outcome
 import com.monta.changelog.util.DateTimeUtil
 import com.monta.changelog.util.LinkResolver
@@ -323,7 +324,7 @@ private fun deployedSystemName(system: DeployedSystem): String {
 
 private fun deployRowSuffix(system: DeployedSystem, withDuration: Boolean = false): String {
     val parts = mutableListOf<String>()
-    if (system.status != null && !system.status.equals("healthy", ignoreCase = true)) {
+    if (system.status != null && system.isNotHealthy()) {
         parts.add("⚠️ ${system.status}")
     }
     val start = DateTimeUtil.formatClock(system.start)

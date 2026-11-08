@@ -39,4 +39,21 @@ class DeployedSystemTest :
             // missing the required name
             DeployedSystem.parseAll("""[{"revision":"x"}]""").shouldBeEmpty()
         }
+
+        "treats healthy, success and a missing status as healthy, in any case" {
+            listOf(
+                DeployedSystem(name = "a", status = "healthy"),
+                DeployedSystem(name = "b", status = "SUCCESS"),
+                DeployedSystem(name = "c")
+            ).outcome() shouldBe DeployOutcome.HEALTHY
+            DeployedSystem(name = "d", status = "success").isNotHealthy() shouldBe false
+        }
+
+        "reports failed when no system is healthy and partial when some are" {
+            listOf(DeployedSystem(name = "a", status = "degraded")).outcome() shouldBe DeployOutcome.FAILED
+            listOf(
+                DeployedSystem(name = "a", status = "success"),
+                DeployedSystem(name = "b", status = "degraded")
+            ).outcome() shouldBe DeployOutcome.PARTIAL
+        }
     })

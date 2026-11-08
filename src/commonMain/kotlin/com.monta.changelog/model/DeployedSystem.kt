@@ -34,7 +34,10 @@ data class DeployedSystem(
      * (e.g. `"2026-08-26T08:30:59Z"`). Non-ISO values are rendered verbatim.
      */
     val end: String? = null,
-    /** Rollout health, e.g. `"healthy"` (a fail-fast wait only reports healthy). */
+    /**
+     * Rollout health, e.g. `"healthy"` (a fail-fast wait only reports healthy). `"success"`,
+     * which GitHub Actions-based deploys report, also counts as healthy.
+     */
     val status: String? = null,
     /** Link to the system, e.g. its ArgoCD application URL. */
     val url: String? = null,
@@ -65,7 +68,9 @@ enum class DeployOutcome {
     FAILED,
 }
 
-private fun DeployedSystem.isHealthy(): Boolean = status == null || status.equals("healthy", ignoreCase = true)
+private val healthyStatuses = setOf("healthy", "success")
+
+private fun DeployedSystem.isHealthy(): Boolean = status == null || status.lowercase() in healthyStatuses
 
 fun List<DeployedSystem>.outcome(): DeployOutcome = when {
     isEmpty() || all { it.isHealthy() } -> DeployOutcome.HEALTHY
