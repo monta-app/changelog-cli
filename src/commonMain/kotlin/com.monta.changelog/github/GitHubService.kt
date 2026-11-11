@@ -420,6 +420,34 @@ class GitHubService(
     }
 
     /**
+     * Reads a file's raw text from a GitHub contents API URL
+     * (`https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}`), or null when it can't be read.
+     */
+    suspend fun getRawFile(url: String): String? {
+        if (githubToken == null) {
+            DebugLogger.debug("No GitHub token provided, skipping file read of $url")
+            return null
+        }
+
+        return try {
+            val response = client.get(url) {
+                header("Authorization", "token $githubToken")
+                accept(ContentType.parse("application/vnd.github.raw"))
+            }
+
+            if (response.status.isSuccess()) {
+                response.bodyAsText()
+            } else {
+                DebugLogger.warn("⚠️  Could not read $url: HTTP ${response.status.value}")
+                null
+            }
+        } catch (e: Exception) {
+            DebugLogger.warn("⚠️  Could not read $url: ${e.message}")
+            null
+        }
+    }
+
+    /**
      * Represents a pull request's author and its approvers, used for tagging
      * people in release notifications.
      */

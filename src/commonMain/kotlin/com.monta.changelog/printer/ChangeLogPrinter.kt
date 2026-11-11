@@ -11,5 +11,7 @@ interface ChangeLogPrinter {
      */
     data class PrintResult(
         val slackMessageUrl: String? = null,
+        val slackChannel: String? = null,
+        val slackThreadTs: String? = null,
     )
 }

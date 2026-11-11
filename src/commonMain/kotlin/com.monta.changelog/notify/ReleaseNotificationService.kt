@@ -256,9 +256,14 @@ class ReleaseNotificationService(
             )
         }
 
-        postMessage(
-            blocks = buildReleaseNotificationBlocks(changeLog, monitoringUrls, mentionLines),
-            fallbackText = changeLog.title
+        postSlackMessage(
+            slackToken = slackToken,
+            request = SlackMessageRequest(
+                channel = slackChannel,
+                threadTs = null,
+                text = changeLog.title,
+                blocks = buildReleaseNotificationBlocks(changeLog, monitoringUrls, mentionLines)
+            )
         )
     }
 
@@ -279,24 +284,17 @@ class ReleaseNotificationService(
 
         return formatMention(slackUserId = slackUserId, login = contributor.login, displayName = contributor.displayName)
     }
+}
 
-    private suspend fun postMessage(blocks: List<SlackBlock>, fallbackText: String) {
-        val response = client.post("https://slack.com/api/chat.postMessage") {
-            header("Authorization", "Bearer $slackToken")
-            contentType(ContentType.Application.Json.withParameter("charset", Charsets.UTF_8.name))
-            setBody(
-                SlackMessageRequest(
-                    channel = slackChannel,
-                    threadTs = null,
-                    text = fallbackText,
-                    blocks = blocks
-                )
-            )
-        }
+internal suspend fun postSlackMessage(slackToken: String, request: SlackMessageRequest) {
+    val response = client.post("https://slack.com/api/chat.postMessage") {
+        header("Authorization", "Bearer $slackToken")
+        contentType(ContentType.Application.Json.withParameter("charset", Charsets.UTF_8.name))
+        setBody(request)
+    }
 
-        val result = response.getBodySafe<SlackMessageResponse>()
-        if (result?.ok != true) {
-            DebugLogger.error("Could not post release notification to slack channel '$slackChannel'")
-        }
+    val result = response.getBodySafe<SlackMessageResponse>()
+    if (result?.ok != true) {
+        DebugLogger.error("Could not post release notification to slack channel '${request.channel}'")
     }
 }
