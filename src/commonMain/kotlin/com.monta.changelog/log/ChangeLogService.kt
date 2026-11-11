@@ -304,8 +304,8 @@ class ChangeLogService(
 
         val slackChannel = printResult?.slackChannel
         val slackThreadTs = printResult?.slackThreadTs
-        if (releaseMentionService != null && isReleaseStage(changeLog) && slackChannel != null && slackThreadTs != null) {
-            releaseMentionService.mention(
+        if (isReleaseStage(changeLog) && slackChannel != null && slackThreadTs != null) {
+            releaseMentionService?.mention(
                 changeLog = changeLog,
                 pullRequests = validatedPrs,
                 slackChannel = slackChannel,
