@@ -72,7 +72,11 @@ class SlackChangeLogPrinter(
         }
 
         return if (permalink != null) {
-            ChangeLogPrinter.PrintResult(slackMessageUrl = permalink)
+            ChangeLogPrinter.PrintResult(
+                slackMessageUrl = permalink,
+                slackChannel = firstMessageChannel,
+                slackThreadTs = firstMessageTs
+            )
         } else {
             null
         }

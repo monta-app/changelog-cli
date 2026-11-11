@@ -9,6 +9,7 @@ import com.monta.changelog.jira.buildJiraCommentDocument
 import com.monta.changelog.model.ChangeLog
 import com.monta.changelog.notify.IdentityResolver
 import com.monta.changelog.notify.MonitoringUrl
+import com.monta.changelog.notify.ReleaseMentionService
 import com.monta.changelog.notify.ReleaseNotificationService
 import com.monta.changelog.printer.ChangeLogPrinter
 import com.monta.changelog.util.DebugLogger
@@ -44,7 +45,8 @@ class ChangeLogService(
     private val monitoringUrls: List<String>? = null,
     private val releaseNotifyChannel: String? = null,
     private val releaseNotifySlackToken: String? = null,
-    private val identityResolveUrl: String? = null,
+    identityResolveUrl: String? = null,
+    releaseSubscribersUrl: String? = null,
 ) {
 
     private val gitService = GitService(tagSorter, tagPattern, pathExcludePattern)
@@ -59,13 +61,26 @@ class ChangeLogService(
     private val deployedSystems = com.monta.changelog.model.DeployedSystem.parseAll(deployments)
     private val jiraProjectBlacklist = normalizeProjectBlacklist(jiraProjectBlacklist)
 
+    private val identityResolver = identityResolveUrl?.let { IdentityResolver(it) }
+
     private val releaseNotificationService = if (releaseNotifyChannel != null && releaseNotifySlackToken != null) {
         ReleaseNotificationService(
             slackToken = releaseNotifySlackToken,
             slackChannel = releaseNotifyChannel,
             monitoringUrls = MonitoringUrl.parseAll(monitoringUrls),
             gitHubService = gitHubService,
-            identityResolver = identityResolveUrl?.let { IdentityResolver(it) }
+            identityResolver = identityResolver
+        )
+    } else {
+        null
+    }
+
+    private val releaseMentionService = if (releaseSubscribersUrl != null && releaseNotifySlackToken != null) {
+        ReleaseMentionService(
+            slackToken = releaseNotifySlackToken,
+            subscribersUrl = releaseSubscribersUrl,
+            gitHubService = gitHubService,
+            identityResolver = identityResolver
         )
     } else {
         null
@@ -287,6 +302,17 @@ class ChangeLogService(
 
         DebugLogger.info("Print result: slackUrl=${printResult?.slackMessageUrl}, commentOnPrs=$commentOnPrs, stage=${changeLog.stage}")
 
+        val slackChannel = printResult?.slackChannel
+        val slackThreadTs = printResult?.slackThreadTs
+        if (isReleaseStage(changeLog) && slackChannel != null && slackThreadTs != null) {
+            releaseMentionService?.mention(
+                changeLog = changeLog,
+                pullRequests = validatedPrs,
+                slackChannel = slackChannel,
+                slackThreadTs = slackThreadTs
+            )
+        }
+
         // Comment on PRs for production deployments
         if (shouldCommentOnPRs(changeLog, printResult)) {
             commentOnPullRequests(
@@ -445,7 +471,7 @@ class ChangeLogService(
         changeLog: ChangeLog,
         printResult: com.monta.changelog.printer.ChangeLogPrinter.PrintResult?,
     ): Boolean {
-        val isValidStage = changeLog.stage?.lowercase() in listOf("production", "internal")
+        val isValidStage = isReleaseStage(changeLog)
         val hasSlackUrl = printResult?.slackMessageUrl != null
 
         return when {
@@ -460,6 +486,8 @@ class ChangeLogService(
             else -> true
         }
     }
+
+    private fun isReleaseStage(changeLog: ChangeLog) = changeLog.stage?.lowercase() in listOf("production", "internal")
 
     private fun logInvalidStageWarning(stage: String?) {
         DebugLogger.warn("⚠️  PR commenting is enabled but stage is not 'production' or 'internal' (current: '${stage ?: "not set"}')")

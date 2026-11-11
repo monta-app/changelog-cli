@@ -39,6 +39,7 @@ CHANGELOG_DEPLOYMENTS # JSON array of systems deployed in this release (see "Dep
 CHANGELOG_MONITORING_URLS # Comma-separated list of dashboard/monitoring URLs for the release notification. Each entry is a bare URL or 'Label|https://url' [optional]
 CHANGELOG_RELEASE_NOTIFY_CHANNEL # Slack channel ID or name to post a release notification to, tagging PR authors/approvers and linking the monitoring URLs [optional, requires CHANGELOG_SLACK_TOKEN]
 CHANGELOG_IDENTITY_RESOLVE_URL # URL of an internal identity-resolution API mapping GitHub logins to Slack user IDs/emails, for more reliable contributor tagging [optional]
+CHANGELOG_RELEASE_SUBSCRIBERS_URL # GitHub contents API URL of the opted-in release subscribers file; empty turns release mentions off [optional, defaults to the Monta Reviews list]
 ```
 
 At least one of `CHANGELOG_SLACK_CHANNEL_NAME` and `CHANGELOG_SLACK_CHANNELS` is required if output is set to `slack`
@@ -104,6 +105,26 @@ A contributor's GitHub login is resolved to a Slack mention in this order:
    and looked up via Slack's `users.lookupByEmail`.
 
 If nothing resolves a Slack account, the contributor falls back to a GitHub profile link.
+
+### Release Mentions
+
+People can ask to be tagged when a release ships their changes, by turning on *Release notifications* on their
+[Monta Reviews](https://reviews.vpn.monta.app/me) profile. Monta Reviews publishes their GitHub logins to
+`subscribers.json` on the `release-subscribers` branch of `monta-app/tool-reviews` (`{"logins": ["alice"]}`), and
+`CHANGELOG_RELEASE_SUBSCRIBERS_URL` points there by default.
+
+On a `production` or `internal` stage with `CHANGELOG_OUTPUT=slack`, the CLI reads that file with
+`CHANGELOG_GITHUB_TOKEN` and replies in the changelog's Slack thread, tagging each subscriber who authored or
+co-authored a pull request in the release, or triggered it:
+
+```
+🔔 Your changes are in 2026-11-11-14-30
+• @alice #123 #124
+• @bob (triggered this release)
+```
+
+Slack users are resolved the same way as for release notifications. A subscriber with no resolvable Slack account
+is left out, and nothing is posted when no subscriber has changes in the release, or the file can't be read.
 
 ### How to Release This Project
 

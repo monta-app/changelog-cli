@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.groups.cooccurring
 import com.github.ajalt.clikt.parameters.groups.groupChoice
 import com.github.ajalt.clikt.parameters.groups.required
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -178,6 +179,13 @@ class GenerateChangeLogCommand : CliktCommand() {
         envvar = "CHANGELOG_IDENTITY_RESOLVE_URL"
     )
 
+    private val releaseSubscribersUrl: String by option(
+        help = "GitHub contents API URL of a JSON file ({\"logins\": [...]}) listing the GitHub logins of people who want " +
+            "to be tagged in the changelog's Slack thread when a production release ships their changes. Read with " +
+            "CHANGELOG_GITHUB_TOKEN; set it empty to turn release mentions off",
+        envvar = "CHANGELOG_RELEASE_SUBSCRIBERS_URL"
+    ).default(DEFAULT_RELEASE_SUBSCRIBERS_URL)
+
     private val output: PrintingConfig by option(
         help = "Name of the output used for printing the log (defaults to console)",
         envvar = "CHANGELOG_OUTPUT"
@@ -226,7 +234,8 @@ class GenerateChangeLogCommand : CliktCommand() {
                 monitoringUrls = monitoringUrls?.filter { it.isNotBlank() },
                 releaseNotifyChannel = releaseNotifyChannel.valueOrNull(),
                 releaseNotifySlackToken = releaseNotifySlackToken.valueOrNull(),
-                identityResolveUrl = identityResolveUrl.valueOrNull()
+                identityResolveUrl = identityResolveUrl.valueOrNull(),
+                releaseSubscribersUrl = releaseSubscribersUrl.valueOrNull()
             )
 
             val commitShaOptions = commitShaOptions
@@ -261,6 +270,12 @@ class GenerateChangeLogCommand : CliktCommand() {
      * if set via ENV variables (as we do from our GitHub Actions)
      */
     private fun String?.valueOrNull() = if (this.isNullOrBlank()) null else this
+
+    private companion object {
+        // Published by Monta Reviews (reviews.vpn.monta.app/me), where people opt in.
+        const val DEFAULT_RELEASE_SUBSCRIBERS_URL =
+            "https://api.github.com/repos/monta-app/tool-reviews/contents/subscribers.json?ref=release-subscribers"
+    }
 
     sealed class PrintingConfig(name: String) : OptionGroup(name) {
         abstract val changeLogPrinter: ChangeLogPrinter
