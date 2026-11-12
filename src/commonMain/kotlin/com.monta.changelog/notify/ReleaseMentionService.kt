@@ -79,7 +79,7 @@ internal fun buildReleaseMentionLine(
  * The reply's plain text, which Slack shows in the notification: it names the service, since a
  * tag alone doesn't say which of many releases it was.
  */
-internal fun buildReleaseMentionText(changeLog: ChangeLog): String = "Your changes are in ${changeLog.serviceName} ${changeLog.tagName}"
+internal fun buildReleaseMentionText(changeLog: ChangeLog): String = "Your changes are in - ${changeLog.serviceName} ${changeLog.tagName}"
 
 /**
  * The release line under the heading: the tag, linked to the GitHub release when there is one,
@@ -95,7 +95,7 @@ internal fun buildReleaseMentionBlocks(changeLog: ChangeLog, lines: List<String>
         type = "section",
         text = SlackText(
             type = "mrkdwn",
-            text = ":bell: *Your changes are in ${changeLog.serviceName}*\n" +
+            text = ":bell: *Your changes are in - ${changeLog.serviceName}*\n" +
                 "${buildReleaseMentionContext(changeLog)}\n${lines.joinToString("\n")}"
         )
     )

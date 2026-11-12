@@ -92,9 +92,9 @@ class ReleaseMentionServiceTest :
                 githubReleaseUrl = "https://github.com/monta-app/octo-guardrail/releases/tag/2026-11-12-12-08"
             }
 
-            buildReleaseMentionText(changeLog) shouldBe "Your changes are in Octo Guardrail 🚀 2026-11-12-12-08"
+            buildReleaseMentionText(changeLog) shouldBe "Your changes are in - Octo Guardrail 🚀 2026-11-12-12-08"
             buildReleaseMentionBlocks(changeLog, listOf("• <@U123> (triggered this release)"))
-                .single().text?.text shouldBe ":bell: *Your changes are in Octo Guardrail 🚀*\n" +
+                .single().text?.text shouldBe ":bell: *Your changes are in - Octo Guardrail 🚀*\n" +
                 "<https://github.com/monta-app/octo-guardrail/releases/tag/2026-11-12-12-08|2026-11-12-12-08> · internal\n" +
                 "• <@U123> (triggered this release)"
         }
