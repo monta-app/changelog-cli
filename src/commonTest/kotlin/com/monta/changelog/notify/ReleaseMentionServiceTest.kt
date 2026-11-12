@@ -1,5 +1,6 @@
 package com.monta.changelog.notify
 
+import com.monta.changelog.model.ChangeLog
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
@@ -85,4 +86,32 @@ class ReleaseMentionServiceTest :
                 slackUserId = "U456"
             ) shouldBe "• <@U456> (triggered this release)"
         }
+
+        "the reply names the service, links the release and says the stage" {
+            val changeLog = releaseChangeLog().apply {
+                githubReleaseUrl = "https://github.com/monta-app/octo-guardrail/releases/tag/2026-11-12-12-08"
+            }
+
+            buildReleaseMentionText(changeLog) shouldBe "Your changes are in Octo Guardrail 🚀 2026-11-12-12-08"
+            buildReleaseMentionBlocks(changeLog, listOf("• <@U123> (triggered this release)"))
+                .single().text?.text shouldBe ":bell: *Your changes are in Octo Guardrail 🚀*\n" +
+                "<https://github.com/monta-app/octo-guardrail/releases/tag/2026-11-12-12-08|2026-11-12-12-08> · internal\n" +
+                "• <@U123> (triggered this release)"
+        }
+
+        "the release line falls back to the plain tag, and leaves out a missing stage" {
+            buildReleaseMentionContext(releaseChangeLog(stage = null)) shouldBe "`2026-11-12-12-08`"
+        }
     })
+
+private fun releaseChangeLog(stage: String? = "Internal") = ChangeLog(
+    serviceName = "Octo Guardrail 🚀",
+    jiraAppName = null,
+    tagName = "2026-11-12-12-08",
+    previousTagName = null,
+    repoOwner = "monta-app",
+    repoName = "octo-guardrail",
+    repositoryUrl = "https://github.com/monta-app/octo-guardrail",
+    groupedCommitMap = emptyMap(),
+    stage = stage
+)
