@@ -747,25 +747,29 @@ class GitHubService(
         DebugLogger.debug("Querying GitHub API for who added '$labelName' label to PR #$prNumber")
 
         return try {
-            val response = client.githubRequest<String?>(
-                path = "$repoOwner/$repoName/issues/$prNumber/events",
-                httpMethod = HttpMethod.Get,
-                body = null
-            )
-
-            if (response.status.isSuccess()) {
-                val events = response.body<List<IssueEvent>>()
-                val actor = findLabelAdderFromEvents(events, labelName)
-                if (actor != null) {
-                    DebugLogger.debug("Found '$labelName' label was added by: $actor")
+            // GitHub returns 30 events per page by default, and a long-lived PR easily has more,
+            // so the label event can sit on a later page: read every page.
+            val events = fetchAllPages { page ->
+                val response = client.githubRequest<String?>(
+                    path = "$repoOwner/$repoName/issues/$prNumber/events?per_page=$EVENTS_PAGE_SIZE&page=$page",
+                    httpMethod = HttpMethod.Get,
+                    body = null
+                )
+                if (response.status.isSuccess()) {
+                    response.body<List<IssueEvent>>()
                 } else {
-                    DebugLogger.debug("No '$labelName' label event found on PR #$prNumber")
+                    DebugLogger.warn("⚠️  Failed to get events for PR #$prNumber (page $page): HTTP ${response.status.value}")
+                    null
                 }
-                actor
+            } ?: return null
+
+            val actor = findLabelAdderFromEvents(events, labelName)
+            if (actor != null) {
+                DebugLogger.debug("Found '$labelName' label was added by: $actor")
             } else {
-                DebugLogger.warn("⚠️  Failed to get events for PR #$prNumber: HTTP ${response.status.value}")
-                null
+                DebugLogger.debug("No '$labelName' label event found on PR #$prNumber (${events.size} events)")
             }
+            actor
         } catch (e: Exception) {
             DebugLogger.warn("⚠️  Exception getting events for PR #$prNumber: ${e.message}")
             null
@@ -819,5 +823,28 @@ class GitHubService(
             events: List<IssueEvent>,
             labelName: String,
         ): String? = events.lastOrNull { it.event == "labeled" && it.label?.name == labelName }?.actor?.login
+
+        const val EVENTS_PAGE_SIZE = 100
+        const val EVENTS_MAX_PAGES = 10
+
+        /**
+         * Reads pages 1, 2, ... from [fetchPage] until one comes back with fewer than [pageSize] items,
+         * or [maxPages] pages have been read. Returns null when any page fails, so a partial list
+         * never passes for the whole one.
+         */
+        suspend fun <T> fetchAllPages(
+            pageSize: Int = EVENTS_PAGE_SIZE,
+            maxPages: Int = EVENTS_MAX_PAGES,
+            fetchPage: suspend (page: Int) -> List<T>?,
+        ): List<T>? {
+            val items = mutableListOf<T>()
+            for (page in 1..maxPages) {
+                val pageItems = fetchPage(page) ?: return null
+                items += pageItems
+                if (pageItems.size < pageSize) return items
+            }
+            DebugLogger.warn("⚠️  Stopped after $maxPages pages of $pageSize items")
+            return items
+        }
     }
 }
