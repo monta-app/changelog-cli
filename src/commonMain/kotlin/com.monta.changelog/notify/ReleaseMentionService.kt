@@ -75,10 +75,29 @@ internal fun buildReleaseMentionLine(
     return "• <@$slackUserId> ${parts.joinToString(" ")}"
 }
 
+/**
+ * The reply's plain text, which Slack shows in the notification: it names the service, since a
+ * tag alone doesn't say which of many releases it was.
+ */
+internal fun buildReleaseMentionText(changeLog: ChangeLog): String = "Your changes are in - ${changeLog.serviceName} ${changeLog.tagName}"
+
+/**
+ * The release line under the heading: the tag, linked to the GitHub release when there is one,
+ * and the stage it shipped to.
+ */
+internal fun buildReleaseMentionContext(changeLog: ChangeLog): String {
+    val tag = changeLog.githubReleaseUrl?.let { "<$it|${changeLog.tagName}>" } ?: "`${changeLog.tagName}`"
+    return listOfNotNull(tag, changeLog.stage?.lowercase()).joinToString(" · ")
+}
+
 internal fun buildReleaseMentionBlocks(changeLog: ChangeLog, lines: List<String>): List<SlackBlock> = listOf(
     SlackBlock(
         type = "section",
-        text = SlackText(type = "mrkdwn", text = ":bell: *Your changes are in ${changeLog.tagName}*\n${lines.joinToString("\n")}")
+        text = SlackText(
+            type = "mrkdwn",
+            text = ":bell: *Your changes are in - ${changeLog.serviceName}*\n" +
+                "${buildReleaseMentionContext(changeLog)}\n${lines.joinToString("\n")}"
+        )
     )
 )
 
@@ -143,7 +162,7 @@ class ReleaseMentionService(
             request = SlackMessageRequest(
                 channel = slackChannel,
                 threadTs = slackThreadTs,
-                text = "Your changes are in ${changeLog.tagName}",
+                text = buildReleaseMentionText(changeLog),
                 blocks = buildReleaseMentionBlocks(changeLog, lines)
             )
         )
