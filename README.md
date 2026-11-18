@@ -84,13 +84,18 @@ Release <link to the GitHub release> is out 🚀
 Dashboards to monitor:
 • Grafana
 • Sentry
-Contributors:
-• @alice #123 #124
-• @bob (approver) #125
+Pull requests:
+• feat: add charging limits (#123)
+    ◦ @alice
+    ◦ @bob (approver)
+• fix: handle empty payload (#124)
+    ◦ @alice
 ```
 
+Each pull request going out in the release is listed with its title, followed by its contributors as sub-bullets.
+
 Contributors are tagged with a real Slack mention (`<@user_id>`) when one can be resolved; otherwise they're
-linked to their GitHub profile instead. Anyone who only approved a pull request (and didn't author one in
+linked to their GitHub profile instead. Anyone who only approved (and didn't author any pull request in
 this release) is suffixed with `(approver)`, and anyone credited only via a `Co-authored-by:` commit trailer
 with `(co-author)`. Requires `CHANGELOG_GITHUB_TOKEN` to resolve PR authors/approvers/co-authors.
 

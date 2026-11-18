@@ -123,35 +123,35 @@ class ReleaseNotificationServiceTest :
         }
 
         "buildRoleSuffix should be empty for an author" {
-            val contributor = Contributor(login = "alice", email = null, displayName = "alice").apply { isAuthor = true }
-            buildRoleSuffix(contributor) shouldBe ""
+            val roles = PrRoles().apply { isAuthor = true }
+            buildRoleSuffix(roles) shouldBe ""
         }
 
         "buildRoleSuffix should be empty for an author who also approved or co-authored" {
-            val contributor = Contributor(login = "alice", email = null, displayName = "alice").apply {
+            val roles = PrRoles().apply {
                 isAuthor = true
                 isApprover = true
                 isCoAuthor = true
             }
-            buildRoleSuffix(contributor) shouldBe ""
+            buildRoleSuffix(roles) shouldBe ""
         }
 
         "buildRoleSuffix should say approver for an approver-only contributor" {
-            val contributor = Contributor(login = "alice", email = null, displayName = "alice").apply { isApprover = true }
-            buildRoleSuffix(contributor) shouldBe " (approver)"
+            val roles = PrRoles().apply { isApprover = true }
+            buildRoleSuffix(roles) shouldBe " (approver)"
         }
 
         "buildRoleSuffix should say co-author for a co-author-only contributor" {
-            val contributor = Contributor(login = "alice", email = null, displayName = "alice").apply { isCoAuthor = true }
-            buildRoleSuffix(contributor) shouldBe " (co-author)"
+            val roles = PrRoles().apply { isCoAuthor = true }
+            buildRoleSuffix(roles) shouldBe " (co-author)"
         }
 
         "buildRoleSuffix should combine co-author and approver roles" {
-            val contributor = Contributor(login = "alice", email = null, displayName = "alice").apply {
+            val roles = PrRoles().apply {
                 isCoAuthor = true
                 isApprover = true
             }
-            buildRoleSuffix(contributor) shouldBe " (co-author, approver)"
+            buildRoleSuffix(roles) shouldBe " (co-author, approver)"
         }
 
         "buildPrLinks should link every pr number using the known html url" {
@@ -188,21 +188,63 @@ class ReleaseNotificationServiceTest :
             formatMention(slackUserId = null, login = null, displayName = "Jane Doe") shouldBe "Jane Doe"
         }
 
-        "buildMentionLine should combine mention, role suffix and pr links" {
-            val contributor = Contributor(login = "alice", email = null, displayName = "alice").apply {
-                isApprover = true
-                prNumbers.add(1)
+        "buildPullRequestLine should show the title with a linked pr number" {
+            val line = buildPullRequestLine("monta-app", "changelog-cli", 1, "fix: a <b> & c", emptyMap())
+
+            line shouldBe "• fix: a &lt;b&gt; &amp; c (<https://github.com/monta-app/changelog-cli/pull/1|#1>)"
+        }
+
+        "buildPullRequestLine should fall back to just the link without a title" {
+            buildPullRequestLine("monta-app", "changelog-cli", 1, null, emptyMap()) shouldBe
+                "• <https://github.com/monta-app/changelog-cli/pull/1|#1>"
+        }
+
+        "buildContributorLine should indent the mention and add the role suffix" {
+            val roles = PrRoles(isApprover = true)
+
+            buildContributorLine(roles, "<@U123>") shouldBe "    ◦ <@U123> (approver)"
+        }
+
+        "buildPullRequestLines should nest each pr's contributors under it with their role in that pr" {
+            val alice = Contributor(login = "alice", email = null, displayName = "alice").apply {
+                prRoles[1] = PrRoles(isAuthor = true)
+                prRoles[2] = PrRoles(isApprover = true)
+            }
+            val bob = Contributor(login = "bob", email = null, displayName = "bob").apply {
+                prRoles[2] = PrRoles(isAuthor = true)
             }
 
-            val line = buildMentionLine(
+            val lines = buildPullRequestLines(
                 repoOwner = "monta-app",
                 repoName = "changelog-cli",
-                contributor = contributor,
+                prNumbers = listOf(2, 1),
+                prTitles = mapOf(1 to "first", 2 to "second"),
                 prUrls = emptyMap(),
-                mention = "<@U123>"
+                contributors = listOf(alice, bob),
+                mentions = mapOf("alice" to "<@UA>", "bob" to "<@UB>")
             )
 
-            line shouldBe "• <@U123> (approver) <https://github.com/monta-app/changelog-cli/pull/1|#1>"
+            lines shouldContainExactly listOf(
+                "• first (<https://github.com/monta-app/changelog-cli/pull/1|#1>)\n    ◦ <@UA>",
+                "• second (<https://github.com/monta-app/changelog-cli/pull/2|#2>)\n    ◦ <@UB>\n    ◦ <@UA> (approver)"
+            )
+        }
+
+        "buildContributors should track roles per pr" {
+            val (contributors, _) = buildContributors(
+                prNumbers = listOf(1, 2),
+                getPullRequestDetails = { prNumber ->
+                    if (prNumber == 1) {
+                        GitHubService.PullRequestDetails(number = 1, author = "alice", htmlUrl = null, approvers = listOf("bob"))
+                    } else {
+                        GitHubService.PullRequestDetails(number = 2, author = "bob", htmlUrl = null, approvers = listOf("alice"))
+                    }
+                },
+                getPullRequestCommitMessages = { emptyList() }
+            )
+
+            contributors.getValue("alice").prRoles shouldBe mapOf(1 to PrRoles(isAuthor = true), 2 to PrRoles(isApprover = true))
+            contributors.getValue("bob").prRoles shouldBe mapOf(1 to PrRoles(isApprover = true), 2 to PrRoles(isAuthor = true))
         }
 
         "shouldSkipNotification should be true when there are no prs and no monitoring urls" {
@@ -319,22 +361,22 @@ class ReleaseNotificationServiceTest :
         }
 
         "buildReleaseNotificationBlocks should omit the dashboards section when there are no monitoring urls" {
-            val blocks = buildReleaseNotificationBlocks(testChangeLog(), emptyList(), listOf("• <@U1> #1"))
+            val blocks = buildReleaseNotificationBlocks(testChangeLog(), emptyList(), listOf("• title (#1)\n    ◦ <@U1>"))
 
             blocks shouldHaveSize 2
             blocks.none { it.text?.text?.contains("Dashboards") == true } shouldBe true
         }
 
-        "buildReleaseNotificationBlocks should include dashboards and contributors when both are present" {
+        "buildReleaseNotificationBlocks should include dashboards and pull requests when both are present" {
             val blocks = buildReleaseNotificationBlocks(
                 testChangeLog(),
                 listOf(MonitoringUrl(label = "Grafana", url = "https://grafana.test.invalid")),
-                listOf("• <@U1> #1")
+                listOf("• title (#1)\n    ◦ <@U1>")
             )
 
             blocks shouldHaveSize 3
             blocks[1].text?.text shouldContain "Grafana"
-            blocks[2].text?.text shouldContain "<@U1> #1"
+            blocks[2].text?.text shouldContain "◦ <@U1>"
         }
     })
 

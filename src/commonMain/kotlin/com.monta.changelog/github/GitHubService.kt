@@ -456,6 +456,7 @@ class GitHubService(
         val author: String?,
         val htmlUrl: String?,
         val approvers: List<String>,
+        val title: String? = null,
     )
 
     /**
@@ -472,7 +473,7 @@ class GitHubService(
             return PullRequestDetails(number = prNumber, author = null, htmlUrl = null, approvers = emptyList())
         }
 
-        val (author, htmlUrl) = try {
+        val (authorAndUrl, title) = try {
             val response = client.githubRequest<String?>(
                 path = "$repoOwner/$repoName/pulls/$prNumber",
                 httpMethod = HttpMethod.Get,
@@ -481,15 +482,16 @@ class GitHubService(
 
             if (response.status.isSuccess()) {
                 val pr = response.body<PullRequestDetailResponse>()
-                pr.user?.login to pr.htmlUrl
+                (pr.user?.login to pr.htmlUrl) to pr.title
             } else {
                 DebugLogger.warn("⚠️  Failed to get PR #$prNumber details: HTTP ${response.status.value}")
-                null to null
+                (null to null) to null
             }
         } catch (e: Exception) {
             DebugLogger.warn("⚠️  Exception getting PR #$prNumber details: ${e.message}")
-            null to null
+            (null to null) to null
         }
+        val (author, htmlUrl) = authorAndUrl
 
         val approvers = try {
             val response = client.githubRequest<String?>(
@@ -512,7 +514,7 @@ class GitHubService(
             emptyList()
         }
 
-        return PullRequestDetails(number = prNumber, author = author, htmlUrl = htmlUrl, approvers = approvers)
+        return PullRequestDetails(number = prNumber, author = author, htmlUrl = htmlUrl, approvers = approvers, title = title)
     }
 
     @Serializable
@@ -521,6 +523,8 @@ class GitHubService(
         val htmlUrl: String? = null,
         @SerialName("user")
         val user: EventActor? = null,
+        @SerialName("title")
+        val title: String? = null,
     )
 
     @Serializable

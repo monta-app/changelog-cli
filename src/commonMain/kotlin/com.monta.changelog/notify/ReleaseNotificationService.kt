@@ -19,6 +19,15 @@ import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.charsets.name
 
 /**
+ * The roles a contributor had in one specific pull request.
+ */
+internal data class PrRoles(
+    var isAuthor: Boolean = false,
+    var isApprover: Boolean = false,
+    var isCoAuthor: Boolean = false,
+)
+
+/**
  * A single person contributing to the release, tracked by the most specific identity
  * we have for them (GitHub login, otherwise email, otherwise their commit trailer name).
  */
@@ -27,6 +36,7 @@ internal data class Contributor(
     val email: String?,
     val displayName: String,
     val prNumbers: MutableSet<Int> = mutableSetOf(),
+    val prRoles: MutableMap<Int, PrRoles> = mutableMapOf(),
     var isAuthor: Boolean = false,
     var isApprover: Boolean = false,
     var isCoAuthor: Boolean = false,
@@ -56,6 +66,14 @@ internal fun addContributor(
     val existing = contributors.getOrPut(contributor.key) { contributor }
     existing.prNumbers.add(prNumber)
     markRole(existing)
+
+    // Apply the same role to a throwaway contributor to learn which role this call grants, so it
+    // can be recorded against just this PR.
+    val granted = Contributor(login = login, email = email, displayName = resolvedDisplayName).also(markRole)
+    val prRoles = existing.prRoles.getOrPut(prNumber) { PrRoles() }
+    prRoles.isAuthor = prRoles.isAuthor || granted.isAuthor
+    prRoles.isApprover = prRoles.isApprover || granted.isApprover
+    prRoles.isCoAuthor = prRoles.isCoAuthor || granted.isCoAuthor
 }
 
 /**
@@ -71,15 +89,15 @@ internal fun sortContributors(contributors: Collection<Contributor>): List<Contr
     )
 
 /**
- * Builds the "(co-author, approver)" style suffix for a contributor's secondary roles.
- * Authors get no suffix - being the author is the default, unqualified role.
+ * Builds the "(co-author, approver)" style suffix for the secondary roles someone had in a
+ * single pull request. Authors get no suffix - being the author is the default, unqualified role.
  */
-internal fun buildRoleSuffix(contributor: Contributor): String {
-    val roles = buildList {
-        if (contributor.isCoAuthor) add("co-author")
-        if (contributor.isApprover) add("approver")
+internal fun buildRoleSuffix(roles: PrRoles): String {
+    val secondary = buildList {
+        if (roles.isCoAuthor) add("co-author")
+        if (roles.isApprover) add("approver")
     }
-    return if (!contributor.isAuthor && roles.isNotEmpty()) " (${roles.joinToString(", ")})" else ""
+    return if (!roles.isAuthor && secondary.isNotEmpty()) " (${secondary.joinToString(", ")})" else ""
 }
 
 /**
@@ -106,18 +124,53 @@ internal fun formatMention(slackUserId: String?, login: String?, displayName: St
 }
 
 /**
- * Builds the "• <mention> (role) <pr links>" line for a single contributor.
+ * Builds the "• title (#123)" line for a pull request, linking the number to the PR.
  */
-internal fun buildMentionLine(
+internal fun buildPullRequestLine(
     repoOwner: String,
     repoName: String,
-    contributor: Contributor,
+    prNumber: Int,
+    title: String?,
     prUrls: Map<Int, String?>,
-    mention: String,
 ): String {
-    val roleSuffix = buildRoleSuffix(contributor)
-    val links = buildPrLinks(repoOwner, repoName, contributor.prNumbers, prUrls)
-    return "• $mention$roleSuffix $links"
+    val link = buildPrLinks(repoOwner, repoName, setOf(prNumber), prUrls)
+    return if (title.isNullOrBlank()) "• $link" else "• ${escapeSlackText(title.trim())} ($link)"
+}
+
+/**
+ * Builds the indented "◦ <mention> (role)" sub-bullet for a contributor of a pull request, with the role they had in that PR.
+ */
+internal fun buildContributorLine(roles: PrRoles, mention: String): String = "    ◦ $mention${buildRoleSuffix(roles)}"
+
+/**
+ * Escapes the characters Slack treats as control characters in mrkdwn text.
+ */
+internal fun escapeSlackText(text: String): String = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+/**
+ * Builds one entry per pull request - the PR line followed by its contributors as sub-bullets -
+ * in PR number order. [mentions] maps a contributor key to its resolved Slack mention.
+ */
+internal fun buildPullRequestLines(
+    repoOwner: String,
+    repoName: String,
+    prNumbers: List<Int>,
+    prTitles: Map<Int, String?>,
+    prUrls: Map<Int, String?>,
+    contributors: Collection<Contributor>,
+    mentions: Map<String, String>,
+): List<String> = prNumbers.distinct().sorted().map { prNumber ->
+    val contributorLines = contributors
+        .mapNotNull { contributor -> contributor.prRoles[prNumber]?.let { contributor to it } }
+        .sortedWith(
+            compareBy(
+                { (_, roles) -> !roles.isAuthor && !roles.isCoAuthor && roles.isApprover },
+                { (contributor, _) -> contributor.displayName.lowercase() }
+            )
+        )
+        .map { (contributor, roles) -> buildContributorLine(roles, mentions[contributor.key] ?: contributor.displayName) }
+    (listOf(buildPullRequestLine(repoOwner, repoName, prNumber, prTitles[prNumber], prUrls)) + contributorLines)
+        .joinToString("\n")
 }
 
 /**
@@ -129,6 +182,7 @@ internal suspend fun buildContributors(
     prNumbers: List<Int>,
     getPullRequestDetails: suspend (Int) -> GitHubService.PullRequestDetails,
     getPullRequestCommitMessages: suspend (Int) -> List<String>,
+    prTitles: MutableMap<Int, String?> = mutableMapOf(),
 ): Pair<Map<String, Contributor>, Map<Int, String?>> {
     val contributors = mutableMapOf<String, Contributor>()
     val prUrls = mutableMapOf<Int, String?>()
@@ -136,6 +190,7 @@ internal suspend fun buildContributors(
     prNumbers.forEach { prNumber ->
         val details = getPullRequestDetails(prNumber)
         prUrls[prNumber] = details.htmlUrl
+        prTitles[prNumber] = details.title
 
         details.author?.let { author ->
             addContributor(contributors, login = author, prNumber = prNumber) { it.isAuthor = true }
@@ -174,7 +229,7 @@ internal fun shouldSkipNotification(
 internal fun buildReleaseNotificationBlocks(
     changeLog: ChangeLog,
     monitoringUrls: List<MonitoringUrl>,
-    mentionLines: List<String>,
+    pullRequestLines: List<String>,
 ): List<SlackBlock> = buildList {
     val releaseUrl = changeLog.githubReleaseUrl
         ?: changeLog.repositoryUrl?.let { "$it/releases/tag/${changeLog.tagName}" }
@@ -190,8 +245,8 @@ internal fun buildReleaseNotificationBlocks(
         add(sectionBlock("*Dashboards to monitor:*\n$dashboardLines"))
     }
 
-    if (mentionLines.isNotEmpty()) {
-        add(sectionBlock("*Contributors:*\n${mentionLines.joinToString("\n")}"))
+    if (pullRequestLines.isNotEmpty()) {
+        add(sectionBlock("*Pull requests:*\n${pullRequestLines.joinToString("\n")}"))
     }
 }
 
@@ -223,8 +278,10 @@ class ReleaseNotificationService(
             return
         }
 
+        val prTitles = mutableMapOf<Int, String?>()
         val (contributors, prUrls) = buildContributors(
             prNumbers = prNumbers,
+            prTitles = prTitles,
             getPullRequestDetails = { prNumber ->
                 gitHubService.getPullRequestDetails(
                     repoOwner = changeLog.repoOwner,
@@ -246,15 +303,17 @@ class ReleaseNotificationService(
         // when no identity-resolve URL was configured.
         val identities = identityResolver?.resolveGithubIdentities(contributors.values.mapNotNull { it.login }).orEmpty()
 
-        val mentionLines = sortContributors(contributors.values).map { contributor ->
-            buildMentionLine(
-                repoOwner = changeLog.repoOwner,
-                repoName = changeLog.repoName,
-                contributor = contributor,
-                prUrls = prUrls,
-                mention = resolveMention(contributor, identities)
-            )
-        }
+        val mentions = contributors.mapValues { (_, contributor) -> resolveMention(contributor, identities) }
+
+        val pullRequestLines = buildPullRequestLines(
+            repoOwner = changeLog.repoOwner,
+            repoName = changeLog.repoName,
+            prNumbers = prNumbers,
+            prTitles = prTitles,
+            prUrls = prUrls,
+            contributors = contributors.values,
+            mentions = mentions
+        )
 
         postSlackMessage(
             slackToken = slackToken,
@@ -262,7 +321,7 @@ class ReleaseNotificationService(
                 channel = slackChannel,
                 threadTs = null,
                 text = changeLog.title,
-                blocks = buildReleaseNotificationBlocks(changeLog, monitoringUrls, mentionLines)
+                blocks = buildReleaseNotificationBlocks(changeLog, monitoringUrls, pullRequestLines)
             )
         )
     }
