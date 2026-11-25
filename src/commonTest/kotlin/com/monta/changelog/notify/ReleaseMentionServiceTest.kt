@@ -68,6 +68,41 @@ class ReleaseMentionServiceTest :
             selectReleaseMentions(emptyList(), triggeredBy = "erin", subscribers = setOf("alice")).shouldBeEmpty()
         }
 
+        "selectReleaseMentions tags whoever added automerge to a bot-authored PR, as its author" {
+            // server#30101: written by monta-factory[bot], queued by jariwiklund, released by Zipper
+            val mentions = selectReleaseMentions(
+                contributors = listOf(contributor("alice", setOf(1), author = true)),
+                triggeredBy = "monta-zipper[bot]",
+                subscribers = setOf("alice", "jariwiklund"),
+                automergeLabelers = mapOf(2 to "jariwiklund")
+            )
+
+            mentions shouldContainExactly listOf(
+                ReleaseMention("alice", setOf(1), triggeredRelease = false),
+                ReleaseMention("jariwiklund", setOf(2), triggeredRelease = false)
+            )
+        }
+
+        "selectReleaseMentions merges a labeler's queued PRs with their own, and keeps the trigger flag" {
+            val mentions = selectReleaseMentions(
+                contributors = listOf(contributor("Alice", setOf(1), author = true)),
+                triggeredBy = "alice",
+                subscribers = setOf("alice"),
+                automergeLabelers = mapOf(2 to "alice", 3 to "alice")
+            )
+
+            mentions shouldContainExactly listOf(ReleaseMention("Alice", setOf(1, 2, 3), triggeredRelease = true))
+        }
+
+        "selectReleaseMentions skips automerge labelers who aren't subscribed or are bots" {
+            selectReleaseMentions(
+                contributors = emptyList(),
+                triggeredBy = null,
+                subscribers = setOf("alice", "renovate[bot]"),
+                automergeLabelers = mapOf(1 to "bob", 2 to "renovate[bot]")
+            ).shouldBeEmpty()
+        }
+
         "buildReleaseMentionLine links the PRs and notes who triggered the release" {
             buildReleaseMentionLine(
                 repoOwner = "monta-app",

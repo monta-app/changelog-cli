@@ -178,7 +178,7 @@ class ChangeLogService(
                     repoOwner = repoInfo.repoOwner,
                     repoName = repoInfo.repoName,
                     prNumber = prNumber,
-                    labelName = "automerge"
+                    labelName = GitHubService.AUTOMERGE_LABEL
                 )
                 if (labelAdder != null) {
                     DebugLogger.info("Resolved bot actor '$triggeredBy' to real user '$labelAdder' (added automerge label on PR #$prNumber)")

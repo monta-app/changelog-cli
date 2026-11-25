@@ -41,16 +41,32 @@ internal data class ReleaseMention(
 /**
  * Picks the subscribers who authored or co-authored a PR in the release, or triggered it.
  * Approving alone doesn't count: the release isn't theirs.
+ *
+ * A PR a bot wrote, such as Monta Factory's, has no human author to tag, so whoever queued it by
+ * adding its automerge label stands in for the author: [automergeLabelers] maps such a PR's number
+ * to that person's login.
  */
 internal fun selectReleaseMentions(
     contributors: Collection<Contributor>,
     triggeredBy: String?,
     subscribers: Set<String>,
+    automergeLabelers: Map<Int, String> = emptyMap(),
 ): List<ReleaseMention> {
     val trigger = triggeredBy?.removePrefix("@")?.lowercase()
-    val mentions = contributors
-        .filter { (it.isAuthor || it.isCoAuthor) && it.login?.lowercase() in subscribers }
-        .map { ReleaseMention(login = it.login!!, prNumbers = it.prNumbers, triggeredRelease = it.login.lowercase() == trigger) }
+    val authored = contributors
+        .filter { it.isAuthor || it.isCoAuthor }
+        .mapNotNull { contributor -> contributor.login?.let { it to contributor.prNumbers.toSet() } }
+    val queued = automergeLabelers.map { (prNumber, login) -> login to setOf(prNumber) }
+    val mentions = (authored + queued)
+        .filter { (login, _) -> login.lowercase() in subscribers && !GitHubService.isBotActor(login) }
+        .groupBy { (login, _) -> login.lowercase() }
+        .map { (key, entries) ->
+            ReleaseMention(
+                login = entries.first().first,
+                prNumbers = entries.flatMap { it.second }.toSet(),
+                triggeredRelease = key == trigger
+            )
+        }
 
     val triggerOnly = trigger != null &&
         trigger in subscribers &&
@@ -125,17 +141,29 @@ class ReleaseMentionService(
             return
         }
 
+        val botAuthoredPrs = mutableListOf<Int>()
         val (contributors, prUrls) = buildContributors(
             prNumbers = pullRequests.mapNotNull { it.toIntOrNull() },
             getPullRequestDetails = { prNumber ->
-                gitHubService.getPullRequestDetails(changeLog.repoOwner, changeLog.repoName, prNumber)
+                gitHubService.getPullRequestDetails(changeLog.repoOwner, changeLog.repoName, prNumber).also {
+                    if (GitHubService.isBotActor(it.author)) botAuthoredPrs += prNumber
+                }
             },
             getPullRequestCommitMessages = { prNumber ->
                 gitHubService.getPullRequestCommitMessages(changeLog.repoOwner, changeLog.repoName, prNumber)
             }
         )
 
-        val mentions = selectReleaseMentions(contributors.values, changeLog.triggeredBy, subscribers)
+        val automergeLabelers = botAuthoredPrs.mapNotNull { prNumber ->
+            gitHubService.findLabelAdder(
+                repoOwner = changeLog.repoOwner,
+                repoName = changeLog.repoName,
+                prNumber = prNumber,
+                labelName = GitHubService.AUTOMERGE_LABEL
+            )?.let { prNumber to it }
+        }.toMap()
+
+        val mentions = selectReleaseMentions(contributors.values, changeLog.triggeredBy, subscribers, automergeLabelers)
         if (mentions.isEmpty()) {
             DebugLogger.debug("No release subscribers have changes in this release")
             return
