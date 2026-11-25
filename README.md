@@ -120,7 +120,8 @@ People can ask to be tagged when a release ships their changes, by turning on *R
 
 On a `production` or `internal` stage with `CHANGELOG_OUTPUT=slack`, the CLI reads that file with
 `CHANGELOG_GITHUB_TOKEN` and replies in the changelog's Slack thread, tagging each subscriber who authored or
-co-authored a pull request in the release, or triggered it:
+co-authored a pull request in the release, or triggered it. A pull request a bot wrote, such as Monta Factory's, has
+no human author, so the subscriber who added its `automerge` label is tagged for it in the author's place:
 
 ```
 🔔 Your changes are in 2026-11-11-14-30

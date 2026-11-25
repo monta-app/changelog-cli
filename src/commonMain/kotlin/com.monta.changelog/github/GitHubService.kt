@@ -831,6 +831,9 @@ class GitHubService(
         const val EVENTS_PAGE_SIZE = 100
         const val EVENTS_MAX_PAGES = 10
 
+        /** The label that queues a PR to merge; whoever adds it chose to ship the PR. */
+        const val AUTOMERGE_LABEL = "automerge"
+
         /**
          * Reads pages 1, 2, ... from [fetchPage] until one comes back with fewer than [pageSize] items,
          * or [maxPages] pages have been read. Returns null when any page fails, so a partial list
