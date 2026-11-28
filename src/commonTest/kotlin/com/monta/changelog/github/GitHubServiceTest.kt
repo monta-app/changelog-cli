@@ -144,6 +144,30 @@ class GitHubServiceTest :
             GitHubService.findLabelAdderFromEvents(events, "automerge").shouldBeNull()
         }
 
+        "findLabelAdderFromEvents should skip a bot that re-added the label after a person" {
+            // server#30338: Casperhr added automerge, Zipper dropped it, Monta Factory re-added it
+            val events = listOf(
+                GitHubService.IssueEvent(
+                    event = "labeled",
+                    actor = GitHubService.EventActor(login = "Casperhr"),
+                    label = GitHubService.EventLabel(name = "automerge")
+                ),
+                GitHubService.IssueEvent(
+                    event = "unlabeled",
+                    actor = GitHubService.EventActor(login = "monta-zipper[bot]"),
+                    label = GitHubService.EventLabel(name = "automerge")
+                ),
+                GitHubService.IssueEvent(
+                    event = "labeled",
+                    actor = GitHubService.EventActor(login = "monta-factory[bot]"),
+                    label = GitHubService.EventLabel(name = "automerge")
+                )
+            )
+
+            GitHubService.findLabelAdderFromEvents(events, "automerge") shouldBe "Casperhr"
+            GitHubService.findLabelAdderFromEvents(events.drop(1), "automerge").shouldBeNull()
+        }
+
         "findLabelAdderFromEvents should return null for empty events" {
             GitHubService.findLabelAdderFromEvents(emptyList(), "automerge").shouldBeNull()
         }
