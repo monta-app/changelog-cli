@@ -822,11 +822,16 @@ class GitHubService(
         /**
          * Finds the username of the person who last added a specific label,
          * given a list of issue events. Pure function for testability.
+         *
+         * Bots are skipped: one re-adding a label, such as Monta Factory re-queueing a PR Zipper
+         * dropped, only restores what a person chose, so that person is still the one named.
          */
         fun findLabelAdderFromEvents(
             events: List<IssueEvent>,
             labelName: String,
-        ): String? = events.lastOrNull { it.event == "labeled" && it.label?.name == labelName }?.actor?.login
+        ): String? = events.lastOrNull {
+            it.event == "labeled" && it.label?.name == labelName && !isBotActor(it.actor?.login)
+        }?.actor?.login
 
         const val EVENTS_PAGE_SIZE = 100
         const val EVENTS_MAX_PAGES = 10
